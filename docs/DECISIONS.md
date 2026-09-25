@@ -153,6 +153,11 @@ These are the conservative behaviours the nutrition engine will ship with unless
 - Conventional commits; push straight to `main`; GitHub Actions runs typecheck, lint and tests on every push.
 - Local Postgres via docker compose; tests against a real database rather than mocks.
 - IDs are UUID v7 generated in the app (future offline/sync friendly).
+- Local Postgres is on host port 5433 and addressed as 127.0.0.1 (5432 was taken on the owner's machine; localhost resolves to IPv6 first on Windows and Docker's IPv6 mapping hangs). Slice 1.
+- Sessions: 30-day sliding expiry renewed when last seen over an hour ago; cookie `dt_session` is HMAC-signed with `SESSION_SECRET`, the database stores only the sha256 of the token. Rotating the secret signs everyone out. Slice 1.
+- Rate limits are in-memory per API process (10 failed logins per email and 30 per IP in 15 minutes; 10 registrations per IP per hour). Fine for one Railway instance; move to Postgres if the API ever scales out. Slice 1.
+- `GET /api/v1/me` answers 401 when signed out; the web app treats that as "signed out", not as an error. Slice 1.
+- Seed accounts `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password` exist for local use only; never run the seed against production. Slice 1.
 - Personas used for seed data and golden tests: **Finn** (male, 28, 178 cm, 75 kg, fighter training 6x/week, lean gain) and **Tess** (female, 30, 160 cm, 50 kg, gym 3x/week, fat loss and tone).
 
 ## Open questions for later slices (not blocking)

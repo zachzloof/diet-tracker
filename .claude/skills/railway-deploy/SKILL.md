@@ -6,12 +6,12 @@ description: How diet-tracker builds and runs on Railway - one service serving t
 # Railway deploy
 
 ## Shape
-- **One service** built from the repo `Dockerfile`. It runs `node apps/api/dist/index.js`, which serves `/api/*` and, for any other path, the built SPA from `apps/web/dist` with a fallback to `index.html`. One origin means no CORS, cookies just work, and Railway's HTTPS makes the PWA installable (browsers refuse to install over HTTP).
+- **One service** built from the repo `Dockerfile`. It runs `node dist/index.js` inside `/app`, which serves `/api/*` and, for any other path, the built SPA from `apps/web/dist` with a fallback to `index.html`. One origin means no CORS, cookies just work, and Railway's HTTPS makes the PWA installable (browsers refuse to install over HTTP).
 - **Postgres** is a Railway plugin in the same project; Railway injects `DATABASE_URL`.
 - **Deploys from GitHub `main`** on every push. The Dockerfile is explicit so Railway never has to guess the build.
 
 ## Boot sequence
-Start command: `node apps/api/dist/migrate.js && node apps/api/dist/index.js`.
+Start command (the Dockerfile `CMD`, run from `/app`, which is the API package laid out by `pnpm deploy`): `node dist/migrate.js && node dist/index.js`.
 Migrations run before the server on every deploy so schema and code cannot disagree. That is why migrations must be safe to run twice and backwards-compatible for the short overlap while the old container drains (see the `db-schema` skill).
 
 ## Env var contract (`apps/api/.env.example` is the source of truth)
@@ -24,6 +24,7 @@ Migrations run before the server on every deploy so schema and code cannot disag
 | OPENAI_MODEL | e.g. `gpt-5`; changing it needs no code change |
 | AI_DAILY_CALL_CAP | per-user daily OpenAI call cap; default 150 |
 | NODE_ENV / LOG_LEVEL | `production` / `info` |
+| WEB_DIST_DIR | Optional. Absolute path of the built SPA; the Dockerfile sets `/app/public`. Unset locally (the API finds `apps/web/dist`) |
 
 Env is parsed by zod at boot (`apps/api/src/env.ts`). A missing or malformed var fails fast with its name in the message, which is far easier to diagnose than a 500 an hour later.
 
@@ -34,6 +35,7 @@ Env is parsed by zod at boot (`apps/api/src/env.ts`). A missing or malformed var
 1. Railway dashboard, deploy logs: build finished, migrations printed how many applied, server printed "listening".
 2. `curl https://<domain>/api/health`.
 3. On a phone: open the URL, add to home screen, log in, walk the slice's Done-when list.
+4. Locally, the same image can be built and booted against the compose database: `docker build -t diet-tracker:local .` then `docker run --rm -p 3001:3000 -e DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5433/diet_tracker -e SESSION_SECRET=<64 hex> -e APP_ORIGIN=http://localhost:3001 diet-tracker:local`. The README has the Railway one-time setup steps.
 The Railway CLI is not installed on the owner's machine. Use the dashboard, or `npm i -g @railway/cli` if terminal log access becomes necessary; say so in the report if you install it.
 
 ## Common failures

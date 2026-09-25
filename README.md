@@ -6,7 +6,7 @@ Working name. Built for a small group of friends first, from a home-screen bookm
 
 ## Status
 
-Planning complete, no code yet. Development happens in five slices, one per working session. See [docs/PLAN.md](docs/PLAN.md) for the slices and [docs/DECISIONS.md](docs/DECISIONS.md) for the design decisions and the ones still open.
+Slice 1 (foundation: monorepo, auth, PWA shell, deploy pipeline) is built. Development happens in five slices, one per working session. See [docs/PLAN.md](docs/PLAN.md) for the slices and [docs/DECISIONS.md](docs/DECISIONS.md) for the design decisions and the ones still open. [CHANGELOG.md](CHANGELOG.md) lists what shipped.
 
 ## What it does (when finished)
 
@@ -21,17 +21,71 @@ Planning complete, no code yet. Development happens in five slices, one per work
 
 Vue 3 + Vite PWA, Node + Hono API, Postgres with Drizzle, OpenAI Structured Outputs, deployed as one service on Railway. Details and reasoning in [docs/DECISIONS.md](docs/DECISIONS.md).
 
+```
+apps/web         Vue 3 PWA (Vite, Tailwind v4, Pinia, TanStack Query, Reka UI)
+apps/api         Hono API on Node 24, Drizzle + Postgres, serves the built SPA
+packages/shared  zod schemas, the nutrient enum, the nutrition engine (pure functions)
+```
+
 ## Running locally
 
-Available after slice 1. The commands will be:
+Prerequisites: Node 24, pnpm 9 (`corepack enable` or `npm i -g pnpm@9`), Docker Desktop.
 
 ```
 pnpm install
-docker compose up -d db
-cp apps/api/.env.example apps/api/.env   # fill in OPENAI_API_KEY, SESSION_SECRET
+docker compose up -d db                  # Postgres on 127.0.0.1:5433
+cp apps/api/.env.example apps/api/.env   # then set SESSION_SECRET (see below)
 pnpm db:migrate
-pnpm dev
+pnpm db:seed                             # optional: creates Finn and Tess
+pnpm dev                                 # web on http://localhost:5173, API on :3000
 ```
+
+Generate a session secret with:
+
+```
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Notes:
+
+- The database is exposed on host port **5433** (not 5432) so it never collides with another project's Postgres. Use `127.0.0.1`, not `localhost`, in `DATABASE_URL`: on Windows `localhost` resolves to IPv6 first and Docker's IPv6 port mapping can hang instead of connecting.
+- Seed accounts (local only): `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password`.
+- `OPENAI_API_KEY` is not needed until slice 3.
+- To try it on your phone over Wi-Fi: `pnpm --filter @diet-tracker/web dev --host`, then open the LAN address Vite prints. Installing to the home screen needs HTTPS, so that only works on the deployed URL.
+
+Other commands:
+
+```
+pnpm typecheck      # shared, api (tsc) and web (vue-tsc)
+pnpm lint           # eslint + prettier --check
+pnpm test           # vitest; api tests run against a real diet_tracker_test database
+pnpm build          # shared -> api -> web
+pnpm db:generate    # drizzle-kit: schema.ts -> SQL migration in apps/api/drizzle/
+pnpm format
+```
+
+Tests need the database from `docker compose up -d db`; they create `diet_tracker_test` on the same server, migrate it, and truncate between files.
+
+## Deploying to Railway
+
+One Railway service builds the repo `Dockerfile` and serves the API and the built web app from a single origin; a Railway Postgres plugin in the same project provides the database. Push to `main` deploys. Migrations run on every boot before the server starts.
+
+One-time setup:
+
+1. In Railway, **New Project → Deploy from GitHub repo** and pick this repository. Railway detects `railway.json` and the `Dockerfile`.
+2. In the same project, **Add → Database → PostgreSQL**. Railway injects `DATABASE_URL` into the service automatically (make sure the service's Variables tab shows it as a reference to the Postgres plugin).
+3. In the service's **Variables**, add:
+   - `SESSION_SECRET`: a fresh 64-character hex string (different from your local one).
+   - `NODE_ENV`: `production`
+   - `LOG_LEVEL`: `info`
+   - `OPENAI_API_KEY`, `OPENAI_MODEL` (`gpt-5`), `AI_DAILY_CALL_CAP` (`150`): can wait until slice 3, but the model and cap can be set now.
+   - `APP_ORIGIN`: set after step 4.
+4. In **Settings → Networking**, generate a public domain. Copy it into `APP_ORIGIN` as `https://<domain>` with no trailing slash and redeploy. The cookie's `Secure` flag is derived from this, so it must be the real `https://` URL.
+5. Watch the deploy logs for `migrations applied` and `listening`, then open `https://<domain>/api/health`. It returns `{ ok: true, version, db: "ok" }`.
+
+On a phone: open the domain, sign up, then **Share → Add to Home Screen** (iOS) or the install prompt (Android). The app launches full-screen with its icon.
+
+If the deploy fails, see the `railway-deploy` skill under `.claude/skills/` for the usual causes.
 
 ## Contributing
 

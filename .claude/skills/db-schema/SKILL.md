@@ -35,7 +35,9 @@ description: Drizzle ORM + Postgres conventions for diet-tracker - table and col
 5. Commit the schema and the migration in the same commit.
 
 ## Local database
-`docker compose up -d db` gives Postgres on `localhost:5432`, database `diet_tracker`, user and password `postgres`. `DATABASE_URL` in `apps/api/.env` points at it. Tests use `diet_tracker_test`, created by the test setup and truncated between test files, so tests exercise real SQL and real constraints instead of mocks.
+`docker compose up -d db` gives Postgres 17 on **127.0.0.1:5433** (host port 5433 so it never collides with another project on 5432), database `diet_tracker`, user and password `postgres`. `DATABASE_URL` in `apps/api/.env` points at it. Use `127.0.0.1` rather than `localhost`: on Windows, `localhost` resolves to IPv6 first and Docker's IPv6 mapping can hang instead of refusing. The pool has a 10 s connection timeout so a wrong host fails fast. Tests use `diet_tracker_test`, created and migrated by `apps/api/src/test/global-setup.ts` and truncated between test files, so tests exercise real SQL and real constraints instead of mocks.
+
+Migrations: `pnpm db:migrate` runs `apps/api/src/migrate.ts`, the same runner the Docker image executes before the server (`dist/migrate.js`). It logs how many files it applied. The first migration also creates the `citext` extension.
 
 ## Query conventions
 - Daily totals come from `daily_summaries`, never from summing `log_entries` at read time on hot paths. Recompute the summary row in the same transaction as any insert, update or delete on `log_entries` for that user and day.

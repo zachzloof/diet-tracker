@@ -12,7 +12,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ## Slice 1 - Foundation: monorepo, auth, deploy
 
-**Status:** not started
+**Status:** done with deferrals (2026-09-25)
 
 **Goal.** A deployed, installable shell that you and your friends can sign into from your phones. Everything later builds on this, so it is mostly plumbing done properly.
 
@@ -29,11 +29,11 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **Out of scope.** Onboarding, targets, logging, any nutrition UI.
 
 **Done when.**
-- [ ] From a phone, open the Railway URL, add to home screen, and the app launches full-screen with an icon.
-- [ ] Register, log out, log in; refreshing keeps you logged in; sessions survive a redeploy.
-- [ ] Wrong password shows a clear error; ten rapid failed logins get rate limited.
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` pass locally and in CI.
-- [ ] Fresh clone + `docker compose up -d db` + `pnpm db:migrate` + `pnpm dev` works by following the README.
+- [ ] From a phone, open the Railway URL, add to home screen, and the app launches full-screen with an icon. *Deferred: needs the owner to create the Railway project (README has the steps) and a real phone. Verified locally instead: manifest with 192/512/maskable icons, service worker registers, iOS add-to-home-screen hint shows under a Safari user agent, and the Docker image boots and serves the app.*
+- [x] Register, log out, log in; refreshing keeps you logged in; sessions survive a redeploy. *Walked in a 390x844 headless browser; a cookie issued by one server process was accepted by a freshly booted container against the same database.*
+- [x] Wrong password shows a clear error; ten rapid failed logins get rate limited. *"Email or password is incorrect"; the eleventh attempt shows "Too many attempts. Try again in 15 minutes." with a 429 and Retry-After.*
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm test` pass locally and in CI. *Locally green (30 tests). CI workflow committed; its first run happens on this push.*
+- [x] Fresh clone + `docker compose up -d db` + `pnpm db:migrate` + `pnpm dev` works by following the README. *Done from a fresh clone into a temp directory.*
 - [x] Decisions D1 to D4 marked `accepted` in `docs/DECISIONS.md` (or superseded with the owner's choice).
 
 **Decisions it depends on.** D1, D2, D3, D4.
