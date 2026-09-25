@@ -1,0 +1,99 @@
+import type { ApiErrorBody, ApiErrorCode, ValidationDetails } from '@diet-tracker/shared'
+import type { Context } from 'hono'
+import { HTTPException } from 'hono/http-exception'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
+import type { ZodError } from 'zod'
+import { logger } from './logger.js'
+import type { AppEnv } from './types.js'
+
+/** An error the API deliberately returns. Anything else becomes a generic 500. */
+export class AppError extends Error {
+  constructor(
+    public readonly status: ContentfulStatusCode,
+    public readonly code: ApiErrorCode,
+    message: string,
+    public readonly details?: unknown,
+  ) {
+    super(message)
+    this.name = 'AppError'
+  }
+
+  toBody(): ApiErrorBody {
+    return {
+      error: {
+        code: this.code,
+        message: this.message,
+        ...(this.details !== undefined ? { details: this.details } : {}),
+      },
+    }
+  }
+}
+
+function humaniseSeconds(seconds: number): string {
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? '' : 's'}`
+  const minutes = Math.ceil(seconds / 60)
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`
+}
+
+export const errors = {
+  validation: (details: ValidationDetails) =>
+    new AppError(400, 'validation_error', 'Check the highlighted fields', details),
+  unauthenticated: () => new AppError(401, 'unauthenticated', 'Sign in to continue'),
+  invalidCredentials: () =>
+    new AppError(401, 'invalid_credentials', 'Email or password is incorrect'),
+  notFound: () => new AppError(404, 'not_found', 'Not found'),
+  emailTaken: () => new AppError(409, 'email_taken', 'An account with that email already exists'),
+  payloadTooLarge: () => new AppError(413, 'payload_too_large', 'That request is too large'),
+  rateLimited: (retryAfterSeconds: number) =>
+    new AppError(
+      429,
+      'rate_limited',
+      `Too many attempts. Try again in ${humaniseSeconds(retryAfterSeconds)}.`,
+      { retryAfterSeconds },
+    ),
+}
+
+export function validationDetails(error: ZodError): ValidationDetails {
+  const fieldErrors: Record<string, string[]> = {}
+  const formErrors: string[] = []
+  for (const issue of error.issues) {
+    const key = issue.path.map(String).join('.')
+    if (key === '') {
+      formErrors.push(issue.message)
+      continue
+    }
+    const list = fieldErrors[key] ?? []
+    list.push(issue.message)
+    fieldErrors[key] = list
+  }
+  return { fieldErrors, formErrors }
+}
+
+export function handleError(error: Error, c: Context<AppEnv>): Response {
+  if (error instanceof AppError) {
+    if (error.code === 'rate_limited' && typeof error.details === 'object' && error.details) {
+      const retry = Reflect.get(error.details, 'retryAfterSeconds')
+      if (typeof retry === 'number') c.header('Retry-After', String(retry))
+    }
+    return c.json(error.toBody(), error.status)
+  }
+
+  if (error instanceof HTTPException) {
+    const mapped =
+      error.status === 404
+        ? errors.notFound()
+        : error.status === 413
+          ? errors.payloadTooLarge()
+          : error.status === 401
+            ? errors.unauthenticated()
+            : null
+    if (mapped) return c.json(mapped.toBody(), mapped.status)
+  }
+
+  const log = c.get('log') ?? logger
+  log.error({ err: error, path: c.req.path, method: c.req.method }, 'unhandled error')
+  const body: ApiErrorBody = {
+    error: { code: 'internal_error', message: 'Something went wrong. Please try again.' },
+  }
+  return c.json(body, 500)
+}
