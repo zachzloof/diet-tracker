@@ -1,0 +1,15 @@
+.git
+.github
+.claude
+docs
+node_modules
+**/node_modules
+**/dist
+**/dev-dist
+**/coverage
+.env
+**/.env
+**/.env.*
+!**/.env.example
+*.md
+!README.md
