@@ -19,7 +19,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** A. It honours the Vue preference and the App Store path is a wrapper, not a rewrite. Nuxt was considered and rejected: a plain SPA plus a separate API is cleaner to wrap with Capacitor and to run as one Railway service.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -32,7 +32,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** A. Hono over Express or Fastify because it is TypeScript-first, tiny, and validates with zod natively. Fastify is a fine fallback if Hono ever gets in the way.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -47,7 +47,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** A.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -60,7 +60,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** A now. Two notes for later: (1) if Google sign-in is ever added, Apple requires Sign in with Apple too, so add both at once; (2) at Capacitor time cookies inside a native WebView can be fiddly, so the session layer should be written so that switching to a bearer token in secure storage is a contained change (session lookup by token; the cookie is just the transport).
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -75,7 +75,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** C. It matches how people actually eat (the same 30 foods on rotation), cuts OpenAI cost, and makes numbers consistent day to day. Revisit B if accuracy complaints are about whole foods rather than portions.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -89,7 +89,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** A to start, with the model ID in env so switching costs nothing. Add B only if the AI bill matters. Either way: Responses API, Structured Outputs with `strict: true`, a per-user daily call cap, request/response logging with token counts, and a 30 s timeout with one retry. Note: model IDs move; confirm the current strongest general model when slice 3 starts rather than trusting this document.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -102,7 +102,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** A. Micronutrients are shown with a status but weighted lightly in "day met" (see the nutrition-engine skill), because AI estimates of them are rough. Stored as a JSONB vector keyed by one enum, so adding a nutrient later is an enum change plus backfill rather than a wide-table migration.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -115,7 +115,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** A. It is the only option that is both explainable and testable, and it keeps the AI bill out of onboarding.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -128,7 +128,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** A. The `mobile-ui` skill defines the design language so the look stays consistent across slices.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -141,7 +141,7 @@ These are the conservative behaviours the nutrition engine will ship with unless
 - Fastest allowed pace: 0.75 kg/week loss or 0.5 kg/week gain.
 - A disclaimer at onboarding and in Settings that the app is not medical advice.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25)
 
 ---
 

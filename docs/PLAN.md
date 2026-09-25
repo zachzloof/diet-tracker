@@ -34,7 +34,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 - [ ] Wrong password shows a clear error; ten rapid failed logins get rate limited.
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` pass locally and in CI.
 - [ ] Fresh clone + `docker compose up -d db` + `pnpm db:migrate` + `pnpm dev` works by following the README.
-- [ ] Decisions D1 to D4 marked `accepted` in `docs/DECISIONS.md` (or superseded with the owner's choice).
+- [x] Decisions D1 to D4 marked `accepted` in `docs/DECISIONS.md` (or superseded with the owner's choice).
 
 **Decisions it depends on.** D1, D2, D3, D4.
 
