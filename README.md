@@ -6,7 +6,7 @@ Working name. Built for a small group of friends first, from a home-screen bookm
 
 ## Status
 
-Slice 1 (foundation: monorepo, auth, PWA shell, deploy pipeline) is built. Development happens in five slices, one per working session. See [docs/PLAN.md](docs/PLAN.md) for the slices and [docs/DECISIONS.md](docs/DECISIONS.md) for the design decisions and the ones still open. [CHANGELOG.md](CHANGELOG.md) lists what shipped.
+Slices 1 (foundation: monorepo, auth, PWA shell, deploy pipeline) and 2 (onboarding, the nutrition engine, targets with overrides and an AI explanation, profile and target history) are built. Development happens in five slices, one per working session. See [docs/PLAN.md](docs/PLAN.md) for the slices and [docs/DECISIONS.md](docs/DECISIONS.md) for the design decisions and the ones still open. [CHANGELOG.md](CHANGELOG.md) lists what shipped.
 
 ## What it does (when finished)
 
@@ -49,8 +49,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 Notes:
 
 - The database is exposed on host port **5433** (not 5432) so it never collides with another project's Postgres. Use `127.0.0.1`, not `localhost`, in `DATABASE_URL`: on Windows `localhost` resolves to IPv6 first and Docker's IPv6 port mapping can hang instead of connecting.
-- Seed accounts (local only): `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password`.
-- `OPENAI_API_KEY` is not needed until slice 3.
+- Seed accounts (local only): `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password`. Both come with a profile and targets.
+- `OPENAI_API_KEY` is optional: without it the targets screen says the explanation is unavailable and everything else works. With it, check `OPENAI_MODEL`: some accounts cannot use `gpt-5` until the organisation is verified (see D11 in `docs/DECISIONS.md`); `gpt-5.5` works without it.
+- `pnpm ai:smoke:plan` sends Finn's and Tess's plans to the live model and prints the explanations; add `--record` to refresh the test fixture.
 - To try it on your phone over Wi-Fi: `pnpm --filter @diet-tracker/web dev --host`, then open the LAN address Vite prints. Installing to the home screen needs HTTPS, so that only works on the deployed URL.
 
 Other commands:
@@ -78,7 +79,7 @@ One-time setup:
    - `SESSION_SECRET`: a fresh 64-character hex string (different from your local one).
    - `NODE_ENV`: `production`
    - `LOG_LEVEL`: `info`
-   - `OPENAI_API_KEY`, `OPENAI_MODEL` (`gpt-5`), `AI_DAILY_CALL_CAP` (`150`): can wait until slice 3, but the model and cap can be set now.
+   - `OPENAI_API_KEY`, `OPENAI_MODEL`, `AI_DAILY_CALL_CAP` (`150`): the key powers the plan explanation from slice 2 and food logging from slice 3. Use `gpt-5` if the organisation is verified, otherwise `gpt-5.5` (D11).
    - `APP_ORIGIN`: set after step 4.
 4. In **Settings → Networking**, generate a public domain. Copy it into `APP_ORIGIN` as `https://<domain>` with no trailing slash and redeploy. The cookie's `Secure` flag is derived from this, so it must be the real `https://` URL.
 5. Watch the deploy logs for `migrations applied` and `listening`, then open `https://<domain>/api/health`. It returns `{ ok: true, version, db: "ok" }`.

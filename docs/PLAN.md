@@ -42,7 +42,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ## Slice 2 - Onboarding and targets
 
-**Status:** not started
+**Status:** done with deferrals (2026-09-25)
 
 **Goal.** The app knows the person and gives them daily targets a dietitian would call sensible, with the reasoning visible.
 
@@ -56,13 +56,13 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **Out of scope.** Food logging, dashboard.
 
 **Done when.**
-- [ ] A new user completes onboarding on a phone in under three minutes without confusion (no field needs explanation beyond its label and helper text).
-- [ ] Finn and Tess get the numbers in `nutrition-engine/references/targets.md` exactly (golden tests) and the screen shows the same numbers.
-- [ ] Overriding protein to 180 g sticks after refresh; overriding energy below the floor shows the warning.
-- [ ] The AI explanation reads naturally, mentions the actual numbers, and never contradicts the engine.
-- [ ] Changing weight in Profile creates a new `target_versions` row and the old one stays visible in history.
+- [ ] A new user completes onboarding on a phone in under three minutes without confusion (no field needs explanation beyond its label and helper text). *Deferred: the timing needs a real person on a real phone. Verified instead in a 390x844 headless browser: 14 screens (15 when a pace applies), only four need typing, every field has a label and helper text, the draft survives a reload, and an under-18 date of birth is refused inline.*
+- [x] Finn and Tess get the numbers in `nutrition-engine/references/targets.md` exactly (golden tests) and the screen shows the same numbers. *44 shared tests including both goldens and 13 edge cases; the targets screen was checked for 14 of Finn's numbers, and the seeded Finn account shows 3,250 kcal and 150 g.*
+- [x] Overriding protein to 180 g sticks after refresh; overriding energy below the floor shows the warning. *Protein 180 g saved with the "above the usual range of 120 to 165 g" warning and survived a reload (carbs re-balanced to 430 g). Energy 1500 kcal shows "below the safe minimum of 1730 kcal" and needs a second "Save anyway" tap.*
+- [x] The AI explanation reads naturally, mentions the actual numbers, and never contradicts the engine. *Generated live with `gpt-5.5` for Finn and Tess (the account cannot use `gpt-5` without organisation verification, see D11). Both quoted every number as given and respected the allergy and dislikes. Finn's answer is the recorded fixture. "Never contradicts" is enforced by the prompt and by dropping the cached text whenever an override changes; it is not checked mechanically.*
+- [x] Changing weight in Profile creates a new `target_versions` row and the old one stays visible in history. *75 kg to 77 kg produced a second version (3,290 kcal) with the 75 kg version still listed; the protein override carried across.*
 
-**Decisions it depends on.** D6, D7, D8, D10.
+**Decisions it depends on.** D6, D7, D8, D10. Surfaced D11 (model access), D12 (override semantics) and D13 (what the explanation call sends).
 
 ---
 

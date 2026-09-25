@@ -18,13 +18,13 @@ description: Drizzle ORM + Postgres conventions for diet-tracker - table and col
 |---|---|---|
 | users | 1 | id, email (citext, unique), password_hash, created_at, updated_at |
 | sessions | 1 | id (sha256 of the cookie token), user_id, expires_at, last_seen_at, user_agent |
-| profiles | 2 | 1:1 with users. sex, dob, height_cm, weight_kg, body_fat_pct?, activity, training_type, training_days, goal, goal_weight_kg?, pace, diet_pattern, allergies[], dislikes[], timezone, units, flags jsonb |
-| target_versions | 2 | user_id, effective_from (date), inputs jsonb, computed jsonb, overrides jsonb, explanation jsonb?, created_at. Latest effective row wins; older rows are history |
-| weight_entries | 2 | user_id, day, weight_kg, note?; unique (user_id, day) |
+| profiles | 2 | 1:1 with users (`user_id` is the primary key). sex, dob (date), height_cm, weight_kg, body_fat_pct?, goal, pace?, goal_weight_kg?, activity, training_type, training_days, diet_pattern, allergies text[], dislikes text[], timezone, units, flags jsonb. Enums are text validated by zod |
+| target_versions | 2 | user_id, effective_from (date), trigger (onboarding, profile_change, recalibration), inputs jsonb (TargetInput), computed jsonb (Targets, no overrides), overrides jsonb (pins), effective jsonb (Targets with pins), explanation jsonb?, created_at. Latest (effective_from, created_at) wins; overrides are updated in place on that row; older rows are history |
+| weight_entries | 2 | user_id, day, weight_kg, note?; unique (user_id, day). Written by profile saves that change weight |
+| ai_calls | 2 | user_id?, purpose, model, input_tokens?, output_tokens?, latency_ms, ok, error?, created_at. One row per attempt; moved up from slice 3 because the plan explanation is the first call |
 | foods | 3 | user_id? (null = shared), name, brand?, basis ('per_100g' or 'per_serving'), serving_grams?, serving_label?, nutrients jsonb, food_groups jsonb, source ('manual' or 'ai' or 'usda'), verified bool, last_used_at |
 | log_entries | 3 | user_id, day, logged_at, meal, name, quantity, unit, grams, nutrients jsonb, food_groups jsonb, source, food_id?, ai_call_id?, assumptions text[], confidence |
 | daily_summaries | 3 | user_id, day, totals jsonb, food_groups jsonb, entry_count, updated_at; unique (user_id, day). Rewritten inside the same transaction as any log write |
-| ai_calls | 3 | user_id, purpose, model, input_tokens, output_tokens, latency_ms, ok, error?, created_at |
 | water_entries | 4 | user_id, day, ml, logged_at (or fold into log_entries; decide in slice 4) |
 
 ## Workflow

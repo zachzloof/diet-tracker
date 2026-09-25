@@ -145,6 +145,44 @@ These are the conservative behaviours the nutrition engine will ship with unless
 
 ---
 
+## D11. Which OpenAI model, given the account cannot use `gpt-5`
+
+**Context.** D6 chose `gpt-5`. On 2026-09-25 the owner's OpenAI organisation is not verified, and the API answers `404 model_not_found: Your organization must be verified to use the model gpt-5` for both `gpt-5` and `gpt-5-mini`. The same key can use `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-4.1`, `gpt-4o`, `o3` and `o4-mini` without verification. The slice 2 smoke test and the browser walk were run with `OPENAI_MODEL=gpt-5.5` passed on the shell; `.env.example` still says `gpt-5`, and the deployed service will fail the explanation (targets keep working) until this is settled.
+
+**Options.**
+- **A. Verify the organisation** at platform.openai.com/settings/organization/general and keep `gpt-5`. Keeps D6 as written; needs ID verification and up to 15 minutes to propagate.
+- **B. Set `OPENAI_MODEL=gpt-5.5`** locally and on Railway. The newest general model this key can reach; it produced natural, number-accurate explanations in about 8 seconds. Cost per call is unknown to Claude; check the pricing page.
+- **C. Set `OPENAI_MODEL=gpt-5.4-mini` or `gpt-4.1`** for a cheaper explanation and revisit at slice 3, when food estimation needs the stronger model anyway.
+
+**Recommendation.** B. It is one env var, matches "one strong model for everything", and slice 3's food estimation benefits from the same model. Switch back to `gpt-5` under A if verification is easy and pricing favours it.
+
+**Status.** `proposed`
+
+---
+
+## D12. Overrides are pins that feed back through the engine (adopted, please confirm)
+
+**Context.** Slice 2 lets a person override any target. What happens to the others?
+
+**Options.**
+- **A. Replace one number.** Simple, but energy and macros stop adding up after an energy or protein change.
+- **B. Pins.** The overridden value replaces the formula for that key and everything downstream follows: energy pins re-derive fat, carbs, fibre and the limits; protein or fat pins re-derive carbs as the remainder; a carbs pin is honoured with a note when the macros no longer match the energy target. Overrides are edited in place on the current target version, carried forward to a new version when still above the safety floor, and any override change drops the cached AI explanation so it can never contradict the numbers.
+- **C. Every override creates a new target version.** Full audit trail, but history fills with tweaks and "days met" in slice 4 would flip retroactively within a day.
+
+**Built.** B. Ranges and floors per target: energy range is TDEE minus 25% to plus 20% with the floor at max(BMR, 1200/1500/1350 kcal); protein range is the goal's g/kg band with a floor at 0.8 g/kg (1.2 g/kg from age 60); fat range 20 to 35% of energy (35 to 50% low carb) with a 0.5 g/kg floor; carbs floor 50 g (30 g low carb); micronutrients and food groups warn outside 0.8 to 2 times (0.5 to 2 times) the guideline.
+
+**Status.** `accepted` (2026-09-25, provisional)
+
+---
+
+## D13. What the explanation call sends to OpenAI (adopted, please confirm)
+
+The request contains the profile summary (sex, age, height, weight, body fat, goal, pace, activity, training, diet pattern, allergies, dislikes, units, safety flags) and every target with its reason. It never contains the email address or any identifier. Requests are sent with `store: false` so OpenAI does not retain them, reasoning effort `low` on reasoning models for speed, a 30 second timeout with one retry, and every attempt is logged to `ai_calls` with model, tokens, latency and outcome. A person's daily call cap (`AI_DAILY_CALL_CAP`) is enforced from slice 3, when calls become user-initiated.
+
+**Status.** `accepted` (2026-09-25, provisional)
+
+---
+
 ## Smaller defaults taken without asking
 
 - Metric by default (kg, cm, kcal); imperial toggle in Settings. kJ display can come later.
@@ -159,6 +197,13 @@ These are the conservative behaviours the nutrition engine will ship with unless
 - `GET /api/v1/me` answers 401 when signed out; the web app treats that as "signed out", not as an error. Slice 1.
 - Seed accounts `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password` exist for local use only; never run the seed against production. Slice 1.
 - Personas used for seed data and golden tests: **Finn** (male, 28, 178 cm, 75 kg, fighter training 6x/week, lean gain) and **Tess** (female, 30, 160 cm, 50 kg, gym 3x/week, fat loss and tone).
+- Onboarding answers stay in the browser (localStorage, per user id) until the last step; only the finished profile is sent, as one `PUT /api/v1/profile`. Slice 2.
+- Age is computed on the server from the date of birth and the profile time zone at every save. Targets are not recomputed automatically on a birthday, only on the next profile save. Slice 2.
+- Changing weight in Profile also writes a `weight_entries` row for the user's local day (one per day, later saves overwrite). Slice 2.
+- The `ai_calls` table arrived in slice 2 rather than slice 3 because the first OpenAI call (the plan explanation) happens at onboarding. Slice 2.
+- Enum columns (`sex`, `goal`, `activity`, ...) are plain `text` validated by zod, not Postgres enums, so adding a value is a code change without a migration. Slice 2.
+- The explanation is generated the first time the targets screen opens (not during onboarding), cached on the target version, and offered again through a "write it again" button. Slice 2.
+- Seed profiles are date-of-birth based (Finn 1998-06-15, Tess 1996-04-02), so their ages, and eventually one DRI band, drift with the calendar; the golden tests use ages directly and do not. Slice 2.
 
 ## Open questions for later slices (not blocking)
 

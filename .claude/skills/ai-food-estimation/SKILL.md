@@ -39,7 +39,11 @@ Daily cap per user; input length cap; no AI call for library re-logs; weekly rev
 ## Failure copy
 Short, blame-free, with the next action: "The estimator is unavailable right now. You can add this meal manually." Never show raw API errors to users; log them.
 
+## Code
+`apps/api/src/ai/openai.ts` owns the client: `callStructured({ purpose, userId, schemaName, schema, system, user })` does the Responses call with `zodTextFormat`, `store: false`, reasoning effort `low` on reasoning models, the timeout and retry, and writes the `ai_calls` row. Each purpose gets its own file next to it (`explain-plan.ts` in slice 2) holding the prompt builder and the persistence. Model access: `gpt-5` needs a verified organisation; see D11 in `docs/DECISIONS.md`.
+
 ## Testing
-- **Unit**: zod schema tests with recorded fixtures in `apps/api/src/ai/__fixtures__/` (one JSON per canonical input). Run in CI, no network.
+- **Unit**: zod schema tests with recorded fixtures in `apps/api/src/ai/__fixtures__/` (one JSON per canonical input; `explain-plan-finn.json` from slice 2). Run in CI, no network.
+- **Plan smoke** (`pnpm ai:smoke:plan [--record]`): explains Finn's and Tess's plans with the live model and prints them; `--record` refreshes the fixture.
 - **Smoke** (`pnpm ai:smoke`, not in CI): sends the five canonical inputs to the live model and prints a table of energy, protein, grams and confidence per item for a human to sanity-check. Canonical inputs: "4 eggs"; "2 slices wholegrain toast with butter"; "chicken stir fry with rice, about a plate"; "large flat white"; "protein shake with a banana". Run it whenever the prompt, schema or model changes, and paste the table into the slice report.
 - **Expected ranges** for the first input: 4 large eggs, about 200 g, energy 280 to 320 kcal, protein 24 to 28 g, fat 19 to 23 g, `protein_foods` serves about 2.
