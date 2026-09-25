@@ -70,7 +70,7 @@ describe('explain-plan prompt', () => {
     expect(message).toMatch(/Dislikes: liver/)
     expect(message).toMatch(/Training: Combat sports, 6 days a week/)
     expect(message).toMatch(/Water on rest days: 2750 ml/)
-    expect(message).toMatch(/maintenance 2980 kcal, adjustment \+270 kcal/)
+    expect(message).toMatch(/maintenance 2980 kcal, adjustment \+275 kcal/)
     for (const entry of targets.entries) expect(message).toContain(entry.reason)
   })
 

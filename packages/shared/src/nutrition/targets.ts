@@ -280,7 +280,8 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
   }
   const energyComputed = roundTo(energyRaw, 10)
   const energy = pin('energy_kcal') ?? energyComputed
-  const energyAdjustment = energyComputed - roundTo(tdee, 10)
+  /** The pace adjustment actually applied, after clamps and the floor. */
+  const energyAdjustment = Math.round(energyRaw - tdee)
 
   const formulaName =
     formula === 'katch_mcardle' ? 'Katch-McArdle from body fat' : 'Mifflin-St Jeor'

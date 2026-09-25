@@ -15,7 +15,13 @@ export type IconName =
   | 'alert'
   | 'download'
   | 'chevron-right'
+  | 'chevron-left'
   | 'sparkles'
+  | 'clock'
+  | 'edit'
+  | 'info'
+  | 'target'
+  | 'refresh'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -33,6 +39,12 @@ const PATHS: Record<IconName, string> = {
   alert: 'M12 3l10 18H2zM12 10v4M12 17h.01',
   download: 'M12 3v12M7 10l5 5 5-5M4 19h16',
   'chevron-right': 'M9 6l6 6-6 6',
+  'chevron-left': 'M15 6l-6 6 6 6',
+  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
+  edit: 'M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3zM13.5 6.5l3 3',
+  info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5M12 8h.01',
+  target: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01',
+  refresh: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5',
   sparkles:
     'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM5 3v3M3.5 4.5h3M19 17v3M17.5 18.5h3',
 }
