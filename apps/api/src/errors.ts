@@ -1,8 +1,12 @@
-import type { ApiErrorBody, ApiErrorCode, ValidationDetails } from '@diet-tracker/shared'
+import {
+  toValidationDetails,
+  type ApiErrorBody,
+  type ApiErrorCode,
+  type ValidationDetails,
+} from '@diet-tracker/shared'
 import type { Context } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import type { ZodError } from 'zod'
 import { logger } from './logger.js'
 import type { AppEnv } from './types.js'
 
@@ -53,21 +57,7 @@ export const errors = {
     ),
 }
 
-export function validationDetails(error: ZodError): ValidationDetails {
-  const fieldErrors: Record<string, string[]> = {}
-  const formErrors: string[] = []
-  for (const issue of error.issues) {
-    const key = issue.path.map(String).join('.')
-    if (key === '') {
-      formErrors.push(issue.message)
-      continue
-    }
-    const list = fieldErrors[key] ?? []
-    list.push(issue.message)
-    fieldErrors[key] = list
-  }
-  return { fieldErrors, formErrors }
-}
+export const validationDetails = toValidationDetails
 
 export function handleError(error: Error, c: Context<AppEnv>): Response {
   if (error instanceof AppError) {

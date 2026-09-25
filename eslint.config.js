@@ -30,6 +30,8 @@ export default defineConfigWithVueTs(
     rules: {
       // Component names come from the mobile-ui skill (Button, Card, Input, ...).
       'vue/multi-word-component-names': 'off',
+      // Optional TS props are undefined by design; a default would only add noise.
+      'vue/require-default-prop': 'off',
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
       '@typescript-eslint/no-unused-vars': [
         'error',

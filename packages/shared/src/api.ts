@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z, type ZodError } from 'zod'
 
 /** Every error the API returns has this shape and one of these codes. */
 export const apiErrorCodeSchema = z.enum([
@@ -36,3 +36,20 @@ export const healthResponseSchema = z.object({
   db: z.enum(['ok', 'error']),
 })
 export type HealthResponse = z.infer<typeof healthResponseSchema>
+
+/** Groups zod issues by dotted field path; issues without a path become form errors. */
+export function toValidationDetails(error: ZodError): ValidationDetails {
+  const fieldErrors: Record<string, string[]> = {}
+  const formErrors: string[] = []
+  for (const issue of error.issues) {
+    const key = issue.path.map(String).join('.')
+    if (key === '') {
+      formErrors.push(issue.message)
+      continue
+    }
+    const list = fieldErrors[key] ?? []
+    list.push(issue.message)
+    fieldErrors[key] = list
+  }
+  return { fieldErrors, formErrors }
+}
