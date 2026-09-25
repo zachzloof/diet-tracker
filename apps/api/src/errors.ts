@@ -2,6 +2,7 @@ import {
   toValidationDetails,
   type ApiErrorBody,
   type ApiErrorCode,
+  type OverrideWarning,
   type ValidationDetails,
 } from '@diet-tracker/shared'
 import type { Context } from 'hono'
@@ -48,6 +49,16 @@ export const errors = {
   notFound: () => new AppError(404, 'not_found', 'Not found'),
   emailTaken: () => new AppError(409, 'email_taken', 'An account with that email already exists'),
   payloadTooLarge: () => new AppError(413, 'payload_too_large', 'That request is too large'),
+  profileRequired: () =>
+    new AppError(409, 'profile_required', 'Set up your profile to get your targets'),
+  overrideBlocked: (blocked: OverrideWarning[]) =>
+    new AppError(422, 'override_blocked', 'That value is below a safe minimum', { blocked }),
+  aiUnavailable: () =>
+    new AppError(
+      503,
+      'ai_unavailable',
+      'The explanation is unavailable right now. Your targets are not affected.',
+    ),
   rateLimited: (retryAfterSeconds: number) =>
     new AppError(
       429,

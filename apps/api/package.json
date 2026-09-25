@@ -15,7 +15,8 @@
     "start": "node dist/migrate.js && node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --conditions=development --import tsx src/migrate.ts",
-    "db:seed": "node --conditions=development --import tsx src/db/seed.ts"
+    "db:seed": "node --conditions=development --import tsx src/db/seed.ts",
+    "ai:smoke:plan": "node --conditions=development --import tsx src/scripts/ai-smoke-plan.ts"
   },
   "dependencies": {
     "@diet-tracker/shared": "workspace:*",
