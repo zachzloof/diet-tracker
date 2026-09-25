@@ -156,7 +156,7 @@ These are the conservative behaviours the nutrition engine will ship with unless
 
 **Recommendation.** B. It is one env var, matches "one strong model for everything", and slice 3's food estimation benefits from the same model. Switch back to `gpt-5` under A if verification is easy and pricing favours it.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-25): B, `gpt-5.5` for now. The code default and `.env.example` say `gpt-5.5`; set the same on Railway.
 
 ---
 
@@ -171,7 +171,7 @@ These are the conservative behaviours the nutrition engine will ship with unless
 
 **Built.** B. Ranges and floors per target: energy range is TDEE minus 25% to plus 20% with the floor at max(BMR, 1200/1500/1350 kcal); protein range is the goal's g/kg band with a floor at 0.8 g/kg (1.2 g/kg from age 60); fat range 20 to 35% of energy (35 to 50% low carb) with a 0.5 g/kg floor; carbs floor 50 g (30 g low carb); micronutrients and food groups warn outside 0.8 to 2 times (0.5 to 2 times) the guideline.
 
-**Status.** `accepted` (2026-09-25, provisional)
+**Status.** `accepted` (2026-09-25)
 
 ---
 
@@ -179,7 +179,7 @@ These are the conservative behaviours the nutrition engine will ship with unless
 
 The request contains the profile summary (sex, age, height, weight, body fat, goal, pace, activity, training, diet pattern, allergies, dislikes, units, safety flags) and every target with its reason. It never contains the email address or any identifier. Requests are sent with `store: false` so OpenAI does not retain them, reasoning effort `low` on reasoning models for speed, a 30 second timeout with one retry, and every attempt is logged to `ai_calls` with model, tokens, latency and outcome. A person's daily call cap (`AI_DAILY_CALL_CAP`) is enforced from slice 3, when calls become user-initiated.
 
-**Status.** `accepted` (2026-09-25, provisional)
+**Status.** `accepted` (2026-09-25)
 
 ---
 

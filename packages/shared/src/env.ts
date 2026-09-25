@@ -31,7 +31,8 @@ export const apiEnvSchema = z.object({
     .transform((value) => value.replace(/\/+$/, '')),
 
   OPENAI_API_KEY: optionalString,
-  OPENAI_MODEL: z.string().default('gpt-5'),
+  /** Decision D11: gpt-5 needs a verified organisation, so gpt-5.5 is the default for now. */
+  OPENAI_MODEL: z.string().default('gpt-5.5'),
   AI_DAILY_CALL_CAP: z.coerce.number().int().positive().default(150),
 
   /** Absolute path of the built SPA. Defaults to apps/web/dist relative to the API. */

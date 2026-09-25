@@ -50,7 +50,7 @@ Notes:
 
 - The database is exposed on host port **5433** (not 5432) so it never collides with another project's Postgres. Use `127.0.0.1`, not `localhost`, in `DATABASE_URL`: on Windows `localhost` resolves to IPv6 first and Docker's IPv6 port mapping can hang instead of connecting.
 - Seed accounts (local only): `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password`. Both come with a profile and targets.
-- `OPENAI_API_KEY` is optional: without it the targets screen says the explanation is unavailable and everything else works. With it, check `OPENAI_MODEL`: some accounts cannot use `gpt-5` until the organisation is verified (see D11 in `docs/DECISIONS.md`); `gpt-5.5` works without it.
+- `OPENAI_API_KEY` is optional: without it the targets screen says the explanation is unavailable and everything else works. `OPENAI_MODEL` defaults to `gpt-5.5` (decision D11: `gpt-5` needs a verified OpenAI organisation).
 - `pnpm ai:smoke:plan` sends Finn's and Tess's plans to the live model and prints the explanations; add `--record` to refresh the test fixture.
 - To try it on your phone over Wi-Fi: `pnpm --filter @diet-tracker/web dev --host`, then open the LAN address Vite prints. Installing to the home screen needs HTTPS, so that only works on the deployed URL.
 
@@ -79,7 +79,7 @@ One-time setup:
    - `SESSION_SECRET`: a fresh 64-character hex string (different from your local one).
    - `NODE_ENV`: `production`
    - `LOG_LEVEL`: `info`
-   - `OPENAI_API_KEY`, `OPENAI_MODEL`, `AI_DAILY_CALL_CAP` (`150`): the key powers the plan explanation from slice 2 and food logging from slice 3. Use `gpt-5` if the organisation is verified, otherwise `gpt-5.5` (D11).
+   - `OPENAI_API_KEY`, `OPENAI_MODEL` (`gpt-5.5`, decision D11), `AI_DAILY_CALL_CAP` (`150`): the key powers the plan explanation from slice 2 and food logging from slice 3.
    - `APP_ORIGIN`: set after step 4.
 4. In **Settings → Networking**, generate a public domain. Copy it into `APP_ORIGIN` as `https://<domain>` with no trailing slash and redeploy. The cookie's `Secure` flag is derived from this, so it must be the real `https://` URL.
 5. Watch the deploy logs for `migrations applied` and `listening`, then open `https://<domain>/api/health`. It returns `{ ok: true, version, db: "ok" }`.
