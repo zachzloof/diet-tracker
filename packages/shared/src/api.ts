@@ -11,6 +11,9 @@ export const apiErrorCodeSchema = z.enum([
   'payload_too_large',
   'internal_error',
   'service_unavailable',
+  'profile_required',
+  'override_blocked',
+  'ai_unavailable',
 ])
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>
 
