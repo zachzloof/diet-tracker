@@ -13,8 +13,9 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --frozen-lockfile --store-dir /pnpm/store
+# No BuildKit cache mount: Railway's builder rejects cache ids without its own service
+# prefix, and a plain install only costs about a minute per build.
+RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 RUN pnpm deploy --filter=@diet-tracker/api --prod /app
