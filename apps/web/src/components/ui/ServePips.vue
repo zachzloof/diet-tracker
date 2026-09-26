@@ -4,6 +4,8 @@ import { computed } from 'vue'
 /**
  * Food-group serves as a row of pips, one per target serve, filled left to right.
  * Fractional serves half-fill a pip; anything past the target is shown by the caller.
+ * `decorative` hides it from assistive tech when it sits inside a control whose text
+ * already says the numbers (a meter inside a button is flattened anyway).
  */
 const props = withDefaults(
   defineProps<{
@@ -11,8 +13,9 @@ const props = withDefaults(
     target: number
     label: string
     color?: 'accent' | 'fibre' | 'carbs'
+    decorative?: boolean
   }>(),
-  { color: 'accent' },
+  { color: 'accent', decorative: false },
 )
 
 const FILL = { accent: 'bg-accent', fibre: 'bg-fibre', carbs: 'bg-carbs' } as const
@@ -29,11 +32,12 @@ const pips = computed(() => {
 <template>
   <div
     class="flex gap-1"
-    role="meter"
-    :aria-label="label"
-    :aria-valuenow="Math.round(value * 10) / 10"
-    aria-valuemin="0"
-    :aria-valuemax="target"
+    :role="decorative ? undefined : 'meter'"
+    :aria-label="decorative ? undefined : label"
+    :aria-valuenow="decorative ? undefined : Math.round(value * 10) / 10"
+    :aria-valuemin="decorative ? undefined : 0"
+    :aria-valuemax="decorative ? undefined : target"
+    :aria-hidden="decorative ? 'true' : undefined"
   >
     <span
       v-for="pip in pips"

@@ -210,8 +210,8 @@ function retry(): void {
       </p>
 
       <template v-if="score">
-        <FoodGroupsCard :score="score" />
-        <MicronutrientGrid :score="score" />
+        <FoodGroupsCard :score="score" :entries="foodEntries" :is-today="isToday" />
+        <MicronutrientGrid :score="score" :entries="foodEntries" :is-today="isToday" />
       </template>
     </div>
 
