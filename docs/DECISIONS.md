@@ -268,7 +268,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** B.
 
-**Status.** `accepted` (2026-09-26): B, adopted so the slice could ship; the owner confirms or redirects.
+**Status.** `accepted` (2026-09-26): B, confirmed by the owner.
 
 ---
 
@@ -283,7 +283,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** B.
 
-**Status.** `accepted` (2026-09-26): B, adopted so the slice could ship; the owner confirms or redirects.
+**Status.** `accepted` (2026-09-26): B, confirmed by the owner.
 
 ---
 
@@ -298,7 +298,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** B. Move to C only when two devices per person becomes common.
 
-**Status.** `accepted` (2026-09-26): B, adopted so the slice could ship; the owner confirms or redirects.
+**Status.** `accepted` (2026-09-26): B, confirmed by the owner.
 
 ---
 
@@ -313,7 +313,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** A now, C when the native shell ships, B only if the PWA stays the main channel and "your week is ready" pushes are wanted.
 
-**Status.** `accepted` (2026-09-26): A, adopted so the slice could ship; the owner confirms or redirects.
+**Status.** `accepted` (2026-09-26): A, confirmed by the owner.
 
 ---
 
@@ -340,7 +340,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** B.
 
-**Status.** `accepted` (2026-09-26): B, adopted so the slice could ship; the owner confirms or redirects.
+**Status.** `accepted` (2026-09-26): B, confirmed by the owner.
 
 ---
 
@@ -402,5 +402,5 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 - Custom domain vs Railway subdomain. Still open after slice 5; the Railway subdomain works for the friends group.
 - Email provider (Resend free tier is the obvious pick) for password reset. Change password exists; "forgot my password" does not, and nothing in the repo resets one (a short admin script against the database is the stopgap). Decide before opening the app beyond friends.
-- D23: what the native shell loads.
+- D23: what the native shell loads. Parked with the rest of the outstanding items in `docs/OUTSTANDING.md` until after the first week of real use.
 - Photo-of-meal estimation and barcode lookup via Open Food Facts (ideas after slice 5).

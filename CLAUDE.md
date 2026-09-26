@@ -6,6 +6,7 @@ Free, phone-first nutrition tracker. A person onboards once (body, goals, traini
 - `docs/PLAN.md` - development slices: scope, acceptance checks, status. Build one slice per session, only when asked.
 - `docs/DECISIONS.md` - big design decisions with options. Anything marked `proposed` is still the owner's call; you may build on the recommended option but say so.
 - `CHANGELOG.md` - what shipped per slice.
+- `docs/OUTSTANDING.md` - what is deferred or waiting on a decision after slice 5; the owner revisits it after a week of real use.
 - `.claude/skills/` - project skills (table below). Read the relevant one before touching its area.
 
 ## Stack (reasons in docs/DECISIONS.md)

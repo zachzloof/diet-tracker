@@ -153,7 +153,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 **Deferrals.** The week of real use. Reminders are in-app timers only (a web app cannot wake itself; D22 explains, the settings card says so; native local notifications come with the shell). "Forgot my password" is not built (needs the email-provider decision; change password is). `LEGAL_CONTACT_EMAIL` is empty until the owner fills it. The Capacitor projects are scaffolded, not built (Android needs Android Studio, iOS a Mac), and D23 on what the shell loads is the owner's call. Performance under Lighthouse's throttled profile is in the 70s; the app-shell JavaScript is about 500 KB uncompressed and would need code-splitting work to move that.
 
-**Decisions it depends on.** Surfaced D19 (weigh-ins and the profile weight), D20 (recalibration as an engine input), D21 (offline mirror and queue), D22 (reminders), D23 (native shell loading, proposed) and D24 (export formats). Domain and email provider remain open.
+**Decisions it depends on.** Surfaced D19 (weigh-ins and the profile weight), D20 (recalibration as an engine input), D21 (offline mirror and queue), D22 (reminders), D23 (native shell loading, proposed) and D24 (export formats); D19 to D22 and D24 confirmed by the owner on 2026-09-26. D23, the domain, the email provider and the deferrals above are parked in `docs/OUTSTANDING.md` until after the first week of real use.
 
 ---
 
