@@ -10,8 +10,9 @@ Two people at the same weight need very different targets: a 75 kg fighter in a 
 
 ## Shape (`packages/shared/src/nutrition`)
 - `computeTargets(profile): Targets` - pure. Inputs: sex, age, height, weight, body fat (optional), activity, training type and days, goal, pace, diet pattern, safety flags. Output: one entry per target with `kind`, `value`, `unit`, `range`, and a one-line `reason`.
-- `evaluateDay(totals, targets): DayScore` - pure. Per-nutrient status (`met`, `close`, `short`, `over`) and the overall `dayMet` boolean.
-- `findGaps(days, targets, profile): Gap[]` - pure. The rules behind "areas where you're lacking", ranked by impact, with food suggestions filtered by diet pattern and allergies.
+- `evaluateDay({ totals, foodGroups, entryCount }, targets): DayScore` - pure (`scoring.ts`). A `TargetScore` per target (`actual`, `target`, `ratio`, status `met`, `close`, `short`, `over` or `unscored`), plus `logged`, `dayMet` and `completeness`. `scoreTarget` scores one target for a live bar.
+- `findGaps(days: DayScore[], { dietPattern, allergies, dislikes }): Gap[]` - pure (`gaps.ts`). The rules behind "areas where you're lacking", ranked by severity, distance from target, then key; each gap carries `evidence` (the sentence the weekly review quotes) and up to three suggestions from `gap-suggestions.ts`, filtered by diet pattern, allergens and dislikes.
+- `week.ts`: `weekWindow`, `currentStreak`, `summariseTarget` (days met, statuses per day, averages) and `summariseWeek`, shared by the Week screen and the review prompt.
 - `references/targets.md` - formulas, defaults, ranges, floors, and two worked examples (Finn, Tess) that are the golden tests. Read it before touching `computeTargets` or recalibration.
 - `references/nutrients.md` - the `NutrientKey` enum with units, DRIs by sex and age, food-group serve definitions, scoring thresholds and gap rules. Read it before touching schemas, `evaluateDay`, `findGaps`, or any prompt that defines serves.
 

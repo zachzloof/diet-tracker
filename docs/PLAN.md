@@ -101,7 +101,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ## Slice 4 - Dashboard and weekly insights
 
-**Status:** not started
+**Status:** done with deferrals (2026-09-26)
 
 **Goal.** Show people where they stand and what to change, in a way that is glanceable on a phone.
 
@@ -116,13 +116,15 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **Out of scope.** Weight tracking UI, recalibration, settings.
 
 **Done when.**
-- [ ] With seeded weeks for Finn and Tess, "days met" and the gaps list match hand-computed results from the rules.
-- [ ] Today renders correctly at 360, 390 and 430 px wide, in dark and light, with no horizontal scroll.
-- [ ] Week screen first paint under one second on a throttled "Fast 3G" profile with a warm cache.
-- [ ] The AI weekly review references real numbers from the week and respects the user's diet pattern in suggestions.
-- [ ] Tapping any day in the strip or calendar opens that day's log.
+- [x] With seeded weeks for Finn and Tess, "days met" and the gaps list match hand-computed results from the rules. *The seed week for each persona is a fixed list of meals with round-number vectors (`apps/api/src/db/seed-weeks.ts`, worked out by hand in its header comment). Finn: 6 logged days, 4 met, streak 4, gaps vegetables, fibre, fruit, vitamin D, vitamin A, water in that order. Tess: 6 logged, 3 met, streak 2, gaps protein, fruit, added sugar, iron, folate, vitamin A, water. An independent script of plain sums and the thresholds gave the same answers before `stats.test.ts` pinned them (per-day statuses, day counts, average ratios and evidence strings).*
+- [x] Today renders correctly at 360, 390 and 430 px wide, in dark and light, with no horizontal scroll. *Walked in a headless iPhone 13 profile at 390x844 dark, 360x780 light and 430x932 dark; `scrollWidth <= innerWidth` on Today, Week and History at every width; screenshots reviewed by eye.*
+- [x] Week screen first paint under one second on a throttled "Fast 3G" profile with a warm cache. *Production build served by the API, Chrome's Fast 3G profile via CDP (1.6 Mbps down, 562 ms RTT). Tapping the Week tab with a warm query cache: strip visible in 48 ms. A full reload of /week with a warm service worker cache: first contentful paint 680 ms, skeleton at 0.9 s, strip with data at 1.7 s. The router guard now fetches the session and the profile in parallel; before that the same reload painted at 1.3 s. Week payload 24.6 KB uncompressed.*
+- [x] The AI weekly review references real numbers from the week and respects the user's diet pattern in suggestions. *Generated live with `gpt-5.5` for both personas (`pnpm ai:smoke:week`, about 4.3 s, 1,950 input / 300 output tokens). Finn's review quoted "4 of 6 days met", "2.5 of 6 serves" and "25.5 / 45 g" and took the top two gaps as its two changes; Tess's took protein and fruit, suggested Greek yoghurt, eggs and chicken (omnivore) and never mentioned shellfish. Both ran about 195 words against a 170-word instruction. "Respects the diet pattern" is enforced by the prompt and by pre-filtering the suggestion lists; it is not checked mechanically.*
+- [x] Tapping any day in the strip or calendar opens that day's log. *Both push `/day/YYYY-MM-DD`, which is the Today screen opened on that day; verified for a strip day and a calendar day in the walk.*
 
-**Decisions it depends on.** D7, D8; the cron-vs-on-demand open question is settled here.
+**Deferrals.** No real-phone check yet (headless only). The review is generated on demand only for the current seven-day window; past windows show their cached review if one exists and never regenerate. Water is scored against the training-day target every day (the rest-day figure is shown on Targets only). Light-mode contrast of the macro bar colours and the met and close status colours is below 3:1 on white by the dataviz validator; every bar and dot carries a text label, which is the accepted relief, but darker light-mode variants would be better (mobile-ui tokens).
+
+**Decisions it depends on.** D7, D8. Settled the cron-vs-on-demand question as D17 (on demand, cached per ISO week) and surfaced D18 (water quick-adds are log entries).
 
 ---
 

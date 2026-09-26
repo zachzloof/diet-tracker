@@ -25,7 +25,9 @@ description: Drizzle ORM + Postgres conventions for diet-tracker - table and col
 | foods | 3 | user_id? (null = shared, unused yet), name, brand?, basis ('per_100g' or 'per_serving'), serving_grams?, serving_label?, nutrients jsonb, food_groups jsonb, source ('manual' or 'ai' or 'usda'), verified bool, last_used_at?, created_at, updated_at. Indexes (user_id, last_used_at) and (user_id, name); search is ILIKE on name or brand |
 | log_entries | 3 | user_id, day, logged_at, meal, name, quantity, unit, grams, nutrients jsonb, food_groups jsonb, source ('ai', 'manual', 'library'), food_id? (set null on food delete), ai_call_id? (set null), assumptions text[], confidence?, created_at, updated_at. Index (user_id, day) |
 | daily_summaries | 3 | user_id, day, totals jsonb, food_groups jsonb, entry_count, updated_at; unique (user_id, day). Rewritten by `recomputeSummary` inside the same transaction as any log write; a zero-entry row is kept |
-| water_entries | 4 | user_id, day, ml, logged_at (or fold into log_entries; decide in slice 4) |
+| weekly_reviews | 4 | user_id, iso_week (`YYYY-Www`), week_end (date), review jsonb (StoredWeeklyReview), created_at, updated_at; unique (user_id, iso_week). Upserted by the weekly review flow (D17) |
+
+Water quick-adds are `log_entries` rows (name "Water", unit "ml", only `water_ml` set; decision D18), not a table of their own; `recomputeSummary` leaves them out of `entry_count`.
 
 ## Workflow
 1. Edit the schema under `apps/api/src/db/schema/` (one file per table group, re-exported from `index.ts`).
@@ -41,5 +43,5 @@ Migrations: `pnpm db:migrate` runs `apps/api/src/migrate.ts`, the same runner th
 
 ## Query conventions
 - Daily totals come from `daily_summaries`, never from summing `log_entries` at read time on hot paths. Recompute the summary row in the same transaction as any insert, update or delete on `log_entries` for that user and day.
-- "Days met this week" reads seven `daily_summaries` rows plus the `target_versions` row effective on each day. The comparison is the pure `evaluateDay` function in `packages/shared`, so API and UI agree.
+- "Days met this week" reads seven `daily_summaries` rows plus the `target_versions` row effective on each day (`apps/api/src/stats/stats-service.ts`: `targetsByDay` picks the latest version with `effective_from` on or before the day, else the earliest). The comparison is the pure `evaluateDay` function in `packages/shared`, so API and UI agree. A day without a summary row is an empty score, never a missing day. The streak looks back 90 days of summaries.
 - Prefer Drizzle's query builder for CRUD; use the `sql` template for JSONB aggregation and `date` arithmetic. Keep raw SQL in the repository layer, not in route handlers.

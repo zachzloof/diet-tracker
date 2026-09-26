@@ -228,6 +228,35 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 ---
 
+## D17. The weekly review is generated on demand and cached, not by a cron job (adopted, please confirm)
+
+**Context.** Slice 4 needed to settle the open question of how the AI weekly review gets made.
+
+**Options.**
+- **A. On demand, cached per ISO week.** Built. Opening the Week screen asks `POST /api/v1/ai/weekly-review`; the API returns the row in `weekly_reviews` for that ISO week when it was generated today, otherwise it generates one (subject to the person's daily AI cap) and upserts it. "Write it again" forces a regeneration. Nothing runs when nobody opens the app, so an inactive user costs nothing, and there is no second Railway service to configure or pay for. The cost is a few seconds' wait the first time each day; the screen shows everything else first and the review card fills in.
+- **B. A Railway cron service** that reviews every active user's week on Sunday night and pushes a notification. Reviews are ready instantly and can drive a reminder, but it is a second service, it needs a job queue and retry logic, and it spends tokens on people who never open the result.
+- **C. Both.** Cron for active users, on demand as the fallback. The right end state if notifications arrive in slice 5.
+
+**Recommendation.** A now; add B only when local notifications exist and the owner wants "your week is ready" pushes.
+
+**Status.** `proposed` (2026-09-26); built on A.
+
+---
+
+## D18. Water quick-adds are log entries, not a separate table (adopted, please confirm)
+
+**Context.** The db-schema plan left `water_entries` open: its own table, or fold into `log_entries`.
+
+**Options.**
+- **A. A "Water" log entry of N ml** whose only nutrient is `water_ml` (source `manual`, no energy). Built. The daily summary already sums `water_ml`, so the target, the bar and the weekly stats needed no new query; the day log hides water rows from the meal groups and the water card shows them as glasses with an undo. Water entries do not count toward the "unlogged day" entry count, so a day of water alone is still unlogged. Water in food and drinks (the estimator fills `water_ml`) counts toward the same target, which is what the 35 ml/kg guidance means.
+- **B. A `water_entries` table** with its own routes. Cleaner separation, but the summary would have to join two tables and the export, delete-account and offline-queue work in slice 5 would each have to cover a second kind of entry.
+
+**Recommendation.** A. Revisit only if water needs to be shown separately from food water, which would then be a display change, not a storage one.
+
+**Status.** `proposed` (2026-09-26); built on A.
+
+---
+
 ## Smaller defaults taken without asking
 
 - Metric by default (kg, cm, kcal); imperial toggle in Settings. kJ display can come later.
@@ -262,10 +291,16 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 - Editing a nutrient does not flip the "Save to My foods" toggle; D14's default (confident items only) stands and the toggle is one tap away. After slice 3, 2026-09-26.
 - A saved AI item keeps the brand the model returned (`log entry brand` -> `foods.brand`) so the library search and the prompt memory match "asda" next time. After slice 3, 2026-09-26.
 - The web search country hint is only set for zones that map to one country (GB, IE, AU, NZ, a few US and CA cities); elsewhere the tool gets the time zone alone. After slice 3, 2026-09-26.
+- The Week screen is a trailing seven-day window ending today (stepping back a week at a time), not a Monday-to-Sunday calendar week, so "days met" has a full denominator every day. The AI review is keyed by the ISO week of the window's last day. Slice 4.
+- Streak: consecutive met days counted back from today when today is met, otherwise from yesterday, so an in-progress day never breaks it; an unlogged day does. The lookback is 90 days. Slice 4.
+- Each past day is scored against the target version in force on that day (latest `effective_from` on or before it); Today scores live against the current version. A profile change today therefore never rewrites yesterday's verdict. Slice 4.
+- Water is scored against the training-day target every day; the rest-day figure is informational. Micronutrient "completeness" is the share of minimum targets met or close and is shown as a percentage, never used to decide a day. Slice 4.
+- The week's gaps come back from the API in full (the engine ranks them); the screen shows the top five. Suggestions are filtered on the server from the person's diet pattern, allergies and dislikes before the model ever sees them. Slice 4.
+- Opening a day from the strip or the calendar is the route `/day/YYYY-MM-DD`, the same Today screen started on that day; the prev and next arrows stay client-side state. Slice 4.
+- The router guard fetches the session and the profile in parallel and never retries a 401 on the profile, so a cold load on a slow network waits one round trip, not two. Slice 4.
 
 ## Open questions for later slices (not blocking)
 
 - Custom domain vs Railway subdomain (slice 5).
-- Scheduled jobs for weekly AI reviews: Railway cron service vs on-demand generation when the user opens the Week screen (slice 4; recommendation is on-demand and cached, because it needs no extra service).
 - Email provider for password reset and reminders (slice 5).
 - Photo-of-meal estimation and barcode lookup via Open Food Facts (ideas after slice 5).
