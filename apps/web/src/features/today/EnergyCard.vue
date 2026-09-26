@@ -28,8 +28,15 @@ const energy = computed(() => props.score.scores.energy_kcal)
 const eaten = computed(() => energy.value?.actual ?? 0)
 const target = computed(() => energy.value?.target ?? 0)
 const remaining = computed(() => Math.round(target.value - eaten.value))
-const over = computed(() => energy.value?.status === 'over')
-const ringColor = computed(() => (over.value ? 'var(--over)' : 'var(--accent)'))
+/**
+ * Past the target by the numbers, which is not the same as the `over` status: up to 120%
+ * of energy still scores close, and 2,835 of 2,500 kcal is "335 kcal over" all the same.
+ * The ring only turns red once the status is over.
+ */
+const past = computed(() => remaining.value < 0)
+const ringColor = computed(() =>
+  energy.value?.status === 'over' ? 'var(--over)' : 'var(--accent)',
+)
 
 const TONE: Record<string, ChipTone> = {
   met: 'met',
@@ -70,7 +77,7 @@ const goal = (key: NutrientKey) => props.score.scores[key]?.target ?? 0
         >
           {{ formatNumber(Math.abs(remaining), 0) }}
         </span>
-        <span class="mt-1 text-xs text-fg-muted">{{ over ? 'kcal over' : 'kcal left' }}</span>
+        <span class="mt-1 text-xs text-fg-muted">{{ past ? 'kcal over' : 'kcal left' }}</span>
       </Ring>
 
       <!-- dt and dd sit directly in the group div (a11y "dlitem"); the grid keeps the row layout. -->
