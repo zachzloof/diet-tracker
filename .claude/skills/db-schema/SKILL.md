@@ -22,9 +22,9 @@ description: Drizzle ORM + Postgres conventions for diet-tracker - table and col
 | target_versions | 2 | user_id, effective_from (date), trigger (onboarding, profile_change, recalibration), inputs jsonb (TargetInput), computed jsonb (Targets, no overrides), overrides jsonb (pins), effective jsonb (Targets with pins), explanation jsonb?, created_at. Latest (effective_from, created_at) wins; overrides are updated in place on that row; older rows are history |
 | weight_entries | 2 | user_id, day, weight_kg, note?; unique (user_id, day). Written by profile saves that change weight |
 | ai_calls | 2 | user_id?, purpose, model, input_tokens?, output_tokens?, latency_ms, ok, error?, created_at. One row per attempt; moved up from slice 3 because the plan explanation is the first call |
-| foods | 3 | user_id? (null = shared), name, brand?, basis ('per_100g' or 'per_serving'), serving_grams?, serving_label?, nutrients jsonb, food_groups jsonb, source ('manual' or 'ai' or 'usda'), verified bool, last_used_at |
-| log_entries | 3 | user_id, day, logged_at, meal, name, quantity, unit, grams, nutrients jsonb, food_groups jsonb, source, food_id?, ai_call_id?, assumptions text[], confidence |
-| daily_summaries | 3 | user_id, day, totals jsonb, food_groups jsonb, entry_count, updated_at; unique (user_id, day). Rewritten inside the same transaction as any log write |
+| foods | 3 | user_id? (null = shared, unused yet), name, brand?, basis ('per_100g' or 'per_serving'), serving_grams?, serving_label?, nutrients jsonb, food_groups jsonb, source ('manual' or 'ai' or 'usda'), verified bool, last_used_at?, created_at, updated_at. Indexes (user_id, last_used_at) and (user_id, name); search is ILIKE on name or brand |
+| log_entries | 3 | user_id, day, logged_at, meal, name, quantity, unit, grams, nutrients jsonb, food_groups jsonb, source ('ai', 'manual', 'library'), food_id? (set null on food delete), ai_call_id? (set null), assumptions text[], confidence?, created_at, updated_at. Index (user_id, day) |
+| daily_summaries | 3 | user_id, day, totals jsonb, food_groups jsonb, entry_count, updated_at; unique (user_id, day). Rewritten by `recomputeSummary` inside the same transaction as any log write; a zero-entry row is kept |
 | water_entries | 4 | user_id, day, ml, logged_at (or fold into log_entries; decide in slice 4) |
 
 ## Workflow

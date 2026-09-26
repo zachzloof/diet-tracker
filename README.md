@@ -6,7 +6,7 @@ Working name. Built for a small group of friends first, from a home-screen bookm
 
 ## Status
 
-Slices 1 (foundation: monorepo, auth, PWA shell, deploy pipeline) and 2 (onboarding, the nutrition engine, targets with overrides and an AI explanation, profile and target history) are built. Development happens in five slices, one per working session. See [docs/PLAN.md](docs/PLAN.md) for the slices and [docs/DECISIONS.md](docs/DECISIONS.md) for the design decisions and the ones still open. [CHANGELOG.md](CHANGELOG.md) lists what shipped.
+Slices 1 (foundation: monorepo, auth, PWA shell, deploy pipeline), 2 (onboarding, the nutrition engine, targets with overrides and an AI explanation, profile and target history) and 3 (AI quick-add with a review card, My foods, manual entry, the day log and Today totals) are built. Development happens in five slices, one per working session. See [docs/PLAN.md](docs/PLAN.md) for the slices and [docs/DECISIONS.md](docs/DECISIONS.md) for the design decisions and the ones still open. [CHANGELOG.md](CHANGELOG.md) lists what shipped.
 
 ## What it does (when finished)
 
@@ -51,7 +51,8 @@ Notes:
 - The database is exposed on host port **5433** (not 5432) so it never collides with another project's Postgres. Use `127.0.0.1`, not `localhost`, in `DATABASE_URL`: on Windows `localhost` resolves to IPv6 first and Docker's IPv6 port mapping can hang instead of connecting.
 - Seed accounts (local only): `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password`. Both come with a profile and targets.
 - `OPENAI_API_KEY` is optional: without it the targets screen says the explanation is unavailable and everything else works. `OPENAI_MODEL` defaults to `gpt-5.5` (decision D11: `gpt-5` needs a verified OpenAI organisation).
-- `pnpm ai:smoke:plan` sends Finn's and Tess's plans to the live model and prints the explanations; add `--record` to refresh the test fixture.
+- `pnpm ai:smoke` sends the five canonical food inputs ("4 eggs", ...) to the live model and prints a table of items, grams, energy, macros and confidence; `pnpm ai:smoke:plan` does the same for Finn's and Tess's plan explanations. Add `--record` to either to refresh the test fixtures.
+- `AI_DAILY_CALL_CAP` (default 150) caps OpenAI calls per person per local day. Logging from My foods never calls OpenAI.
 - To try it on your phone over Wi-Fi: `pnpm --filter @diet-tracker/web dev --host`, then open the LAN address Vite prints. Installing to the home screen needs HTTPS, so that only works on the deployed URL.
 
 Other commands:

@@ -68,7 +68,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ## Slice 3 - Food logging: AI quick-add, manual entry, food library
 
-**Status:** not started
+**Status:** done with deferrals (2026-09-26)
 
 **Goal.** Logging is fast enough that people actually do it at every meal.
 
@@ -84,14 +84,16 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **Out of scope.** Week view, gaps, weight tracking.
 
 **Done when.**
-- [ ] On a phone, "4 eggs" is logged in under ten seconds with plausible numbers (energy 280 to 320 kcal, protein 24 to 28 g) and the assumptions shown.
-- [ ] A mixed meal ("chicken stir fry with rice, about a plate") returns several items and food-group serves that make sense.
-- [ ] A manual food is saved, re-logged with a different portion, and the totals update correctly.
-- [ ] Removing the OpenAI key produces a clear error and the manual path still works.
-- [ ] `ai_calls` shows one row per call with token counts; the daily cap blocks further calls with a clear message.
-- [ ] The AI smoke script prints the five canonical inputs with numbers a human agrees are reasonable.
+- [x] On a phone, "4 eggs" is logged in under ten seconds with plausible numbers (energy 280 to 320 kcal, protein 24 to 28 g) and the assumptions shown. *Walked in a 390x844 and a 360-wide headless browser with the live model: 288 kcal, 25 g protein, 200 g, two assumptions shown, 3.9 to 5.0 s from typing to logged including the model call. A real phone over a mobile network is still to be tried.*
+- [x] A mixed meal ("chicken stir fry with rice, about a plate") returns several items and food-group serves that make sense. *Four or five items (rice, chicken, vegetables, oil and sauce) at 640 to 740 kcal; vegetables about 2.4 serves and protein foods 1.5 in the recorded fixture. Confidence is "low" on a plate-sized guess, as the prompt asks.*
+- [x] A manual food is saved, re-logged with a different portion, and the totals update correctly. *A 50 g, 200 kcal bar logged once (+200 kcal), then 2.5 bars from My foods (+500 kcal), then edited to 2 bars and moved to yesterday (today −200, yesterday +400). API tests cover the same with oats per 100 g.*
+- [x] Removing the OpenAI key produces a clear error and the manual path still works. *With the API started without a key: "The estimator is unavailable right now. You can add this meal manually." with Try again and Add manually (the text is carried into the form), and the manual entry saved.*
+- [x] `ai_calls` shows one row per call with token counts; the daily cap blocks further calls with a clear message. *Eight rows after the walk, each with model `gpt-5.5-2026-04-23`, input and output tokens and latency. With `AI_DAILY_CALL_CAP=1` the second estimate shows "You've used today's 1 AI estimates. You can still add meals manually or from My foods; the cap resets at midnight." The cap counts every attempt since local midnight, failures included.*
+- [x] The AI smoke script prints the five canonical inputs with numbers a human agrees are reasonable. *`pnpm ai:smoke --record` on 2026-09-26: 4 eggs 288 kcal / 25 g; toast and butter 270 kcal; stir fry 740 kcal in two items; large flat white 181 kcal; protein shake and banana 350 kcal with a clarifying question about the shake. The five answers are the recorded fixtures.*
 
-**Decisions it depends on.** D5, D6, D7.
+**Deferrals.** No offline queue for quick-adds (slice 5). No "recent" section separate from My foods: the library sorts by last used, which covers it. Water is logged like any nutrient for now; the +250 ml tracker is slice 4.
+
+**Decisions it depends on.** D5, D6, D7. Surfaced D14 (saving confident AI items to My foods) and D15 (the client computes portions, the server stores them).
 
 ---
 

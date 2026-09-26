@@ -183,6 +183,36 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 ---
 
+## D14. Confident AI items are saved to My foods by default (adopted, please confirm)
+
+**Context.** D5 option C says confirmed AI estimates feed the person's library so the same food is consistent day to day and re-logs cost no AI call. Slice 3 had to decide which items to save without asking a question per item.
+
+**Options.**
+- **A. Save nothing automatically.** The library holds only manual entries and items the person explicitly saves. Clean, but the memory that D5 promised rarely fills up, and "4 eggs" is re-estimated every time.
+- **B. Save items the model marked `high` confidence, with a per-item toggle on the review card.** Built. Packaged foods and precise counts ("4 eggs", "1 scoop whey") get saved as a per-serving food where one serving is exactly what was logged; rough guesses ("about a plate") do not. The chip on the row says "Will save" so nothing is silent, and items that matched an existing library food are never duplicated.
+- **C. Save every confirmed item.** Fills the library fastest but with a lot of one-off restaurant guesses.
+
+**Recommendation.** B. In the browser walk the second "4 eggs" already matched the saved "Eggs" food and the model said so in its assumptions. Switch to A if the library gets noisy; it is one default in the review card.
+
+**Status.** `proposed` (built as B on 2026-09-26)
+
+---
+
+## D15. The client computes portions and rescaled totals; the server stores what it is sent (adopted, please confirm)
+
+**Context.** Re-logging 50 g of oats or changing "4 eggs" to 3 needs the nutrient vector scaled. Somebody has to do the arithmetic, and the server has no per-gram basis for an AI item (only totals for the quantity described).
+
+**Options.**
+- **A. Server recomputes from `food_id` and grams.** Exact for library foods, impossible for AI items and manual one-offs without a basis, so two code paths.
+- **B. Client scales with the shared pure functions (`portionOf`, `rescaleToQuantity`) and sends the final totals; the server validates the shape (complete vector, no negatives, ownership of `food_id` and `ai_call_id`) and stores it.** Built. One code path, the numbers the person saw are the numbers stored, and the math lives in `packages/shared` with unit tests as non-negotiable 2 asks. The only "trust" is in a person's own diary.
+- **C. Send both and have the server check them against each other within a tolerance.** Belt and braces, more code, and a hard question about what to do when they differ.
+
+**Recommendation.** B. Revisit if a shared catalogue (`foods.user_id` null) ever makes server-side recomputation necessary.
+
+**Status.** `proposed` (built as B on 2026-09-26)
+
+---
+
 ## Smaller defaults taken without asking
 
 - Metric by default (kg, cm, kcal); imperial toggle in Settings. kJ display can come later.
@@ -204,6 +234,15 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 - Enum columns (`sex`, `goal`, `activity`, ...) are plain `text` validated by zod, not Postgres enums, so adding a value is a code change without a migration. Slice 2.
 - The explanation is generated the first time the targets screen opens (not during onboarding), cached on the target version, and offered again through a "write it again" button. Slice 2.
 - Seed profiles are date-of-birth based (Finn 1998-06-15, Tess 1996-04-02), so their ages, and eventually one DRI band, drift with the calendar; the golden tests use ages directly and do not. Slice 2.
+- Meal inference by local hour: breakfast 04:00 to 10:59, lunch 11:00 to 14:59, dinner 17:00 to 21:59, otherwise snack. The model's own `meal_hint` wins when it gives one. Slice 3.
+- Entries before 04:00 local get a "Yesterday" hint and one-tap switch (the late-night rule from the plan). Any past day can be picked with a date field. Slice 3.
+- The daily AI cap counts every `ai_calls` row for the person since their local midnight, all purposes and failed attempts included, so a flapping model cannot run up a bill. Slice 3.
+- The estimate prompt includes up to 20 of the person's verified foods whose name or brand shares a word with the input; ids the model returns that were not offered are dropped. Slice 3.
+- `max_output_tokens` is 6000 for estimates (15 items with full vectors is long); other purposes keep 1200. A zod validation failure on an otherwise well-formed answer is retried once with the error appended. Slice 3.
+- A saved AI item becomes a per-serving food where one serving is exactly what was logged ("4 large eggs (200 g)"), so re-logging "1 serving" means the same plate. Manual foods and manual edits are `verified`. Slice 3.
+- Deleting a library food leaves its log entries intact with their snapshot (`food_id` set to null). Deleting an entry recomputes that day's summary; a summary row with zero entries is kept rather than deleted. Slice 3.
+- The region hint for portion sizes comes from the profile time zone (Europe/London is "the United Kingdom"). Slice 3.
+- Today's day navigation is client-side state, not a route; opening quick add from a past day logs to that day. Slice 3.
 
 ## Open questions for later slices (not blocking)
 
