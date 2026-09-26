@@ -23,6 +23,7 @@ Migrations run before the server on every deploy so schema and code cannot disag
 | OPENAI_API_KEY | server-only; must never reach the web bundle |
 | OPENAI_MODEL | e.g. `gpt-5`; changing it needs no code change |
 | AI_DAILY_CALL_CAP | per-user daily OpenAI call cap; default 150 |
+| AI_WEB_SEARCH | `true` (default) lets the estimator read a named product's label with OpenAI's web search tool, billed per search (D16); `false` switches it off without a deploy |
 | NODE_ENV / LOG_LEVEL | `production` / `info` |
 | WEB_DIST_DIR | Optional. Absolute path of the built SPA; the Dockerfile sets `/app/public`. Unset locally (the API finds `apps/web/dist`) |
 

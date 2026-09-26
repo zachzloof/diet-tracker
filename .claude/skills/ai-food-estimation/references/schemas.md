@@ -22,6 +22,8 @@ FoodItem {
   assumptions: string[]                   // "assumed large eggs (50 g each)"
   confidence: 'high' | 'medium' | 'low'
   matched_food_id: string | null          // id of a user library food reused for consistency
+  brand: string | null                    // brand, retailer or chain the person named ("Asda", "M&S")
+  source_url: string | null               // product page the label was read from (web search, D16)
   nutrients: NutrientVector               // for the TOTAL quantity, all keys, >= 0
   food_groups: FoodGroupServes            // for the TOTAL quantity, all keys, >= 0
 }
@@ -56,6 +58,11 @@ Rules:
 - The user's own foods, with values they have verified, are listed below. When an item clearly
   matches one, reuse its values scaled to the quantity and set matched_food_id.
 {library matches as JSON}
+- When the text names a brand, retailer, chain or product, SEARCH THE WEB for that exact
+  product's nutrition information; prefer the retailer's or manufacturer's page for {region};
+  scale the label to the quantity eaten; set brand, source_url and confidence high; name the
+  pack size in assumptions. Not found: generic estimate, source_url null, lower confidence.
+  Never search for generic foods. (Only when the web_search tool is offered.)
 ```
 
 User message: the raw text, plus local time of day (for `meal_hint`).

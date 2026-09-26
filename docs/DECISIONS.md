@@ -213,6 +213,21 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 ---
 
+## D16. Named products are looked up online with OpenAI's web search tool (adopted, please confirm)
+
+**Context.** "Asda mozzarella sticks" or "M&S fries" has an exact label on the retailer's website, and the owner expects those numbers rather than a generic guess. The estimator only had the model's memory, which is stale or approximate for own-brand supermarket products. The owner offered Tavily or any better-suited dependency.
+
+**Options.**
+- **A. OpenAI's built-in `web_search` tool on the same Responses call.** Built. No new dependency or key; the model searches when the prompt's rule triggers (a brand, retailer, chain or product is named), reads the label from the page, and still answers through the strict `FoodEstimate` schema, now with `brand` and `source_url` per item. Location hint from the profile time zone (GB for Europe/London). Cost is per search on top of tokens (see the OpenAI pricing page for the current rate); `ai_calls.web_search_calls` counts them per call so the bill per person stays visible. Adds a few seconds to a branded estimate; the call timeout is 75 s when the tool is offered. `AI_WEB_SEARCH=false` switches it off without a deploy.
+- **B. Tavily (or Brave/Serper) search API, fed to the model.** A second key and dependency, our own "is this branded?" detection before the call, and a second round trip; the model would still have to read the page. More control over which sites are searched, and a free tier of about 1,000 searches a month.
+- **C. Open Food Facts product lookup.** Free, no key, real label data with barcodes, but text search is fuzzy and UK own-brand coverage is patchy; better as a barcode scanner later than as the text path.
+
+**Recommendation.** A. It is the smallest change that gives the label rather than a guess, and B or C can be slotted in as extra resolvers later without touching the schema. Watch `web_search_calls` in `ai_calls` for the first weeks; if the cost is out of line, switch to B or turn the flag off.
+
+**Status.** `accepted` (2026-09-26): A, adopted so the fix could ship; the owner confirms or redirects.
+
+---
+
 ## Smaller defaults taken without asking
 
 - Metric by default (kg, cm, kcal); imperial toggle in Settings. kJ display can come later.
@@ -243,6 +258,10 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 - Deleting a library food leaves its log entries intact with their snapshot (`food_id` set to null). Deleting an entry recomputes that day's summary; a summary row with zero entries is kept rather than deleted. Slice 3.
 - The region hint for portion sizes comes from the profile time zone (Europe/London is "the United Kingdom"). Slice 3.
 - Today's day navigation is client-side state, not a route; opening quick add from a past day logs to that day. Slice 3.
+- Editing an estimate or a logged entry: changing the quantity or the weight rescales every number from the item's original values (so passing through 0 while typing is harmless); changing one nutrient changes only that nutrient, and the corrected item becomes what later portion changes scale from. Food-group serves scale with the portion and are not edited by hand. After slice 3, 2026-09-26.
+- Editing a nutrient does not flip the "Save to My foods" toggle; D14's default (confident items only) stands and the toggle is one tap away. After slice 3, 2026-09-26.
+- A saved AI item keeps the brand the model returned (`log entry brand` -> `foods.brand`) so the library search and the prompt memory match "asda" next time. After slice 3, 2026-09-26.
+- The web search country hint is only set for zones that map to one country (GB, IE, AU, NZ, a few US and CA cities); elsewhere the tool gets the time zone alone. After slice 3, 2026-09-26.
 
 ## Open questions for later slices (not blocking)
 

@@ -51,8 +51,9 @@ Notes:
 - The database is exposed on host port **5433** (not 5432) so it never collides with another project's Postgres. Use `127.0.0.1`, not `localhost`, in `DATABASE_URL`: on Windows `localhost` resolves to IPv6 first and Docker's IPv6 port mapping can hang instead of connecting.
 - Seed accounts (local only): `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password`. Both come with a profile and targets.
 - `OPENAI_API_KEY` is optional: without it the targets screen says the explanation is unavailable and everything else works. `OPENAI_MODEL` defaults to `gpt-5.5` (decision D11: `gpt-5` needs a verified OpenAI organisation).
-- `pnpm ai:smoke` sends the five canonical food inputs ("4 eggs", ...) to the live model and prints a table of items, grams, energy, macros and confidence; `pnpm ai:smoke:plan` does the same for Finn's and Tess's plan explanations. Add `--record` to either to refresh the test fixtures.
+- `pnpm ai:smoke` sends the seven canonical food inputs ("4 eggs", ..., "asda mozzarella sticks") to the live model and prints a table of items, grams, energy, macros and confidence; `pnpm ai:smoke:plan` does the same for Finn's and Tess's plan explanations. Add `--record` to either to refresh the test fixtures.
 - `AI_DAILY_CALL_CAP` (default 150) caps OpenAI calls per person per local day. Logging from My foods never calls OpenAI.
+- `AI_WEB_SEARCH` (default `true`) lets the estimator look up a named product's label online with OpenAI's web search tool (decision D16). Each search is billed per call; `ai_calls.web_search_calls` counts them. Set `false` to switch it off without a deploy.
 - To try it on your phone over Wi-Fi: `pnpm --filter @diet-tracker/web dev --host`, then open the LAN address Vite prints. Installing to the home screen needs HTTPS, so that only works on the deployed URL.
 
 Other commands:
@@ -80,7 +81,7 @@ One-time setup:
    - `SESSION_SECRET`: a fresh 64-character hex string (different from your local one).
    - `NODE_ENV`: `production`
    - `LOG_LEVEL`: `info`
-   - `OPENAI_API_KEY`, `OPENAI_MODEL` (`gpt-5.5`, decision D11), `AI_DAILY_CALL_CAP` (`150`): the key powers the plan explanation from slice 2 and food logging from slice 3.
+   - `OPENAI_API_KEY`, `OPENAI_MODEL` (`gpt-5.5`, decision D11), `AI_DAILY_CALL_CAP` (`150`), `AI_WEB_SEARCH` (`true`, decision D16): the key powers the plan explanation from slice 2 and food logging from slice 3.
    - `APP_ORIGIN`: set after step 4.
 4. In **Settings → Networking**, generate a public domain. Copy it into `APP_ORIGIN` as `https://<domain>` with no trailing slash and redeploy. The cookie's `Secure` flag is derived from this, so it must be the real `https://` URL.
 5. Watch the deploy logs for `migrations applied` and `listening`, then open `https://<domain>/api/health`. It returns `{ ok: true, version, db: "ok" }`.

@@ -4,6 +4,12 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Fixes after slice 3 (2026-09-26)
+- Named products are looked up online. Type a brand, shop or product ("asda mozzarella sticks", "m&s fries, 150g") and the estimator searches the web with OpenAI's built-in tool, reads the retailer's label and scales it to what you ate. The item shows a "Label found online" chip, the brand, and a link to the page the numbers came from; the assumptions name the pack size it used. Generic foods ("4 eggs") are never searched. In the smoke run the Asda sticks came from asda.com (341 kcal for 5 sticks, 100 g) and the M&S fries from marksandspencer.com (260 kcal for 150 g). `AI_WEB_SEARCH=false` turns it off; `ai_calls.web_search_calls` counts searches for the bill.
+- Estimates are fully editable. Tap an item to change its quantity or its weight in grams (every number rescales, so 4 eggs at 200 g become 3 eggs at 150 g) or to correct any single nutrient: energy, protein, carbs and fat up front, the other seventeen behind "More nutrients". Correcting a nutrient changes only that number and marks the item "Edited"; a later portion change scales the corrected values. The same editor is in the entry sheet on Today, so a logged item can be fixed after the fact.
+- Saved AI items keep their brand in My foods, so "asda" matches next time and the estimator reuses your verified numbers instead of searching again.
+- Under the hood: `brand` and `source_url` on every estimate item, `rescaleToGrams` in the shared portion math, `web_search_calls` on `ai_calls` (migration 0003), a 75 s call timeout when search is offered, `pnpm ai:smoke` now runs seven inputs and prints searches and sources.
+
 ### Slice 3 - Food logging: AI quick-add, manual entry, food library (2026-09-26)
 - Quick add: tap the big + and type what you ate ("4 eggs and two slices of toast with butter"). The AI returns each item with grams, energy, protein, carbs and fat, how confident it is, and the assumptions it made. Tap an item to change the quantity (the numbers rescale), remove it, or save it to My foods. Confident items are saved by default so the next time costs no guesswork. If the AI needs one detail that changes the numbers a lot it asks; you can answer or keep the estimate.
 - Meal and day: the meal is guessed from the time and is one tap to change. Before 04:00 the app offers yesterday, so a late dinner lands on the day it belongs to. Any day can be chosen.

@@ -93,6 +93,8 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 **Deferrals.** No offline queue for quick-adds (slice 5). No "recent" section separate from My foods: the library sorts by last used, which covers it. Water is logged like any nutrient for now; the +250 ml tracker is slice 4.
 
+**Follow-ups shipped (2026-09-26).** Named products are looked up online with OpenAI's web search tool and the review card links the label's page (D16). Estimate items and logged entries are editable in full: quantity or weight rescales everything, a single nutrient changes only itself. Saved AI items keep their brand. Verified with the live model in a 390x844 and a 360-wide headless browser; see CHANGELOG.
+
 **Decisions it depends on.** D5, D6, D7. Surfaced D14 (saving confident AI items to My foods) and D15 (the client computes portions, the server stores them).
 
 ---
