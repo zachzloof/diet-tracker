@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { confidenceSchema, mealSchema } from '../log/enums.js'
+import { foodGroupServesSchema, nutrientVectorSchema } from '../nutrition/nutrients.js'
 
 /**
  * Structured Outputs schemas. Strict mode needs every field required and no extra
@@ -23,6 +25,41 @@ export const storedPlanExplanationSchema = z.object({
   generatedAt: z.iso.datetime(),
 })
 export type StoredPlanExplanation = z.infer<typeof storedPlanExplanationSchema>
+
+/**
+ * Purpose `estimate` (slice 3): one item per distinct food in the person's text. Amounts
+ * are for the TOTAL quantity described, never per 100 g. Vectors are complete: the
+ * nutrient and food-group schemas list every key and refuse negatives.
+ */
+export const foodItemSchema = z.object({
+  /** Canonical, e.g. "Egg, whole, large, boiled". */
+  name: z.string(),
+  /** The fragment of the user's text this item came from. */
+  input_text: z.string(),
+  quantity: z.number(),
+  /** "egg", "slice", "cup", "g", "ml", "serving". */
+  unit: z.string(),
+  /** Total edible weight estimate. */
+  grams: z.number(),
+  preparation: z.string().nullable(),
+  /** "assumed large eggs (50 g each)". */
+  assumptions: z.array(z.string()),
+  confidence: confidenceSchema,
+  /** Id of a library food reused for consistency, or null. */
+  matched_food_id: z.string().nullable(),
+  nutrients: nutrientVectorSchema,
+  food_groups: foodGroupServesSchema,
+})
+export type FoodItem = z.infer<typeof foodItemSchema>
+
+export const foodEstimateSchema = z.object({
+  items: z.array(foodItemSchema),
+  meal_hint: mealSchema.nullable(),
+  overall_confidence: confidenceSchema,
+  /** Only when the ambiguity materially changes the numbers; otherwise null. */
+  clarifying_question: z.string().nullable(),
+})
+export type FoodEstimate = z.infer<typeof foodEstimateSchema>
 
 export const AI_PURPOSES = ['explain_plan', 'estimate', 'weekly_review'] as const
 export const aiPurposeSchema = z.enum(AI_PURPOSES)
