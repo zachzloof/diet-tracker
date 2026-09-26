@@ -148,7 +148,10 @@ export function useUpdateEntry() {
   return useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: UpdateEntryRequest }) =>
       logApi.updateEntry(id, patch),
-    onSuccess: (result) => applySummaries(queryClient, result.summaries),
+    onSuccess: async (result, { patch }) => {
+      await applySummaries(queryClient, result.summaries)
+      if (patch.saveToLibrary) await queryClient.invalidateQueries({ queryKey: FOODS_KEY })
+    },
   })
 }
 

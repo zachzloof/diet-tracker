@@ -10,6 +10,7 @@ import { computed, ref, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import Icon from '@/components/ui/Icon.vue'
 import Sheet from '@/components/ui/Sheet.vue'
+import Toggle from '@/components/ui/Toggle.vue'
 import { ApiError } from '@/lib/api'
 import { formatGrams, formatKcal, formatNumber } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
@@ -26,7 +27,8 @@ import { useDeleteEntry, useUpdateEntry } from './useLog'
 
 /**
  * Edit one logged item: quantity or weight (everything rescales), any single nutrient (only
- * that number), meal, day, or delete it.
+ * that number), meal, day, or delete it. An item that is not in My foods yet (an estimate
+ * that was not saved when it was logged) can be saved there as it stands after the edits.
  */
 const open = defineModel<boolean>('open', { default: false })
 
@@ -40,6 +42,7 @@ const draft = ref<EditableItem | null>(null)
 const base = ref<EditableItem | null>(null)
 const meal = ref<Meal>('snack')
 const day = ref(props.today)
+const saveToLibrary = ref(false)
 const confirmingDelete = ref(false)
 const error = ref<string | null>(null)
 
@@ -51,6 +54,7 @@ watch(
       base.value = snapshotItem(entry)
       meal.value = entry.meal
       day.value = entry.day
+      saveToLibrary.value = false
       confirmingDelete.value = false
       error.value = null
       update.reset()
@@ -74,13 +78,17 @@ const portionChanged = computed(
 const changed = computed(
   () =>
     props.entry !== null &&
-    (portionChanged.value || meal.value !== props.entry.meal || day.value !== props.entry.day),
+    (portionChanged.value ||
+      meal.value !== props.entry.meal ||
+      day.value !== props.entry.day ||
+      saveToLibrary.value),
 )
 
 function save(): void {
   if (!props.entry || !draft.value || draft.value.quantity <= 0) return
   error.value = null
   const moved = meal.value !== props.entry.meal || day.value !== props.entry.day
+  const saving = saveToLibrary.value && props.entry.foodId === null
   update.mutate(
     {
       id: props.entry.id,
@@ -95,11 +103,12 @@ function save(): void {
           : {}),
         ...(meal.value !== props.entry.meal ? { meal: meal.value } : {}),
         ...(day.value !== props.entry.day ? { day: day.value } : {}),
+        ...(saving ? { saveToLibrary: true } : {}),
       },
     },
     {
       onSuccess: () => {
-        ui.toast(moved ? 'Moved' : 'Saved', 'success')
+        ui.toast(saving ? 'Saved to My foods' : moved ? 'Moved' : 'Saved', 'success')
         open.value = false
       },
       onError: (e: unknown) => {
@@ -159,6 +168,22 @@ function del(): void {
 
       <MealDayPicker v-model:meal="meal" v-model:day="day" :today="today" />
 
+      <Toggle
+        v-if="entry.foodId === null"
+        v-model="saveToLibrary"
+        label="Save to My foods"
+        :description="
+          ui.online
+            ? 'Log it again later with one tap, no AI needed.'
+            : 'Needs a connection to save.'
+        "
+        :disabled="!ui.online"
+      />
+      <p v-else class="flex gap-2 text-sm text-fg-muted">
+        <Icon name="book" :size="16" class="mt-0.5 shrink-0" />
+        In My foods. Changes here change only this entry.
+      </p>
+
       <p v-if="error" class="text-sm text-over" role="alert">{{ error }}</p>
 
       <div class="space-y-2">
@@ -168,7 +193,7 @@ function del(): void {
           :loading="update.isPending.value"
           @click="save"
         >
-          {{ ui.online ? 'Save' : 'Offline' }}
+          {{ ui.online ? 'Save changes' : 'Offline' }}
         </Button>
         <Button
           block
