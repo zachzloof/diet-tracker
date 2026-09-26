@@ -1,0 +1,106 @@
+{
+  "input": {
+    "text": "chicken stir fry with rice, about a plate",
+    "system": "You are a nutrition estimator for a food diary. Convert the user's description of what they ate into structured items with realistic nutrient totals.\n\nRules:\n- One item per distinct food, at most 15. Amounts are for the TOTAL quantity described, not per 100 g.\n- Use typical values for cooked, as-eaten food (USDA-like). Include cooking fats and sauces when implied by the preparation.\n- If a quantity is missing, assume one typical serving for the United Kingdom and state it in assumptions, for example \"assumed 2 slices of toast\". Silent guesses are the one thing the user cannot correct.\n- Set clarifying_question only when the answer would change energy by more than about 30% (a slice of pizza versus a whole pizza; a protein shake with no brand or size). Otherwise leave it null, estimate, and state the assumption.\n- Units: energy kcal; protein, carbs, fat, fibre, sugars, added sugar, saturated fat in g; sodium, potassium, calcium, iron, magnesium, zinc, vitamin C in mg; vitamin A (RAE), vitamin D, B12 and folate (DFE) in mcg; water in ml; alcohol in standard drinks of 10 g ethanol. Never leave a value null or negative; use 0 and lower the item confidence if genuinely unknown.\n- Food-group serves use these definitions exactly:\n  - vegetables: 1 serve is 75 g cooked vegetables or legumes, or 1 cup salad, or half a medium potato\n  - fruit: 1 serve is 150 g fresh fruit, or 1 medium piece, or 30 g dried\n  - whole_grains: 1 serve is 1 slice wholegrain bread, half a cup cooked wholegrain rice, pasta or oats, 30 g wholegrain cereal\n  - protein_foods: 1 serve is 65 g cooked lean meat, 80 g cooked poultry, 100 g cooked fish, 2 large eggs, 150 g cooked legumes or tofu, 30 g nuts or seeds\n  - dairy_or_alt: 1 serve is 250 ml milk or fortified plant milk, 200 g yoghurt, 40 g hard cheese\n  - legumes: 1 serve is 150 g cooked legumes (counts toward protein foods and vegetables too)\n  - nuts_seeds: 1 serve is 30 g\n- confidence per item: high for packaged foods with stated weights or precise counts of common foods; medium for home-cooked food with quantities; low for restaurant meals, \"some\" or \"a bit of\".\n- meal_hint: breakfast, lunch, dinner or snack from the food and the local time given, or null if unclear.\n- input_text is the fragment of the user's text the item came from, copied verbatim.\n- The user's diet pattern is Omnivore; allergies or intolerances: none. Interpret ambiguous foods accordingly (a vegan's \"milk\" is plant milk).\n- The user has no saved foods yet; set matched_food_id to null on every item.",
+    "user": "Local time: 08:30.\n\nWhat I ate: chicken stir fry with rice, about a plate"
+  },
+  "response": {
+    "items": [
+      {
+        "name": "Chicken stir-fry with vegetables and sauce",
+        "input_text": "chicken stir fry",
+        "quantity": 1,
+        "unit": "plate serving portion",
+        "grams": 350,
+        "preparation": "Stir-fried chicken with mixed vegetables, oil and soy-based sauce",
+        "assumptions": [
+          "assumed a typical UK plate portion: about 120 g cooked chicken breast, 180 g mixed stir-fry vegetables, 1 tbsp cooking oil, and a soy-based stir-fry sauce",
+          "sauce assumed moderately salty; no noodles included in this item"
+        ],
+        "confidence": "low",
+        "matched_food_id": null,
+        "nutrients": {
+          "energy_kcal": 430,
+          "protein_g": 40,
+          "carbs_g": 22,
+          "fat_g": 20,
+          "fiber_g": 5,
+          "sugar_g": 10,
+          "added_sugar_g": 3,
+          "saturated_fat_g": 3,
+          "sodium_mg": 1100,
+          "potassium_mg": 950,
+          "calcium_mg": 80,
+          "iron_mg": 2.3,
+          "magnesium_mg": 75,
+          "zinc_mg": 2,
+          "vitamin_a_ug": 450,
+          "vitamin_c_mg": 55,
+          "vitamin_d_ug": 0.2,
+          "vitamin_b12_ug": 0.4,
+          "folate_ug": 90,
+          "water_ml": 250,
+          "alcohol_std_drinks": 0
+        },
+        "food_groups": {
+          "vegetables": 2.4,
+          "fruit": 0,
+          "whole_grains": 0,
+          "protein_foods": 1.5,
+          "dairy_or_alt": 0,
+          "legumes": 0,
+          "nuts_seeds": 0
+        }
+      },
+      {
+        "name": "Cooked white rice",
+        "input_text": "rice",
+        "quantity": 1.5,
+        "unit": "cups cooked",
+        "grams": 240,
+        "preparation": "Cooked/steamed",
+        "assumptions": [
+          "assumed about 1.5 cups cooked white rice as the rice portion on a plate",
+          "not assumed to be wholegrain rice"
+        ],
+        "confidence": "low",
+        "matched_food_id": null,
+        "nutrients": {
+          "energy_kcal": 310,
+          "protein_g": 6.5,
+          "carbs_g": 67,
+          "fat_g": 0.7,
+          "fiber_g": 1,
+          "sugar_g": 0.2,
+          "added_sugar_g": 0,
+          "saturated_fat_g": 0.2,
+          "sodium_mg": 5,
+          "potassium_mg": 84,
+          "calcium_mg": 24,
+          "iron_mg": 0.5,
+          "magnesium_mg": 29,
+          "zinc_mg": 1.2,
+          "vitamin_a_ug": 0,
+          "vitamin_c_mg": 0,
+          "vitamin_d_ug": 0,
+          "vitamin_b12_ug": 0,
+          "folate_ug": 9,
+          "water_ml": 164,
+          "alcohol_std_drinks": 0
+        },
+        "food_groups": {
+          "vegetables": 0,
+          "fruit": 0,
+          "whole_grains": 0,
+          "protein_foods": 0,
+          "dairy_or_alt": 0,
+          "legumes": 0,
+          "nuts_seeds": 0
+        }
+      }
+    ],
+    "meal_hint": "breakfast",
+    "overall_confidence": "low",
+    "clarifying_question": null
+  }
+}

@@ -3,15 +3,16 @@ import { eq } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import { hashPassword } from '../auth/password.js'
 import { logger } from '../logger.js'
+import { createFood } from '../log/foods-service.js'
 import { saveProfile } from '../profile/profile-service.js'
 import { closeDb, db } from './client.js'
-import { profiles, users } from './schema/index.js'
-import { SEED_USERS } from './seed-data.js'
+import { foods, profiles, users } from './schema/index.js'
+import { SEED_FOODS, SEED_USERS } from './seed-data.js'
 
 /**
- * Creates Finn and Tess with their profiles and first target version. Idempotent: existing
- * accounts and profiles are left alone, so re-running never overwrites a change you made
- * by hand in the app.
+ * Creates Finn and Tess with their profiles, first target version and a few library foods.
+ * Idempotent: existing accounts, profiles and libraries are left alone, so re-running never
+ * overwrites a change you made by hand in the app.
  */
 async function seed(): Promise<void> {
   for (const { email, password, profile } of SEED_USERS) {
@@ -32,17 +33,31 @@ async function seed(): Promise<void> {
       .where(eq(profiles.userId, user.id))
     if (existing.length > 0) {
       logger.info({ email }, 'seed profile already present, left alone')
+    } else {
+      const result = await saveProfile(user.id, profile)
+      logger.info(
+        {
+          email,
+          energyKcal: targetValue(result.version.effective, 'energy_kcal'),
+          proteinG: targetValue(result.version.effective, 'protein_g'),
+        },
+        'seed profile and targets',
+      )
+    }
+
+    const library = await db
+      .select({ id: foods.id })
+      .from(foods)
+      .where(eq(foods.userId, user.id))
+      .limit(1)
+    if (library.length > 0) {
+      logger.info({ email }, 'seed foods already present, left alone')
       continue
     }
-    const result = await saveProfile(user.id, profile)
-    logger.info(
-      {
-        email,
-        energyKcal: targetValue(result.version.effective, 'energy_kcal'),
-        proteinG: targetValue(result.version.effective, 'protein_g'),
-      },
-      'seed profile and targets',
-    )
+    for (const food of SEED_FOODS[email] ?? []) {
+      await createFood(user.id, food, { source: 'manual', verified: true })
+    }
+    logger.info({ email, count: SEED_FOODS[email]?.length ?? 0 }, 'seed foods')
   }
 }
 

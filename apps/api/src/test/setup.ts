@@ -14,11 +14,13 @@ process.env.SESSION_SECRET ??= 'test-only-session-secret-0123456789abcdef0123456
 process.env.APP_ORIGIN ??= 'http://localhost:5173'
 // Tests never call OpenAI; the explain route must answer ai_unavailable.
 process.env.OPENAI_API_KEY = ''
+// A small cap so the daily-cap test needs only a few ai_calls rows.
+process.env.AI_DAILY_CALL_CAP = '3'
 
 beforeAll(async () => {
   const { db } = await import('../db/client.js')
   await db.execute(
-    sql`truncate table ai_calls, weight_entries, target_versions, profiles, sessions, users cascade`,
+    sql`truncate table log_entries, daily_summaries, foods, ai_calls, weight_entries, target_versions, profiles, sessions, users cascade`,
   )
 })
 

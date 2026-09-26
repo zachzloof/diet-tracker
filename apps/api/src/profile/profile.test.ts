@@ -61,7 +61,7 @@ async function errorBody(res: Response) {
 beforeEach(async () => {
   resetRateLimits()
   await db.execute(
-    sql`truncate table ai_calls, weight_entries, target_versions, profiles, sessions, users cascade`,
+    sql`truncate table log_entries, daily_summaries, foods, ai_calls, weight_entries, target_versions, profiles, sessions, users cascade`,
   )
   const res = await app.request('/api/v1/auth/register', {
     method: 'POST',

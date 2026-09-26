@@ -40,6 +40,13 @@ function humaniseSeconds(seconds: number): string {
   return `${minutes} minute${minutes === 1 ? '' : 's'}`
 }
 
+/** Failure copy per purpose (ai-food-estimation skill): short, blame-free, with the next action. */
+export const AI_UNAVAILABLE_MESSAGES = {
+  explain_plan: 'The explanation is unavailable right now. Your targets are not affected.',
+  estimate: 'The estimator is unavailable right now. You can add this meal manually.',
+  weekly_review: 'The weekly review is unavailable right now. Your numbers are not affected.',
+} as const
+
 export const errors = {
   validation: (details: ValidationDetails) =>
     new AppError(400, 'validation_error', 'Check the highlighted fields', details),
@@ -53,11 +60,20 @@ export const errors = {
     new AppError(409, 'profile_required', 'Set up your profile to get your targets'),
   overrideBlocked: (blocked: OverrideWarning[]) =>
     new AppError(422, 'override_blocked', 'That value is below a safe minimum', { blocked }),
-  aiUnavailable: () =>
+  aiUnavailable: (message: string = AI_UNAVAILABLE_MESSAGES.explain_plan) =>
+    new AppError(503, 'ai_unavailable', message),
+  aiCapReached: (cap: number, used: number) =>
     new AppError(
-      503,
-      'ai_unavailable',
-      'The explanation is unavailable right now. Your targets are not affected.',
+      429,
+      'ai_cap_reached',
+      `You've used today's ${cap} AI estimates. You can still add meals manually or from My foods; the cap resets at midnight.`,
+      { cap, used },
+    ),
+  aiUnclear: () =>
+    new AppError(
+      422,
+      'ai_unclear',
+      "Couldn't work out what that was. Try rephrasing, or add it manually.",
     ),
   rateLimited: (retryAfterSeconds: number) =>
     new AppError(
