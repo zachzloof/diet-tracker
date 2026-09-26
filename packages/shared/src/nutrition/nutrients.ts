@@ -309,6 +309,11 @@ export const FOOD_GROUPS: Readonly<Record<FoodGroupKey, FoodGroupMeta>> = {
   },
 }
 
+/** True for a nutrient key, so a target key that fails it is a food group. */
+export function isNutrientKey(key: string): key is NutrientKey {
+  return Object.hasOwn(NUTRIENTS, key)
+}
+
 export function emptyNutrientVector(): NutrientVector {
   return {
     energy_kcal: 0,

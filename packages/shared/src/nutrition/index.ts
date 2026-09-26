@@ -1,3 +1,4 @@
+export * from './contributors.js'
 export * from './dri.js'
 export * from './gap-suggestions.js'
 export * from './gaps.js'
