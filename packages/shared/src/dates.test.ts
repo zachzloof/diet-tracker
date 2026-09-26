@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { ageOn, isValidTimeZone, localDay } from './dates.js'
+import {
+  addMonths,
+  ageOn,
+  daysOfMonth,
+  isValidTimeZone,
+  isoWeek,
+  localDay,
+  monthOf,
+  weekdayIndex,
+} from './dates.js'
 
 describe('localDay', () => {
   it('is the calendar date in the given zone, not the server zone', () => {
@@ -63,5 +72,32 @@ describe('startOfLocalDay and addDays', () => {
     expect(addDays('2026-09-26', -1)).toBe('2026-09-25')
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01')
     expect(addDays('2024-02-28', 1)).toBe('2024-02-29')
+  })
+})
+
+describe('isoWeek, weekdayIndex and month helpers', () => {
+  it('numbers ISO weeks with Monday starts and 4 January in week 1', () => {
+    expect(isoWeek('2026-09-26')).toBe('2026-W39')
+    expect(isoWeek('2026-09-28')).toBe('2026-W40')
+    expect(isoWeek('2026-01-01')).toBe('2026-W01')
+    expect(isoWeek('2027-01-01')).toBe('2026-W53')
+    expect(isoWeek('2021-01-03')).toBe('2020-W53')
+    expect(isoWeek('2024-12-30')).toBe('2025-W01')
+  })
+
+  it('indexes weekdays from Monday', () => {
+    expect(weekdayIndex('2026-09-28')).toBe(0) // Monday
+    expect(weekdayIndex('2026-09-26')).toBe(5) // Saturday
+    expect(weekdayIndex('2026-09-27')).toBe(6) // Sunday
+  })
+
+  it('lists the days of a month and shifts months', () => {
+    expect(monthOf('2026-09-26')).toBe('2026-09')
+    expect(daysOfMonth('2026-02')).toHaveLength(28)
+    expect(daysOfMonth('2028-02')).toHaveLength(29)
+    expect(daysOfMonth('2026-09')[0]).toBe('2026-09-01')
+    expect(daysOfMonth('2026-09')[29]).toBe('2026-09-30')
+    expect(addMonths('2026-01', -1)).toBe('2025-12')
+    expect(addMonths('2026-12', 1)).toBe('2027-01')
   })
 })

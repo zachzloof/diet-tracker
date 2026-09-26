@@ -110,3 +110,48 @@ export function detectTimeZone(): string {
     return 'UTC'
   }
 }
+
+/** Monday = 0 ... Sunday = 6 for a `YYYY-MM-DD` day. */
+export function weekdayIndex(day: string): number {
+  if (!DAY_RE.test(day)) throw new Error('weekdayIndex expects YYYY-MM-DD')
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
+  return (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7
+}
+
+/** ISO 8601 week of a day as `YYYY-Www` (weeks start on Monday; week 1 holds 4 January). */
+export function isoWeek(day: string): string {
+  if (!DAY_RE.test(day)) throw new Error('isoWeek expects YYYY-MM-DD')
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
+  const date = new Date(Date.UTC(y, m - 1, d))
+  // Shift to the Thursday of this week; its year is the ISO year.
+  date.setUTCDate(date.getUTCDate() + 3 - ((date.getUTCDay() + 6) % 7))
+  const isoYear = date.getUTCFullYear()
+  const firstThursday = new Date(Date.UTC(isoYear, 0, 4))
+  firstThursday.setUTCDate(firstThursday.getUTCDate() + 3 - ((firstThursday.getUTCDay() + 6) % 7))
+  const week = 1 + Math.round((date.getTime() - firstThursday.getTime()) / (7 * 86_400_000))
+  return `${String(isoYear).padStart(4, '0')}-W${String(week).padStart(2, '0')}`
+}
+
+/** `YYYY-MM` of a day. */
+export function monthOf(day: string): string {
+  if (!DAY_RE.test(day)) throw new Error('monthOf expects YYYY-MM-DD')
+  return day.slice(0, 7)
+}
+
+/** `YYYY-MM` shifted by `months` (negative for earlier). */
+export function addMonths(month: string, months: number): string {
+  const [y, m] = month.split('-').map(Number) as [number, number]
+  const shifted = new Date(Date.UTC(y, m - 1 + months, 1))
+  return `${String(shifted.getUTCFullYear()).padStart(4, '0')}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+/** Every `YYYY-MM-DD` in a `YYYY-MM` month, in order. */
+export function daysOfMonth(month: string): string[] {
+  const [y, m] = month.split('-').map(Number) as [number, number]
+  const count = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  return Array.from(
+    { length: count },
+    (_, i) =>
+      `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`,
+  )
+}

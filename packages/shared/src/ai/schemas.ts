@@ -68,3 +68,36 @@ export type FoodEstimate = z.infer<typeof foodEstimateSchema>
 export const AI_PURPOSES = ['explain_plan', 'estimate', 'weekly_review'] as const
 export const aiPurposeSchema = z.enum(AI_PURPOSES)
 export type AiPurpose = z.infer<typeof aiPurposeSchema>
+
+/**
+ * Purpose `weekly_review` (slice 4): a short structured reading of the last seven days,
+ * built only from the supplied day scores, gaps and targets. Exactly two changes, ranked.
+ */
+export const weeklyReviewChangeSchema = z.object({
+  title: z.string(),
+  why: z.string(),
+  how: z.string(),
+})
+export type WeeklyReviewChange = z.infer<typeof weeklyReviewChangeSchema>
+
+export const weeklyReviewSchema = z.object({
+  /** Two sentences on the week. */
+  summary: z.string(),
+  /** 1 to 3 things that went well. */
+  wins: z.array(z.string()),
+  /** Exactly 2, ranked. */
+  changes: z.array(weeklyReviewChangeSchema),
+  /** One sentence, specific, not saccharine. */
+  encouragement: z.string(),
+})
+export type WeeklyReview = z.infer<typeof weeklyReviewSchema>
+
+export const storedWeeklyReviewSchema = z.object({
+  ...weeklyReviewSchema.shape,
+  model: z.string(),
+  generatedAt: z.iso.datetime(),
+  /** The last day of the seven-day window the review covers. */
+  weekEnd: z.iso.date(),
+  daysLogged: z.number().int().min(0),
+})
+export type StoredWeeklyReview = z.infer<typeof storedWeeklyReviewSchema>
