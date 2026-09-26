@@ -6,7 +6,7 @@ Working name. Built for a small group of friends first, from a home-screen bookm
 
 ## Status
 
-Slices 1 (foundation: monorepo, auth, PWA shell, deploy pipeline), 2 (onboarding, the nutrition engine, targets with overrides and an AI explanation, profile and target history), 3 (AI quick-add with a review card, My foods, manual entry, the day log and Today totals) and 4 (the Today dashboard with the energy ring, water, food groups and micronutrients; the Week screen with days met, streak, gaps and an AI review; the History calendar) are built. Development happens in five slices, one per working session. See [docs/PLAN.md](docs/PLAN.md) for the slices and [docs/DECISIONS.md](docs/DECISIONS.md) for the design decisions and the ones still open. [CHANGELOG.md](CHANGELOG.md) lists what shipped.
+All five slices are built: 1 (foundation: monorepo, auth, PWA shell, deploy pipeline), 2 (onboarding, the nutrition engine, targets with overrides and an AI explanation, profile and target history), 3 (AI quick-add with a review card, My foods, manual entry, the day log and Today totals), 4 (the Today dashboard with the energy ring, water, food groups and micronutrients; the Week screen with days met, streak, gaps and an AI review; the History calendar) and 5 (weight log and Progress, fortnightly recalibration, Settings with reminders, password, export and delete, offline reads and queued writes, legal pages, icons, and the Capacitor scaffold). The app is ready for a small group to use from the Railway URL; the native shells are scaffolded but not yet built (see [docs/NATIVE.md](docs/NATIVE.md) and [docs/APP-STORE.md](docs/APP-STORE.md)). See [docs/PLAN.md](docs/PLAN.md) for the slices and [docs/DECISIONS.md](docs/DECISIONS.md) for the design decisions and the ones still open. [CHANGELOG.md](CHANGELOG.md) lists what shipped.
 
 ## What it does (when finished)
 
@@ -15,7 +15,9 @@ Slices 1 (foundation: monorepo, auth, PWA shell, deploy pipeline), 2 (onboarding
 - **Logging**: type what you ate and an AI estimates the nutrients, with its assumptions shown so you can correct them. Or enter a food manually with label values and save it to your library for one-tap re-logging.
 - **Today**: energy remaining, macro bars, micronutrient status, food-group serves, water.
 - **Week**: days met, streaks, and an "areas you're lacking" list with concrete food suggestions that respect your diet pattern and allergies.
-- **Progress**: weight trend against your goal, and target recalibration when the numbers say so.
+- **Progress**: weight trend against your goal, and a fortnightly recalibration that proposes a bounded target change when your weight and your plan disagree.
+- **Settings**: theme, units, time zone, reminders, change password, export (JSON and CSV), delete account.
+- **Offline**: the last known day, targets and week stay readable; entries added offline are queued and sent when the connection is back.
 
 ## Stack
 
@@ -49,12 +51,13 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 Notes:
 
 - The database is exposed on host port **5433** (not 5432) so it never collides with another project's Postgres. Use `127.0.0.1`, not `localhost`, in `DATABASE_URL`: on Windows `localhost` resolves to IPv6 first and Docker's IPv6 port mapping can hang instead of connecting.
-- Seed accounts (local only): `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password`. Both come with a profile, targets, a few library foods and a week of logged meals (relative to today), so the Week screen has something to show.
+- Seed accounts (local only): `finn@example.com` / `finn-password` and `tess@example.com` / `tess-password`. Both come with a profile, targets, a few library foods, two weeks of logged meals and weigh-ins (relative to today) and a backdated first target version, so the Week screen has something to show and the recalibration check has an opinion: Tess gets a proposal, Finn is on track.
 - `OPENAI_API_KEY` is optional: without it the targets screen says the explanation is unavailable and everything else works. `OPENAI_MODEL` defaults to `gpt-5.5` (decision D11: `gpt-5` needs a verified OpenAI organisation).
 - `pnpm ai:smoke` sends the seven canonical food inputs ("4 eggs", ..., "asda mozzarella sticks") to the live model and prints a table of items, grams, energy, macros and confidence; `pnpm ai:smoke:plan` does the same for Finn's and Tess's plan explanations, and `pnpm ai:smoke:week` for their weekly reviews built from the seed weeks. Add `--record` to any of them to refresh the test fixtures.
 - `AI_DAILY_CALL_CAP` (default 150) caps OpenAI calls per person per local day. Logging from My foods never calls OpenAI.
 - `AI_WEB_SEARCH` (default `true`) lets the estimator look up a named product's label online with OpenAI's web search tool (decision D16). Each search is billed per call; `ai_calls.web_search_calls` counts them. Set `false` to switch it off without a deploy.
 - To try it on your phone over Wi-Fi: `pnpm --filter @diet-tracker/web dev --host`, then open the LAN address Vite prints. Installing to the home screen needs HTTPS, so that only works on the deployed URL.
+- Native shells: `pnpm --filter @diet-tracker/web build`, then from `apps/web` run `pnpm exec cap sync` and `pnpm exec cap open android` or `ios`. Android builds anywhere with Android Studio; iOS needs a Mac with Xcode. Details and the open decision on what the shell loads are in [docs/NATIVE.md](docs/NATIVE.md).
 
 Other commands:
 

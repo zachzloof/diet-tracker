@@ -1,6 +1,6 @@
 # Development plan
 
-The app is built in five slices. Each slice is one working session, produces something the owner can open on their phone, and ends with a commit on `main`. Slices are started only when the owner asks ("do slice 2"). The `slice` skill carries the working loop.
+The app is built in five slices. Each slice is one working session, produces something the owner can open on their phone, and ends with a commit on `main`. Slices are started only when the owner asks ("do slice 2"). The `slice` skill carries the working loop. All five slices are done (2026-09-26); what remains is real-phone use, the open decisions in `docs/DECISIONS.md`, and the ideas at the bottom.
 
 Two personas run through every slice as seed data, golden tests and manual checks:
 - **Finn**: male, 28, 178 cm, 75 kg, fighter, trains 6x/week, wants a lean gain of 0.25 kg/week.
@@ -130,7 +130,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ## Slice 5 - Progress, settings and publish-readiness
 
-**Status:** not started
+**Status:** done with deferrals (2026-09-26)
 
 **Goal.** Something people keep using for months, and that could be submitted to an app store without embarrassment.
 
@@ -145,13 +145,15 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **Out of scope.** Photo estimation, barcodes, coach chat, social features (all listed as ideas below).
 
 **Done when.**
-- [ ] A week of daily use by the owner and one friend with no visible bugs reported.
-- [ ] Export downloads a file containing every log entry; delete account removes every row for that user.
-- [ ] Lighthouse PWA and accessibility at or above 90 on the deployed URL.
-- [ ] Airplane mode: Today still shows the last known state and a quick-add queues and sends when back online.
-- [ ] Recalibration proposes a sensible change for a seeded user whose weight stalled for two weeks.
+- [ ] A week of daily use by the owner and one friend with no visible bugs reported. *Deferred: needs the owner and a friend on real phones for a week. Everything below was walked in a headless phone viewport (390x844 dark, 360 light, 430 dark) against the production build served by the API, 49 checks passing, plus 235 automated tests.*
+- [x] Export downloads a file containing every log entry; delete account removes every row for that user. *JSON export for Tess held 53 log entries, 8 weigh-ins and 2 target versions, served as `diet-tracker-2026-09-26.json` with a download header; the food-log CSV had one row per entry with every nutrient as a column. `account.test.ts` compares the exported ids with the table. Delete account was walked with a throwaway account (two confirmations, back to login, session gone, sign-in refused) and the API test checks users, sessions, profiles, target_versions, weight_entries, foods, log_entries and daily_summaries are all empty afterwards.*
+- [x] Lighthouse PWA and accessibility at or above 90 on the deployed URL. *Run against the production build locally (the Railway URL is the owner's to deploy). Lighthouse 13 no longer has a PWA category (removed in v12), so installability was checked by hand: manifest with 12 icons and maskable variants, service worker registered, standalone display. Accessibility 100 on Login, Today, Progress, Settings and Week after fixing light-mode contrast, the auth pages' main landmark, two button-name mismatches and a nested definition list. Best practices 100 (Login 96: the expected 401 from the session check when signed out). SEO 100. Performance 70 to 84 under Lighthouse's simulated slow 4G with 4x CPU throttle (first paint about 3.7 s there); not a Done-when number, recorded for honesty.*
+- [x] Airplane mode: Today still shows the last known state and a quick-add queues and sends when back online. *Production build with the service worker: after one online visit, `setOffline(true)` and a reload showed the last known Today from the localStorage mirror with the offline banner; a +250 ml glass and a My foods entry were queued, counted in the bars and listed as "waiting for a connection"; on reconnect the toast said "Sent 2 queued entries" and both were on the server. The AI "Describe" path stays disabled offline by design.*
+- [x] Recalibration proposes a sensible change for a seeded user whose weight stalled for two weeks. *Tess (gentle loss, flat trend at 50 kg over 14 days, 12 logged days averaging 1680 kcal): the proposal is 1570 to 1380 kcal (275 by the formula, bounded to 200, then the 25% deficit clamp), protein unchanged at 100 g, carbs 190 to 155 g, with the clamp note shown. Applying wrote a `recalibration` target version visible in history with "minus 186 kcal from recalibration" in the energy reason; a later profile edit kept it. Finn gaining about 0.3 kg a week against a 0.25 plan reads "on track". Pinned in `recalibration.test.ts` (shared) and `progress.test.ts` (API).*
 
-**Decisions it depends on.** Open questions on domain and email provider.
+**Deferrals.** The week of real use. Reminders are in-app timers only (a web app cannot wake itself; D22 explains, the settings card says so; native local notifications come with the shell). "Forgot my password" is not built (needs the email-provider decision; change password is). `LEGAL_CONTACT_EMAIL` is empty until the owner fills it. The Capacitor projects are scaffolded, not built (Android needs Android Studio, iOS a Mac), and D23 on what the shell loads is the owner's call. Performance under Lighthouse's throttled profile is in the 70s; the app-shell JavaScript is about 500 KB uncompressed and would need code-splitting work to move that.
+
+**Decisions it depends on.** Surfaced D19 (weigh-ins and the profile weight), D20 (recalibration as an engine input), D21 (offline mirror and queue), D22 (reminders), D23 (native shell loading, proposed) and D24 (export formats). Domain and email provider remain open.
 
 ---
 

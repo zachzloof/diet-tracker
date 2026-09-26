@@ -46,5 +46,8 @@ The Railway CLI is not installed on the owner's machine. Use the dashboard, or `
 - 404 on refreshing a deep link: the SPA fallback is missing from the static handler.
 - PWA will not install: manifest missing, icons missing, or service worker not registered on the deployed origin.
 
+## Native shells
+`apps/web/ios` and `apps/web/android` are Capacitor projects (slice 5). They are not part of the Railway build (`.dockerignore` excludes them) and nothing on Railway changes for them. If D23 picks the bundled build, the API needs CORS for `capacitor://localhost` and `https://localhost` plus bearer-token sessions; see docs/NATIVE.md.
+
 ## Still open (docs/DECISIONS.md)
-Custom domain, a staging environment, and whether weekly AI reviews need a scheduled job or are generated on demand.
+Custom domain, a staging environment, an email provider for password reset, and what the native shell loads (D23).

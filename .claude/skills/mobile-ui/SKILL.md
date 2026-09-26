@@ -17,16 +17,16 @@ It has to look like something people would pay for, and it has to be usable one-
 
 ## Tokens (`apps/web/src/styles/tokens.css`, mapped into Tailwind v4 `@theme`)
 - Surfaces: `--bg` (dark `#0c0f14`, light `#f7f8fa`), `--surface`, `--surface-2`, `--border`, `--fg`, `--fg-muted`.
-- Accent: one brand hue used sparingly for the primary action and the energy ring. Default a saturated lime-green (`#7cf29a` dark / `#16a34a` light); revisit at naming time.
+- Accent: one brand hue used sparingly for the primary action and the energy ring. Default a saturated lime-green (`#7cf29a` dark / `#15803d` light, the light value chosen for 5:1 on white so button labels pass contrast); revisit at naming time.
 - Semantic macro colours, fixed everywhere: protein `#60a5fa` (blue), carbs `#fbbf24` (amber), fat `#f472b6` (pink), fibre `#34d399` (teal-green), water `#38bdf8` (sky).
-- Status: `met` green, `close` amber, `short` neutral grey with an outline, `over` coral red. Status colours never double as macro colours.
+- Status: `met` green, `close` amber, `short` neutral grey with an outline, `over` coral red (`#f0564f` dark, `#dc2626` light because it is also error text). `--danger` follows the same rule (`#e5484d` dark, `#c53030` light). Status colours never double as macro colours.
 - Type: system font stack (`-apple-system, Inter, Segoe UI, Roboto`) with `font-variant-numeric: tabular-nums` on every number. Scale: 12 / 14 / 16 / 20 / 28 / 44 (hero). Body 16 px minimum, which also stops iOS zooming inputs.
 - Radius 16 px cards, 12 px controls, full for chips. Shadows only in light mode; dark mode uses surface steps.
 - Spacing on a 4 px grid; screen gutter 16 px.
 - Both themes defined on `:root` with `prefers-color-scheme` and a `data-theme` override from Settings.
 
 ## Components (`apps/web/src/components/ui/`)
-Build these once in slice 1 and reuse: `AppShell`, `TabBar`, `Sheet`, `Button` (primary, secondary, ghost, destructive; 48 px tall), `IconButton`, `Card`, `Input` (with label, helper, error, right-slot unit), `NumberField` (`inputmode="decimal"`, unit suffix, stepper), `Select` (native on mobile, it is better than any custom one), `SegmentedControl`, `Toggle`, `Chip`, `ProgressBar` (macro bars), `Ring` (SVG, animated stroke), `StatTile`, `Skeleton`, `EmptyState`, `Toast`, `OfflineBanner`.
+Build these once in slice 1 and reuse: `AppShell`, `TabBar`, `Sheet`, `Button` (primary, secondary, ghost, destructive; 48 px tall), `IconButton`, `Card`, `Input` (with label, helper, error, right-slot unit), `NumberField` (`inputmode="decimal"`, unit suffix, stepper), `Select` (native on mobile, it is better than any custom one), `SegmentedControl`, `Toggle`, `Chip`, `ProgressBar` (macro bars), `Ring` (SVG, animated stroke), `StatTile`, `Skeleton`, `EmptyState`, `Toast`, `OfflineBanner`, `LineChart` (single series with an optional secondary trend line, a target hairline, `domain="auto"` for series that should not start at zero, `labelEvery` for dense axes), `ErrorScreen` (the error boundary's fallback, mounted from `App.vue`).
 Feature screens live in `apps/web/src/features/<feature>/` and compose these; they don't write raw Tailwind for things a component covers.
 
 ## Screen states (every screen has all of them)
@@ -47,7 +47,10 @@ Loading = skeletons in the layout's shape, never a spinner in the middle. Empty 
 Rings and bars are small hand-written SVG components with tokens for colour; no chart library for those. Line charts (weight trend in slice 5) use a tiny custom SVG too unless it gets painful, then `unovis` or `chart.js` via a decision. Before drawing any chart, load the `dataviz` skill for form and colour rules, then map its palette onto the tokens above rather than introducing new colours.
 
 ## Accessibility baseline
-Touch targets 44 px minimum, colour never the only signal (status has an icon or text), contrast AA in both themes, every icon-only button has an `aria-label`, focus visible for keyboard users on desktop, `aria-live` on the quick-add result.
+Touch targets 44 px minimum, colour never the only signal (status has an icon or text), contrast AA in both themes, every icon-only button has an `aria-label`, focus visible for keyboard users on desktop, `aria-live` on the quick-add result. A button with visible text must not get an `aria-label` that starts differently (Lighthouse "label-content-name-mismatch"); add an `sr-only` span for the extra context instead. Every page has one `<main>` (the auth and legal layouts included).
+
+## Offline (slice 5)
+Offline is a state of every screen that writes: cached data beats an error, a paused query with nothing cached shows an offline card with a retry, and writes that can be queued say "(offline)" on the button rather than disabling it. The AI path is the one action that stays disabled offline. The mirror and the queue live in `lib/query-client.ts` and `stores/queue.ts` (D21).
 
 ## Checklist before calling a screen done
 Looks right at 360, 390 and 430 wide; dark and light; all four states; keyboard open doesn't hide the primary action; nothing overflows horizontally; numbers are tabular; safe areas respected on a notched device simulation.

@@ -101,9 +101,13 @@ Values per sex and age band from `nutrients.md`. All are `minimum` except sodium
 
 kg = lb * 0.45359237; cm = in * 2.54; kcal only for now (kJ = kcal * 4.184 if a display option is added). Display rounding never feeds back into storage: store the metric value the user entered, converted once.
 
-## 10. Recalibration (slice 5)
+## 10. Recalibration (slice 5, built as `assessRecalibration`)
 
-Every 14 days with at least 10 logged days and 4 weigh-ins in the window: compute average intake and the trend-weight change (7-day moving average, first vs last). Expected change = pace. If actual differs from expected by more than 0.15 kg/week, propose an energy adjustment of `(actualKgPerWeek - expectedKgPerWeek) * 7700 / 7`, bounded to plus or minus 200 kcal per recalibration and never past the floor or clamps in section 3. Macros are recomputed from the new energy with the same rules. The user confirms before anything changes.
+Due 14 days after the current target version's `effective_from`. The window is the 14 days ending today; it needs at least 10 logged days (nutrients.md section 4 "logged") and 4 weigh-ins whose first and last are at least 7 days apart. Average intake is the mean energy over the logged days. The trend is the trailing 7-day mean per weigh-in (`weightTrend`); the actual rate is `(lastTrend - firstTrend) / spanDays * 7` (`weightRate`). Expected = the pace's kg/week (0 for maintenance and recomposition).
+
+Let `gap = actual - expected`. Within 0.15 kg/week: on track, nothing changes. Otherwise the energy adjustment is `-gap * 7700 / 7` (weight moved up more than planned means intake is above true maintenance, so energy comes down; the sign is the opposite of the TDEE error), rounded to 10 kcal and bounded to plus or minus 200 kcal per round. The adjustment is added to the current `recalibrationKcal` and the engine recomputes with the latest weigh-in as the weight input: the clamps and floor of section 3 still apply, and only the part that took effect is stored so the next round starts from the real target. Protein, fat, carbs, fibre and the limits follow the new energy through the normal rules; overrides carry over (D12). Flagged profiles (D10) and a pinned energy target are never recalibrated. The person confirms the proposal; "not now" hides it for 14 days.
+
+Worked example (Tess, gentle loss): flat trend over 14 days at 50 kg, 12 logged days averaging 1680 kcal. gap = 0 - (-0.25) = 0.25, raw adjustment -275, bounded -200, energy 1843 - 275 - 200 = 1368 which the 25% deficit clamp lifts to 1382, rounded 1380. Stored `recalibrationKcal` is -186 (1380 - 1843 + 275 + rounding), the proposal reads 1570 -> 1380 kcal, protein stays 100 g, carbs 190 -> 155 g.
 
 ## 11. Worked examples (golden tests)
 

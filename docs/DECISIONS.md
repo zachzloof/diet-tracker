@@ -257,6 +257,93 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 ---
 
+## D19. Weigh-ins update the profile weight, never the targets (adopted, please confirm)
+
+**Context.** Slice 5 adds a weight log with a quick entry on Today. Slice 2 already writes a weigh-in whenever the profile weight changes; the reverse direction had to be decided.
+
+**Options.**
+- **A. A weigh-in only records.** The profile weight stays whatever was last typed on Profile. Simple, but Profile and You would show a stale number within days.
+- **B. The newest weigh-in updates the profile weight; targets are untouched.** Built. `PUT /api/v1/weight` writes the `weight_entries` row and, when that day is the most recent weigh-in, sets `profiles.weight_kg`. No target version is created: recalibration (D20) is the only path from weight data to targets. The next profile save does recompute (the engine input changed), which the toast says.
+- **C. Every weigh-in recomputes targets.** A new version per morning: the history fills with noise and the protein target flaps with water weight.
+
+**Recommendation.** B.
+
+**Status.** `accepted` (2026-09-26): B, adopted so the slice could ship; the owner confirms or redirects.
+
+---
+
+## D20. Recalibration is an engine input, not an override (adopted, please confirm)
+
+**Context.** targets.md section 10 says a recalibration proposes an energy change the person confirms. Something has to carry that change through the engine so protein, fat, carbs, fibre and the limits follow.
+
+**Options.**
+- **A. Store it as an energy override (a pin, D12).** Reuses the pin machinery, but the target would read "Set by you", the person could not tell a pin from a calibration, and clearing the pin would silently throw the calibration away.
+- **B. A new engine input, `TargetInput.recalibrationKcal`.** Built. Applied after the pace and before the 25% / 20% clamps and the floor, named in the energy reason ("minus 186 kcal from recalibration against your logged weight and intake"), carried across profile edits, replaced by the next recalibration. Each round moves energy by at most 200 kcal; when a clamp binds, only the part that took effect is stored so the next round starts from the real target. Ignored for flagged profiles (D10). The proposal is deterministic (`assessRecalibration` in `packages/shared`), the API only gathers the last 14 scored days and weigh-ins, and applying writes a `target_versions` row with the trigger `recalibration`.
+- **C. Change the pace instead.** Coarser than the data supports (paces step by 275 kcal) and wrong for maintenance.
+
+**Recommendation.** B.
+
+**Status.** `accepted` (2026-09-26): B, adopted so the slice could ship; the owner confirms or redirects.
+
+---
+
+## D21. Offline: a localStorage mirror of recent queries plus a queue of log writes (adopted, please confirm)
+
+**Context.** The plan asks for airplane mode to show the last known day and to queue quick-adds until the connection is back.
+
+**Options.**
+- **A. Service-worker runtime caching of API responses (Workbox NetworkFirst) plus Background Sync.** The textbook answer, but the worker would cache authenticated JSON on disk regardless of who is signed in, Background Sync is Chrome-only (no iOS), and the app could not show "waiting to send".
+- **B. TanStack Query's persister into localStorage plus an app-level queue.** Built. An allowlist of queries (session, profile, targets, day logs, week and month stats, foods, weigh-ins, recalibration) is mirrored with a seven-day age limit, cleared on logout and delete, and busted by the app version. `POST /log/entries` made offline, or failing with a network error, goes into a per-user queue in localStorage; the day log and the ring count the queued entries as pending; the queue is sent in order on the next `online` event, at app start and after login. Works on iOS Safari. The AI "Describe" path stays disabled offline; My foods and manual entries queue.
+- **C. A local database with sync (IndexedDB, conflict rules).** The right end state for a native app; far more than slice 5 needs.
+
+**Recommendation.** B. Move to C only when two devices per person becomes common.
+
+**Status.** `accepted` (2026-09-26): B, adopted so the slice could ship; the owner confirms or redirects.
+
+---
+
+## D22. Reminders are local, in-app timers (adopted, please confirm)
+
+**Context.** "Reminders (local notifications where the PWA supports them)". A web app cannot wake itself when it is closed.
+
+**Options.**
+- **A. An in-app timer plus the Notification API through the service worker.** Built. Times live in localStorage; a timer in the running tab shows a notification (or a toast when notifications are blocked); the settings card says plainly that it only fires while the app is open or in the background on that device, and that iOS needs the Home Screen install.
+- **B. Web Push from the server.** Reliable when closed, but it needs VAPID keys, a subscriptions table, a scheduler (the cron service D17 declined), and iOS 16.4+ with the app installed.
+- **C. Capacitor LocalNotifications in the native shell.** Reliable, no server, ships with the store build.
+
+**Recommendation.** A now, C when the native shell ships, B only if the PWA stays the main channel and "your week is ready" pushes are wanted.
+
+**Status.** `accepted` (2026-09-26): A, adopted so the slice could ship; the owner confirms or redirects.
+
+---
+
+## D23. What the native shell loads
+
+**Context.** Slice 5 scaffolds the Capacitor projects (`apps/web/ios`, `apps/web/android`). The shell can either point at the deployed site or bundle the build; the session cookie only works unchanged in the first case. docs/NATIVE.md has the mechanics.
+
+**Options.**
+- **A. Remote URL.** `server.url` in `capacitor.config.ts` points at the Railway domain. Cookies work, every push to `main` updates the app, nothing else changes. Apple may reject a wrapper with no native functionality (guideline 4.2); the app is blank offline until the service worker has cached the shell.
+- **B. Bundled build with bearer-token sessions for native.** The build ships inside the app and starts instantly offline. The API accepts `Authorization: Bearer` next to the cookie (the change D4 anticipated), the native client keeps the token in secure storage, and `VITE_API_ORIGIN` tells the bundle where the API is. About a day of work plus the plugins that make the app feel native (local notifications first).
+
+**Recommendation.** A for a first TestFlight to friends, B before a store submission.
+
+**Status.** `proposed`
+
+---
+
+## D24. Export is one JSON file plus a CSV per spreadsheet-shaped table (adopted, please confirm)
+
+**Options.**
+- **A. JSON only.** Complete, but nobody opens JSON on a phone.
+- **B. JSON for everything, CSV for the food log (one row per entry with every nutrient and food group as a column) and for the weigh-ins.** Built. Served as attachments named by the person's local day. No new dependency.
+- **C. A zip of everything.** A dependency, and harder to open on a phone than three separate downloads.
+
+**Recommendation.** B.
+
+**Status.** `accepted` (2026-09-26): B, adopted so the slice could ship; the owner confirms or redirects.
+
+---
+
 ## Smaller defaults taken without asking
 
 - Metric by default (kg, cm, kcal); imperial toggle in Settings. kJ display can come later.
@@ -298,9 +385,22 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 - The week's gaps come back from the API in full (the engine ranks them); the screen shows the top five. Suggestions are filtered on the server from the person's diet pattern, allergies and dislikes before the model ever sees them. Slice 4.
 - Opening a day from the strip or the calendar is the route `/day/YYYY-MM-DD`, the same Today screen started on that day; the prev and next arrows stay client-side state. Slice 4.
 - The router guard fetches the session and the profile in parallel and never retries a 401 on the profile, so a cold load on a slow network waits one round trip, not two. Slice 4.
+- Recalibration looks at the 14 days ending today (today counts only when it is a logged day) and is due 14 days after the current target version's `effective_from`, whatever its trigger, so a profile change restarts the clock. "Not now" hides a proposal for 14 days (`profiles.recalibration_snoozed_until`). Slice 5.
+- The weight trend is a trailing seven-day mean over weigh-ins; the rate of change compares the first and last trend points and needs at least seven days between them. Slice 5.
+- One weigh-in per local day, later saves overwrite; a future day is refused; deleting a weigh-in never touches the profile weight. Slice 5.
+- Changing the password signs out every other session and keeps the current one. Wrong-password attempts on change password and delete account are limited to 10 per 15 minutes per user. Slice 5.
+- Deleting the account is one `DELETE FROM users` (every table cascades) and the cookie is cleared in the same response; the browser also drops the offline mirror and the queue. Slice 5.
+- Export files are `diet-tracker-<local day>.json`, `-food-log.csv` and `-weight.csv`; CSV is RFC 4180 with CRLF line ends. Slice 5.
+- The offline queue is keyed by user id; a write the server rejects (4xx) is dropped with a toast, a network failure stops the flush until the next reconnect. "Save to My foods" is skipped offline because the food row needs the server. Slice 5.
+- The light-mode accent is `#15803d` (5:1 on white for button labels) and the light `--over` and `--danger` are `#dc2626` and `#c53030`; dark mode keeps the lime accent and the original reds. Slice 5.
+- Privacy and terms are open routes (no session lookup, no tab bar). `LEGAL_CONTACT_EMAIL` in `apps/web/src/features/legal/legal.ts` is empty until the owner fills it. Slice 5.
+- Icons are rendered from `favicon.svg` at 16 to 1024 px by a one-off Playwright script kept out of the repo; the 1024 px store icon and the Apple touch icon have no alpha and no rounded corners. Slice 5.
+- Capacitor app id `app.diettracker.mobile`, app name "Diet Tracker" (a working name). The native projects are committed; the web build that `cap sync` copies into them is ignored. Slice 5.
+- `robots.txt` allows everything except `/api/`. Slice 5.
 
 ## Open questions for later slices (not blocking)
 
-- Custom domain vs Railway subdomain (slice 5).
-- Email provider for password reset and reminders (slice 5).
+- Custom domain vs Railway subdomain. Still open after slice 5; the Railway subdomain works for the friends group.
+- Email provider (Resend free tier is the obvious pick) for password reset. Change password exists; "forgot my password" does not, and nothing in the repo resets one (a short admin script against the database is the stopgap). Decide before opening the app beyond friends.
+- D23: what the native shell loads.
 - Photo-of-meal estimation and barcode lookup via Open Food Facts (ideas after slice 5).
