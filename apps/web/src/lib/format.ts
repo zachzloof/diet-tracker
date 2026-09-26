@@ -6,6 +6,7 @@ import {
   type NutrientKey,
   type TargetEntry,
   type TargetKey,
+  type TargetStatus,
   type TargetUnit,
   type UnitSystem,
 } from '@diet-tracker/shared'
@@ -81,4 +82,38 @@ export function formatGrams(grams: number): string {
 
 export function formatMealTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}
+
+export const STATUS_LABELS: Readonly<Record<TargetStatus, string>> = {
+  met: 'Met',
+  close: 'Close',
+  short: 'Short',
+  over: 'Over',
+  unscored: 'Info',
+}
+
+export function formatPercent(ratio: number | null): string {
+  return ratio === null ? '' : `${Math.round(ratio * 100)}%`
+}
+
+function dateOf(day: string): Date | null {
+  const [y, m, d] = day.split('-').map(Number)
+  return y && m && d ? new Date(y, m - 1, d) : null
+}
+
+/** "Mon", "Tue", ... in the person's locale. */
+export function weekdayShort(day: string): string {
+  return dateOf(day)?.toLocaleDateString(undefined, { weekday: 'short' }) ?? day
+}
+
+/** "26 Sep" without the year. */
+export function formatDayShort(day: string): string {
+  return dateOf(day)?.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) ?? day
+}
+
+/** "September 2026" from "2026-09". */
+export function formatMonth(month: string): string {
+  const [y, m] = month.split('-').map(Number)
+  if (!y || !m) return month
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 }

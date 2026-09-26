@@ -9,6 +9,7 @@ import type {
 } from '@diet-tracker/shared'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
+import { STATS_KEY } from '@/features/stats/useStats'
 import { foodsApi, logApi } from './api'
 
 export const LOG_KEY = ['log'] as const
@@ -47,9 +48,10 @@ function applySummaries(
       current ? { ...current, summary } : current,
     )
   }
-  return Promise.all(
-    summaries.map((summary) => queryClient.invalidateQueries({ queryKey: dayKey(summary.day) })),
-  )
+  return Promise.all([
+    ...summaries.map((summary) => queryClient.invalidateQueries({ queryKey: dayKey(summary.day) })),
+    queryClient.invalidateQueries({ queryKey: STATS_KEY }),
+  ])
 }
 
 export function useCreateEntries() {
@@ -67,6 +69,7 @@ export function useCreateEntries() {
           : current,
       )
       await queryClient.invalidateQueries({ queryKey: dayKey(input.day) })
+      await queryClient.invalidateQueries({ queryKey: STATS_KEY })
       if (result.foodsSaved > 0 || input.entries.some((e) => e.foodId)) {
         await queryClient.invalidateQueries({ queryKey: FOODS_KEY })
       }

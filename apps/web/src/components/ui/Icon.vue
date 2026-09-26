@@ -30,6 +30,11 @@ export type IconName =
   | 'chevron-down'
   | 'bookmark'
   | 'pencil'
+  | 'droplet'
+  | 'flame'
+  | 'award'
+  | 'leaf'
+  | 'history'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -62,6 +67,12 @@ const PATHS: Record<IconName, string> = {
   'chevron-down': 'M6 9l6 6 6-6',
   bookmark: 'M6 3h12v18l-6-4-6 4z',
   pencil: 'M4 20h4L19 9a2 2 0 0 0-3-3L5 17v3z',
+  droplet: 'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+  flame:
+    'M12 3c1.5 3 5 5.5 5 10a5 5 0 0 1-10 0c0-1.7.6-3 1.5-4 .5 1.5 1.3 2.3 2.5 2.5C10.5 8.5 10 6 12 3z',
+  award: 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM8.5 14L7 21l5-3 5 3-1.5-7',
+  leaf: 'M4 20c0-8 6-14 16-14-1 10-7 14-14 14M4 20l8-8',
+  history: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2',
   sparkles:
     'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM5 3v3M3.5 4.5h3M19 17v3M17.5 18.5h3',
 }

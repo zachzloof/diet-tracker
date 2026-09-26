@@ -1,20 +1,13 @@
 <script setup lang="ts">
-import {
-  addDays,
-  targetValue,
-  type LogEntry,
-  type NutrientKey,
-  type NutrientVector,
-} from '@diet-tracker/shared'
+import { addDays, isValidDay, isWaterEntry, type LogEntry } from '@diet-tracker/shared'
 import { computed, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { useRoute } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
-import ProgressBar, { type BarColor } from '@/components/ui/ProgressBar.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { useSession } from '@/features/auth/useSession'
 import DayLog from '@/features/log/DayLog.vue'
@@ -23,20 +16,42 @@ import { useDayLog } from '@/features/log/useLog'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import InstallHint from '@/features/pwa/InstallHint.vue'
 import { useTargets } from '@/features/targets/useTargets'
-import { formatDay, formatNumber } from '@/lib/format'
+import { formatDay } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
+import DayStatus from './DayStatus.vue'
+import EnergyCard from './EnergyCard.vue'
+import FoodGroupsCard from './FoodGroupsCard.vue'
+import MicronutrientGrid from './MicronutrientGrid.vue'
+import WaterCard from './WaterCard.vue'
+import { useDayScore } from './useDayScore'
 
 const ui = useUiStore()
 const session = useSession()
 const targets = useTargets()
+const route = useRoute()
 const { today } = useLocalDay()
 
-// The day being viewed follows "today" until the person steps back.
-const viewedDay = ref(today.value)
+/** `/day/:day` opens a specific day (from the week strip or the calendar); `/` is today. */
+function routeDay(): string | null {
+  const param = route.params.day
+  return typeof param === 'string' && isValidDay(param) ? param : null
+}
+
+// The day being viewed follows "today" until the person steps back or opens a past day.
+const viewedDay = ref(routeDay() ?? today.value)
 watch(today, (next, previous) => {
   if (viewedDay.value === previous) viewedDay.value = next
 })
+watch(
+  () => route.params.day,
+  () => {
+    const day = routeDay()
+    if (day) viewedDay.value = day
+    else if (route.name === 'today') viewedDay.value = today.value
+  },
+)
 const log = useDayLog(viewedDay)
+const score = useDayScore(log.summary, targets.version)
 
 const isToday = computed(() => viewedDay.value === today.value)
 const dayLabel = computed(() => {
@@ -52,24 +67,7 @@ const greeting = computed(() => {
   return 'Good evening'
 })
 
-interface Bar {
-  key: NutrientKey
-  label: string
-  color: BarColor
-  unit: string
-}
-const BARS: Bar[] = [
-  { key: 'protein_g', label: 'Protein', color: 'protein', unit: 'g' },
-  { key: 'carbs_g', label: 'Carbs', color: 'carbs', unit: 'g' },
-  { key: 'fat_g', label: 'Fat', color: 'fat', unit: 'g' },
-  { key: 'fiber_g', label: 'Fibre', color: 'fibre', unit: 'g' },
-]
-
-const totals = computed<NutrientVector | null>(() => log.summary.value?.totals ?? null)
-const target = (key: NutrientKey) =>
-  targets.version.value ? targetValue(targets.version.value.effective, key) : 0
-const eaten = (key: NutrientKey) => totals.value?.[key] ?? 0
-const remaining = computed(() => Math.round(target('energy_kcal') - eaten('energy_kcal')))
+const foodEntries = computed(() => log.entries.value.filter((e) => !isWaterEntry(e)))
 
 const editing = ref<LogEntry | null>(null)
 const entrySheetOpen = computed({
@@ -124,8 +122,9 @@ function retry(): void {
 
     <div v-if="loading" class="space-y-4" aria-busy="true">
       <Skeleton class="h-7 w-48" />
-      <Skeleton class="h-52 w-full" rounded="card" />
-      <Skeleton class="h-24 w-full" rounded="card" />
+      <Skeleton class="h-56 w-full" rounded="card" />
+      <Skeleton class="h-32 w-full" rounded="card" />
+      <Skeleton class="h-40 w-full" rounded="card" />
     </div>
 
     <Card v-else-if="failed">
@@ -135,64 +134,20 @@ function retry(): void {
     </Card>
 
     <div v-else class="space-y-4">
-      <p v-if="isToday" class="text-[28px] leading-tight font-bold">{{ greeting }}</p>
-      <p v-else class="text-[28px] leading-tight font-bold">{{ formatDay(viewedDay) }}</p>
+      <div>
+        <p class="text-[28px] leading-tight font-bold">
+          {{ isToday ? greeting : formatDay(viewedDay) }}
+        </p>
+        <DayStatus v-if="score" class="mt-2" :score="score" :is-today="isToday" />
+      </div>
       <InstallHint v-if="isToday" />
 
-      <Card v-if="targets.version.value">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-medium tracking-wide text-fg-muted uppercase">
-            {{ remaining >= 0 ? 'Remaining' : 'Over by' }}
-          </span>
-          <RouterLink
-            :to="{ name: 'targets' }"
-            class="flex items-center gap-1 text-sm font-semibold text-accent"
-          >
-            Targets <Icon name="chevron-right" :size="16" />
-          </RouterLink>
-        </div>
-        <div class="mt-1 flex items-baseline gap-2">
-          <span class="text-hero font-bold text-fg">{{
-            formatNumber(Math.abs(remaining), 0)
-          }}</span>
-          <span class="text-base text-fg-muted">kcal</span>
-        </div>
-        <p class="mt-1 text-sm text-fg-muted">
-          {{ formatNumber(Math.round(eaten('energy_kcal')), 0) }} of
-          {{ formatNumber(target('energy_kcal'), 0) }} kcal eaten
-        </p>
-        <ProgressBar
-          class="mt-3"
-          :value="eaten('energy_kcal')"
-          :max="target('energy_kcal')"
-          label="Energy"
-        />
+      <template v-if="score">
+        <EnergyCard :score="score" />
+        <WaterCard :score="score" :entries="log.entries.value" :day="viewedDay" />
+      </template>
 
-        <dl class="mt-4 space-y-3">
-          <div v-for="bar in BARS" :key="bar.key">
-            <div class="flex items-baseline justify-between text-sm">
-              <dt class="font-medium text-fg">{{ bar.label }}</dt>
-              <dd class="text-fg-muted">
-                <span class="font-semibold text-fg">{{ formatNumber(eaten(bar.key), 0) }}</span>
-                / {{ formatNumber(target(bar.key), 0) }} {{ bar.unit }}
-              </dd>
-            </div>
-            <ProgressBar
-              class="mt-1"
-              :value="eaten(bar.key)"
-              :max="target(bar.key)"
-              :color="bar.color"
-              :label="bar.label"
-            />
-          </div>
-        </dl>
-      </Card>
-
-      <DayLog
-        v-if="log.entries.value.length"
-        :entries="log.entries.value"
-        @select="editing = $event"
-      />
+      <DayLog v-if="foodEntries.length" :entries="foodEntries" @select="editing = $event" />
 
       <Card v-else :padded="false">
         <EmptyState
@@ -206,9 +161,14 @@ function retry(): void {
         </EmptyState>
       </Card>
 
-      <p v-if="log.entries.value.length" class="px-2 text-center text-xs text-fg-muted">
+      <p v-if="foodEntries.length" class="px-2 text-center text-xs text-fg-muted">
         Tap an item to change the amount, move it to another meal or day, or remove it.
       </p>
+
+      <template v-if="score">
+        <FoodGroupsCard :score="score" />
+        <MicronutrientGrid :score="score" />
+      </template>
     </div>
 
     <EntrySheet v-model:open="entrySheetOpen" :entry="editing" :today="today" />

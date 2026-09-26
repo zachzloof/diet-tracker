@@ -15,7 +15,17 @@ declare module 'vue-router' {
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'today', component: () => import('@/features/today/TodayScreen.vue') },
+  {
+    path: '/day/:day',
+    name: 'day',
+    component: () => import('@/features/today/TodayScreen.vue'),
+  },
   { path: '/week', name: 'week', component: () => import('@/features/week/WeekScreen.vue') },
+  {
+    path: '/history',
+    name: 'history',
+    component: () => import('@/features/history/HistoryScreen.vue'),
+  },
   { path: '/you', name: 'you', component: () => import('@/features/you/YouScreen.vue') },
   {
     path: '/onboarding',

@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { MEALS, MEAL_LABELS, type LogEntry, type Meal } from '@diet-tracker/shared'
+import { MEALS, MEAL_LABELS, isWaterEntry, type LogEntry, type Meal } from '@diet-tracker/shared'
 import { computed } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import Icon, { type IconName } from '@/components/ui/Icon.vue'
 import { formatGrams, formatKcal, formatQuantity } from '@/lib/format'
 
-/** The day's entries grouped by meal, each with a kcal subtotal. Tap a row to edit it. */
+/** The day's food entries grouped by meal, each with a kcal subtotal. Tap a row to edit it. Water quick-adds live in the water card. */
 const props = defineProps<{ entries: LogEntry[] }>()
 const emit = defineEmits<{ select: [entry: LogEntry] }>()
 
 const groups = computed(() =>
   MEALS.map((meal: Meal) => {
-    const entries = props.entries.filter((entry) => entry.meal === meal)
+    const entries = props.entries.filter((entry) => entry.meal === meal && !isWaterEntry(entry))
     return {
       meal,
       entries,
