@@ -17,7 +17,8 @@
     "db:migrate": "node --conditions=development --import tsx src/migrate.ts",
     "db:seed": "node --conditions=development --import tsx src/db/seed.ts",
     "ai:smoke": "node --conditions=development --import tsx src/scripts/ai-smoke.ts",
-    "ai:smoke:plan": "node --conditions=development --import tsx src/scripts/ai-smoke-plan.ts"
+    "ai:smoke:plan": "node --conditions=development --import tsx src/scripts/ai-smoke-plan.ts",
+    "ai:smoke:week": "node --conditions=development --import tsx src/scripts/ai-smoke-week.ts"
   },
   "dependencies": {
     "@diet-tracker/shared": "workspace:*",

@@ -79,12 +79,13 @@ export const router = createRouter({
  * not be reached (offline), in which case navigation proceeds and screens show the error.
  */
 router.beforeEach(async (to) => {
-  let user: Awaited<ReturnType<typeof queryClient.ensureQueryData>> | undefined
-  try {
-    user = await queryClient.ensureQueryData(meQueryOptions())
-  } catch {
-    user = undefined
-  }
+  // Both lookups go out at once: on a slow network each round trip costs more than the
+  // render, and the first paint of every screen waits on this guard.
+  const [userResult, profileResult] = await Promise.allSettled([
+    queryClient.ensureQueryData(meQueryOptions()),
+    to.meta.public ? Promise.resolve(null) : queryClient.ensureQueryData(profileQueryOptions()),
+  ])
+  const user = userResult.status === 'fulfilled' ? userResult.value : undefined
 
   if (to.meta.public) {
     return user ? { name: 'today' } : true
@@ -94,12 +95,8 @@ router.beforeEach(async (to) => {
   }
   if (user === undefined) return true
 
-  let profile: Profile | null | undefined
-  try {
-    profile = await queryClient.ensureQueryData(profileQueryOptions())
-  } catch {
-    profile = undefined
-  }
+  const profile: Profile | null | undefined =
+    profileResult.status === 'fulfilled' ? profileResult.value : undefined
   if (profile === null && !to.meta.preOnboarding) return { name: 'onboarding' }
   if (profile && to.name === 'onboarding') return { name: 'today' }
   return true

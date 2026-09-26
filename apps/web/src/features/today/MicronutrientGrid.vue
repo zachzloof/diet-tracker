@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import Icon from '@/components/ui/Icon.vue'
 import StatusDot from '@/components/ui/StatusDot.vue'
-import { STATUS_LABELS, formatNumber } from '@/lib/format'
+import { formatNumber } from '@/lib/format'
 
 /**
  * Vitamins and minerals as a grid of small tiles with a met / close / short status, and
@@ -70,10 +70,7 @@ const met = computed(
           <span class="font-semibold text-fg">{{ amount(tile.score.actual) }}</span>
           / {{ amount(tile.score.target) }} {{ unitShort(tile.unit) }}
         </span>
-        <span class="mt-1 flex items-center gap-1 text-[11px] text-fg-muted">
-          <StatusDot :status="tile.score.status" />
-          {{ STATUS_LABELS[tile.score.status] }}
-        </span>
+        <StatusDot class="mt-1" :status="tile.score.status" label />
       </li>
     </ul>
 
@@ -91,10 +88,7 @@ const met = computed(
           <template v-if="tile.score.target > 0"> / {{ amount(tile.score.target) }}</template>
           {{ tile.unit }}
         </span>
-        <span class="mt-1 flex items-center gap-1 text-[11px] text-fg-muted">
-          <StatusDot :status="tile.score.status" />
-          {{ STATUS_LABELS[tile.score.status] }}
-        </span>
+        <StatusDot class="mt-1" :status="tile.score.status" label />
       </li>
     </ul>
     <p class="mt-3 text-xs text-fg-muted">
