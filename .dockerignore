@@ -6,6 +6,8 @@ node_modules
 **/node_modules
 **/dist
 **/dev-dist
+apps/web/android
+apps/web/ios
 **/coverage
 .env
 **/.env

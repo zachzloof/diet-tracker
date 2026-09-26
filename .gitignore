@@ -22,6 +22,10 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
-# native shells (added at Capacitor time)
-apps/web/ios/
-apps/web/android/
+# native shells: projects are committed, the web build cap sync copies into them is not
+apps/web/ios/App/App/public/
+apps/web/ios/App/Pods/
+apps/web/ios/App/App/capacitor.config.json
+apps/web/android/app/src/main/assets/public/
+apps/web/android/app/src/main/assets/capacitor.config.json
+apps/web/android/app/src/main/assets/capacitor.plugins.json

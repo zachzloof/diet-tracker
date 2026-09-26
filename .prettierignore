@@ -3,6 +3,8 @@ dist
 dev-dist
 coverage
 pnpm-lock.yaml
+apps/web/android
+apps/web/ios
 apps/api/drizzle
 CHANGELOG.md
 *.md

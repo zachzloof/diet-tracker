@@ -19,6 +19,8 @@ export default defineConfigWithVueTs(
       '**/node_modules/**',
       '**/coverage/**',
       'apps/api/drizzle/**',
+      'apps/web/android/**',
+      'apps/web/ios/**',
     ],
   },
   js.configs.recommended,
