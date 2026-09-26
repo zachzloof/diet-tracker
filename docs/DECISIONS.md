@@ -194,7 +194,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** B. In the browser walk the second "4 eggs" already matched the saved "Eggs" food and the model said so in its assumptions. Switch to A if the library gets noisy; it is one default in the review card.
 
-**Status.** `proposed` (built as B on 2026-09-26)
+**Status.** `accepted` (2026-09-26): B.
 
 ---
 
@@ -209,7 +209,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** B. Revisit if a shared catalogue (`foods.user_id` null) ever makes server-side recomputation necessary.
 
-**Status.** `proposed` (built as B on 2026-09-26)
+**Status.** `accepted` (2026-09-26): B.
 
 ---
 
