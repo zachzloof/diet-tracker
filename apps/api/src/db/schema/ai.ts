@@ -20,6 +20,8 @@ export const aiCalls = pgTable(
     latencyMs: integer('latency_ms').notNull(),
     ok: boolean('ok').notNull(),
     error: text('error'),
+    /** Web search tool calls the model made during this request; billed per call (D16). */
+    webSearchCalls: integer('web_search_calls').notNull().default(0),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
   },
   (t) => [index('ai_calls_user_created_idx').on(t.userId, t.createdAt)],

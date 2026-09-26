@@ -21,7 +21,7 @@ import { aiCalls } from '../db/schema/index.js'
 import { env } from '../env.js'
 import { errors } from '../errors.js'
 import { findLibraryMatches } from '../log/foods-service.js'
-import { callStructured } from './openai.js'
+import { callStructured, type StructuredCall } from './openai.js'
 
 /**
  * Purpose `estimate`: "4 eggs and two slices of toast" in, structured items with realistic
@@ -39,6 +39,30 @@ function serveDefinitions(): string {
   return FOOD_GROUP_KEYS.map(
     (key) => `  - ${key}: 1 serve is ${FOOD_GROUPS[key].serveDefinition}`,
   ).join('\n')
+}
+
+/** ISO country for the web search tool's location hint, or null when the zone is ambiguous. */
+export function countryFromTimeZone(timeZone: string): string | null {
+  const [area = '', city = ''] = timeZone.split('/')
+  if (timeZone === 'Europe/London') return 'GB'
+  if (timeZone === 'Europe/Dublin') return 'IE'
+  if (area === 'Australia') return 'AU'
+  if (area === 'Pacific' && city === 'Auckland') return 'NZ'
+  if (
+    area === 'America' &&
+    ['Toronto', 'Vancouver', 'Edmonton', 'Winnipeg', 'Halifax'].includes(city)
+  ) {
+    return 'CA'
+  }
+  if (
+    area === 'America' &&
+    ['New_York', 'Chicago', 'Denver', 'Los_Angeles', 'Phoenix', 'Anchorage', 'Detroit'].includes(
+      city,
+    )
+  ) {
+    return 'US'
+  }
+  return null
 }
 
 /** Country hint from the IANA zone: portion sizes differ by region. */
@@ -65,15 +89,39 @@ export interface LibraryMatch {
   foodGroups: Food['foodGroups']
 }
 
-export function buildEstimateSystemPrompt(profile: Profile, library: LibraryMatch[]): string {
+export interface EstimatePromptOptions {
+  /** Whether the web search tool is offered on this call; the rules differ. */
+  webSearch: boolean
+}
+
+function brandedProductRules(region: string, webSearch: boolean): string[] {
+  if (!webSearch) {
+    return [
+      `- When the text names a brand, retailer, restaurant chain or specific product ("M&S fries", "Asda mozzarella sticks", "Greggs sausage roll"), use that product's published nutrition label from memory if you know it for ${region}; set brand to the brand or retailer and source_url to null. If you do not know the product, estimate from the closest generic equivalent, say so in assumptions and lower the confidence.`,
+    ]
+  }
+  return [
+    `- When the text names a brand, retailer, restaurant chain or specific product ("M&S fries", "Asda mozzarella sticks", "Greggs sausage roll", "Huel Black"), SEARCH THE WEB for that exact product's nutrition information before answering. Prefer the retailer's or manufacturer's own product page for ${region}; a grocery-delivery listing or a nutrition database is acceptable when the official page is not found. Read the per-100 g or per-serving values from the label and scale them to the quantity eaten. Set brand to the brand or retailer, set source_url to the page you took the values from, set confidence to high (medium when the quantity had to be assumed), and add an assumption naming the pack size or serving the label uses (for example "Asda pack is 250 g, 5 sticks; assumed 5 sticks").`,
+    '- Search at most twice per product. If the product cannot be found, estimate from the closest generic equivalent, set source_url to null, say in assumptions that the product page was not found, and lower the confidence to medium or low. Never invent a URL.',
+    '- Do not search for generic foods (eggs, toast, chicken, rice, an apple); estimate those from typical values with brand and source_url null.',
+  ]
+}
+
+export function buildEstimateSystemPrompt(
+  profile: Profile,
+  library: LibraryMatch[],
+  options: EstimatePromptOptions = { webSearch: false },
+): string {
   const allergies = profile.allergies.length ? profile.allergies.join(', ') : 'none'
+  const region = regionFromTimeZone(profile.timezone)
   const lines = [
     "You are a nutrition estimator for a food diary. Convert the user's description of what they ate into structured items with realistic nutrient totals.",
     '',
     'Rules:',
     '- One item per distinct food, at most 15. Amounts are for the TOTAL quantity described, not per 100 g.',
     '- Use typical values for cooked, as-eaten food (USDA-like). Include cooking fats and sauces when implied by the preparation.',
-    `- If a quantity is missing, assume one typical serving for ${regionFromTimeZone(profile.timezone)} and state it in assumptions, for example "assumed 2 slices of toast". Silent guesses are the one thing the user cannot correct.`,
+    ...brandedProductRules(region, options.webSearch),
+    `- If a quantity is missing, assume one typical serving for ${region} and state it in assumptions, for example "assumed 2 slices of toast". Silent guesses are the one thing the user cannot correct.`,
     '- Set clarifying_question only when the answer would change energy by more than about 30% (a slice of pizza versus a whole pizza; a protein shake with no brand or size). Otherwise leave it null, estimate, and state the assumption.',
     `- ${UNITS_RULE} Never leave a value null or negative; use 0 and lower the item confidence if genuinely unknown.`,
     '- Food-group serves use these definitions exactly:',
@@ -111,6 +159,18 @@ export function buildEstimateUserMessage(text: string, at: Date, timeZone: strin
   return `Local time: ${clock}.\n\nWhat I ate: ${text}`
 }
 
+/** Only an absolute http(s) URL is worth linking; anything else becomes null. */
+export function tidyUrl(value: string | null): string | null {
+  const trimmed = value?.trim() ?? ''
+  if (trimmed.length === 0 || trimmed.length > 2000) return null
+  try {
+    const url = new URL(trimmed)
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
 /** Trims text, clamps vectors, drops empty items and caps the count. Never throws on odd but valid data. */
 export function tidyEstimate(estimate: FoodEstimate): FoodEstimate {
   const items: FoodItem[] = estimate.items
@@ -129,6 +189,8 @@ export function tidyEstimate(estimate: FoodEstimate): FoodEstimate {
         .filter((a) => a.length > 0)
         .slice(0, 5),
       matched_food_id: item.matched_food_id?.trim() || null,
+      brand: item.brand?.trim().slice(0, 80) || null,
+      source_url: tidyUrl(item.source_url),
       nutrients: sanitiseNutrientVector(item.nutrients),
       food_groups: sanitiseFoodGroupServes(item.food_groups),
     }))
@@ -158,6 +220,20 @@ export interface EstimateArgs {
   at: Date
 }
 
+/** A search reads one or two product pages; the 30 s default is too tight for that. */
+export const ESTIMATE_WITH_SEARCH_TIMEOUT_MS = 75_000
+
+/** The web search tool (D16) and the longer timeout it needs, when `AI_WEB_SEARCH` is on. */
+export function estimateCallOptions(
+  timeZone: string,
+): Pick<StructuredCall<FoodEstimate>, 'webSearch' | 'timeoutMs'> {
+  if (!env.AI_WEB_SEARCH) return {}
+  return {
+    webSearch: { country: countryFromTimeZone(timeZone), timezone: timeZone },
+    timeoutMs: ESTIMATE_WITH_SEARCH_TIMEOUT_MS,
+  }
+}
+
 /**
  * The quick-add flow (ai-food-estimation skill): cap, library memory, call, tidy. Nothing
  * is written to `log_entries` here; the person reviews and confirms first.
@@ -173,9 +249,10 @@ export async function estimateFood(args: EstimateArgs): Promise<EstimateResponse
     userId,
     schemaName: 'food_estimate',
     schema: foodEstimateSchema,
-    system: buildEstimateSystemPrompt(profile, library),
+    system: buildEstimateSystemPrompt(profile, library, { webSearch: env.AI_WEB_SEARCH }),
     user: buildEstimateUserMessage(text, at, profile.timezone),
     maxOutputTokens: 6000,
+    ...estimateCallOptions(profile.timezone),
   })
   const estimate = tidyEstimate(result.data)
   if (estimate.items.length === 0 && !estimate.clarifying_question) throw errors.aiUnclear()

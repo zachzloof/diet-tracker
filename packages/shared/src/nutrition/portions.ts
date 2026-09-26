@@ -79,6 +79,25 @@ export function rescaleToQuantity<T extends Scalable>(item: T, quantity: number)
   }
 }
 
+/**
+ * An item rescaled to a new total weight (150 g of fries instead of 200 g). The quantity in
+ * the item's own unit follows the same factor, so 4 eggs at 200 g become 3 eggs at 150 g.
+ * Callers scale from the untouched original, never from an already-scaled copy, so a pass
+ * through zero cannot strand the numbers at zero.
+ */
+export function rescaleToGrams<T extends Scalable>(item: T, grams: number): T {
+  if (!Number.isFinite(grams) || grams < 0) throw new Error('grams must be a non-negative number')
+  if (item.grams <= 0) return { ...item, grams }
+  const factor = grams / item.grams
+  return {
+    ...item,
+    quantity: item.quantity * factor,
+    grams,
+    nutrients: scaleNutrientVector(item.nutrients, factor),
+    foodGroups: scaleFoodGroupServes(item.foodGroups, factor),
+  }
+}
+
 export interface Totals {
   totals: NutrientVector
   foodGroups: FoodGroupServes

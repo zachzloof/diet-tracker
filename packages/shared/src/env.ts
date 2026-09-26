@@ -6,6 +6,18 @@ const optionalString = z.preprocess(
   z.string().optional(),
 )
 
+/** `true`/`false`, `1`/`0`, `on`/`off`, `yes`/`no`; an empty or missing value takes the default. */
+function booleanFlag(defaultValue: boolean) {
+  return z.preprocess((value) => {
+    if (typeof value !== 'string') return value
+    const normalised = value.trim().toLowerCase()
+    if (normalised === '') return undefined
+    if (['true', '1', 'on', 'yes'].includes(normalised)) return true
+    if (['false', '0', 'off', 'no'].includes(normalised)) return false
+    return value
+  }, z.boolean().default(defaultValue))
+}
+
 /**
  * The API's environment contract. `apps/api/.env.example` documents every variable;
  * this schema enforces it at boot so a bad value fails fast with its name.
@@ -34,6 +46,12 @@ export const apiEnvSchema = z.object({
   /** Decision D11: gpt-5 needs a verified organisation, so gpt-5.5 is the default for now. */
   OPENAI_MODEL: z.string().default('gpt-5.5'),
   AI_DAILY_CALL_CAP: z.coerce.number().int().positive().default(150),
+  /**
+   * Decision D16: let the estimator use OpenAI's web search tool to read the label of a
+   * named product ("Asda mozzarella sticks"). Searches are billed per call; set `false` to
+   * fall back to estimates from memory alone.
+   */
+  AI_WEB_SEARCH: booleanFlag(true),
 
   /** Absolute path of the built SPA. Defaults to apps/web/dist relative to the API. */
   WEB_DIST_DIR: optionalString,

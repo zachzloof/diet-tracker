@@ -4,6 +4,7 @@ import {
   gramsForServings,
   portionOf,
   referenceGrams,
+  rescaleToGrams,
   rescaleToQuantity,
   sanitiseNutrientVector,
   sumPortions,
@@ -84,6 +85,48 @@ describe('rescaleToQuantity', () => {
     expect(() => rescaleToQuantity(fourEggs, -1)).toThrow()
     const zero = { ...fourEggs, quantity: 0 }
     expect(rescaleToQuantity(zero, 2).grams).toBe(200)
+  })
+})
+
+describe('rescaleToGrams', () => {
+  const fourEggs = {
+    quantity: 4,
+    grams: 200,
+    nutrients: { ...emptyNutrientVector(), energy_kcal: 300, protein_g: 26, fat_g: 20 },
+    foodGroups: { ...emptyFoodGroupServes(), protein_foods: 2 },
+    name: 'Egg, whole, large, boiled',
+  }
+
+  it('scales quantity, nutrients and serves with the grams and keeps other fields', () => {
+    const smaller = rescaleToGrams(fourEggs, 150)
+    expect(smaller.grams).toBe(150)
+    expect(smaller.quantity).toBe(3)
+    expect(smaller.nutrients.energy_kcal).toBe(225)
+    expect(smaller.nutrients.protein_g).toBe(19.5)
+    expect(smaller.foodGroups.protein_foods).toBe(1.5)
+    expect(smaller.name).toBe(fourEggs.name)
+    expect(fourEggs.grams).toBe(200)
+  })
+
+  it('agrees with rescaleToQuantity for the same change', () => {
+    const byGrams = rescaleToGrams(fourEggs, 250)
+    const byQuantity = rescaleToQuantity(fourEggs, 5)
+    expect(byGrams.quantity).toBeCloseTo(byQuantity.quantity)
+    expect(byGrams.nutrients).toEqual(byQuantity.nutrients)
+  })
+
+  it('goes to zero and back when scaling from the original each time', () => {
+    const zero = rescaleToGrams(fourEggs, 0)
+    expect(zero.nutrients.energy_kcal).toBe(0)
+    expect(zero.quantity).toBe(0)
+    expect(rescaleToGrams(fourEggs, 100).nutrients.energy_kcal).toBe(150)
+  })
+
+  it('refuses negative grams and leaves a zero-gram item alone', () => {
+    expect(() => rescaleToGrams(fourEggs, -1)).toThrow()
+    const zero = { ...fourEggs, grams: 0 }
+    expect(rescaleToGrams(zero, 50).quantity).toBe(4)
+    expect(rescaleToGrams(zero, 50).grams).toBe(50)
   })
 })
 

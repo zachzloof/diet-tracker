@@ -47,6 +47,10 @@ export const foodItemSchema = z.object({
   confidence: confidenceSchema,
   /** Id of a library food reused for consistency, or null. */
   matched_food_id: z.string().nullable(),
+  /** Brand, retailer or chain when the person named one ("Asda", "M&S", "Greggs"); else null. */
+  brand: z.string().nullable(),
+  /** The product page the values were read from when the item was looked up online; else null. */
+  source_url: z.string().nullable(),
   nutrients: nutrientVectorSchema,
   food_groups: foodGroupServesSchema,
 })

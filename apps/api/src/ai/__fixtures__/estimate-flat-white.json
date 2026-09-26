@@ -1,44 +1,47 @@
 {
   "input": {
     "text": "large flat white",
-    "system": "You are a nutrition estimator for a food diary. Convert the user's description of what they ate into structured items with realistic nutrient totals.\n\nRules:\n- One item per distinct food, at most 15. Amounts are for the TOTAL quantity described, not per 100 g.\n- Use typical values for cooked, as-eaten food (USDA-like). Include cooking fats and sauces when implied by the preparation.\n- If a quantity is missing, assume one typical serving for the United Kingdom and state it in assumptions, for example \"assumed 2 slices of toast\". Silent guesses are the one thing the user cannot correct.\n- Set clarifying_question only when the answer would change energy by more than about 30% (a slice of pizza versus a whole pizza; a protein shake with no brand or size). Otherwise leave it null, estimate, and state the assumption.\n- Units: energy kcal; protein, carbs, fat, fibre, sugars, added sugar, saturated fat in g; sodium, potassium, calcium, iron, magnesium, zinc, vitamin C in mg; vitamin A (RAE), vitamin D, B12 and folate (DFE) in mcg; water in ml; alcohol in standard drinks of 10 g ethanol. Never leave a value null or negative; use 0 and lower the item confidence if genuinely unknown.\n- Food-group serves use these definitions exactly:\n  - vegetables: 1 serve is 75 g cooked vegetables or legumes, or 1 cup salad, or half a medium potato\n  - fruit: 1 serve is 150 g fresh fruit, or 1 medium piece, or 30 g dried\n  - whole_grains: 1 serve is 1 slice wholegrain bread, half a cup cooked wholegrain rice, pasta or oats, 30 g wholegrain cereal\n  - protein_foods: 1 serve is 65 g cooked lean meat, 80 g cooked poultry, 100 g cooked fish, 2 large eggs, 150 g cooked legumes or tofu, 30 g nuts or seeds\n  - dairy_or_alt: 1 serve is 250 ml milk or fortified plant milk, 200 g yoghurt, 40 g hard cheese\n  - legumes: 1 serve is 150 g cooked legumes (counts toward protein foods and vegetables too)\n  - nuts_seeds: 1 serve is 30 g\n- confidence per item: high for packaged foods with stated weights or precise counts of common foods; medium for home-cooked food with quantities; low for restaurant meals, \"some\" or \"a bit of\".\n- meal_hint: breakfast, lunch, dinner or snack from the food and the local time given, or null if unclear.\n- input_text is the fragment of the user's text the item came from, copied verbatim.\n- The user's diet pattern is Omnivore; allergies or intolerances: none. Interpret ambiguous foods accordingly (a vegan's \"milk\" is plant milk).\n- The user has no saved foods yet; set matched_food_id to null on every item.",
+    "system": "You are a nutrition estimator for a food diary. Convert the user's description of what they ate into structured items with realistic nutrient totals.\n\nRules:\n- One item per distinct food, at most 15. Amounts are for the TOTAL quantity described, not per 100 g.\n- Use typical values for cooked, as-eaten food (USDA-like). Include cooking fats and sauces when implied by the preparation.\n- When the text names a brand, retailer, restaurant chain or specific product (\"M&S fries\", \"Asda mozzarella sticks\", \"Greggs sausage roll\", \"Huel Black\"), SEARCH THE WEB for that exact product's nutrition information before answering. Prefer the retailer's or manufacturer's own product page for the United Kingdom; a grocery-delivery listing or a nutrition database is acceptable when the official page is not found. Read the per-100 g or per-serving values from the label and scale them to the quantity eaten. Set brand to the brand or retailer, set source_url to the page you took the values from, set confidence to high, and add an assumption naming the pack size or serving the label uses (for example \"Asda pack is 250 g, 5 sticks; assumed 5 sticks\").\n- Search at most twice per product. If the product cannot be found, estimate from the closest generic equivalent, set source_url to null, say in assumptions that the product page was not found, and lower the confidence to medium or low. Never invent a URL.\n- Do not search for generic foods (eggs, toast, chicken, rice, an apple); estimate those from typical values with brand and source_url null.\n- If a quantity is missing, assume one typical serving for the United Kingdom and state it in assumptions, for example \"assumed 2 slices of toast\". Silent guesses are the one thing the user cannot correct.\n- Set clarifying_question only when the answer would change energy by more than about 30% (a slice of pizza versus a whole pizza; a protein shake with no brand or size). Otherwise leave it null, estimate, and state the assumption.\n- Units: energy kcal; protein, carbs, fat, fibre, sugars, added sugar, saturated fat in g; sodium, potassium, calcium, iron, magnesium, zinc, vitamin C in mg; vitamin A (RAE), vitamin D, B12 and folate (DFE) in mcg; water in ml; alcohol in standard drinks of 10 g ethanol. Never leave a value null or negative; use 0 and lower the item confidence if genuinely unknown.\n- Food-group serves use these definitions exactly:\n  - vegetables: 1 serve is 75 g cooked vegetables or legumes, or 1 cup salad, or half a medium potato\n  - fruit: 1 serve is 150 g fresh fruit, or 1 medium piece, or 30 g dried\n  - whole_grains: 1 serve is 1 slice wholegrain bread, half a cup cooked wholegrain rice, pasta or oats, 30 g wholegrain cereal\n  - protein_foods: 1 serve is 65 g cooked lean meat, 80 g cooked poultry, 100 g cooked fish, 2 large eggs, 150 g cooked legumes or tofu, 30 g nuts or seeds\n  - dairy_or_alt: 1 serve is 250 ml milk or fortified plant milk, 200 g yoghurt, 40 g hard cheese\n  - legumes: 1 serve is 150 g cooked legumes (counts toward protein foods and vegetables too)\n  - nuts_seeds: 1 serve is 30 g\n- confidence per item: high for packaged foods with stated weights or precise counts of common foods; medium for home-cooked food with quantities; low for restaurant meals, \"some\" or \"a bit of\".\n- meal_hint: breakfast, lunch, dinner or snack from the food and the local time given, or null if unclear.\n- input_text is the fragment of the user's text the item came from, copied verbatim.\n- The user's diet pattern is Omnivore; allergies or intolerances: none. Interpret ambiguous foods accordingly (a vegan's \"milk\" is plant milk).\n- The user has no saved foods yet; set matched_food_id to null on every item.",
     "user": "Local time: 08:30.\n\nWhat I ate: large flat white"
   },
   "response": {
     "items": [
       {
-        "name": "Large flat white coffee (with whole milk)",
+        "name": "Large flat white",
         "input_text": "large flat white",
         "quantity": 1,
         "unit": "large cup",
         "grams": 340,
-        "preparation": "espresso coffee with steamed whole milk",
+        "preparation": "espresso coffee with steamed milk",
         "assumptions": [
-          "Assumed a UK large flat white of about 340 ml total, made with roughly 280 ml whole cow's milk and espresso, with no added sugar."
+          "Assumed a large UK café flat white is about 340 ml total, made with ~300 ml semi-skimmed cow's milk plus espresso.",
+          "No sugar or syrup assumed."
         ],
         "confidence": "medium",
         "matched_food_id": null,
+        "brand": null,
+        "source_url": null,
         "nutrients": {
-          "energy_kcal": 181,
-          "protein_g": 9.6,
-          "carbs_g": 13.6,
-          "fat_g": 10.2,
+          "energy_kcal": 150,
+          "protein_g": 10.2,
+          "carbs_g": 14.4,
+          "fat_g": 5.1,
           "fiber_g": 0,
-          "sugar_g": 13.6,
+          "sugar_g": 14.4,
           "added_sugar_g": 0,
-          "saturated_fat_g": 6.5,
-          "sodium_mg": 125,
-          "potassium_mg": 440,
-          "calcium_mg": 340,
+          "saturated_fat_g": 3.2,
+          "sodium_mg": 132,
+          "potassium_mg": 480,
+          "calcium_mg": 360,
           "iron_mg": 0.1,
-          "magnesium_mg": 32,
-          "zinc_mg": 1.1,
-          "vitamin_a_ug": 129,
+          "magnesium_mg": 35,
+          "zinc_mg": 1.2,
+          "vitamin_a_ug": 138,
           "vitamin_c_mg": 0,
-          "vitamin_d_ug": 0.1,
-          "vitamin_b12_ug": 1.3,
-          "folate_ug": 14,
-          "water_ml": 305,
+          "vitamin_d_ug": 0.15,
+          "vitamin_b12_ug": 1.5,
+          "folate_ug": 15,
+          "water_ml": 310,
           "alcohol_std_drinks": 0
         },
         "food_groups": {
@@ -46,7 +49,7 @@
           "fruit": 0,
           "whole_grains": 0,
           "protein_foods": 0,
-          "dairy_or_alt": 1.12,
+          "dairy_or_alt": 1.2,
           "legumes": 0,
           "nuts_seeds": 0
         }

@@ -57,6 +57,7 @@ const eggs: LogEntryInput = {
   aiCallId: null,
   assumptions: ['assumed large eggs (50 g each)'],
   confidence: 'high',
+  brand: null,
   saveToLibrary: false,
 }
 
@@ -72,6 +73,7 @@ const toast: LogEntryInput = {
   aiCallId: null,
   assumptions: [],
   confidence: 'medium',
+  brand: 'Hovis',
   saveToLibrary: true,
 }
 
@@ -173,6 +175,7 @@ describe('day log', () => {
     expect(saved.basis).toBe('per_serving')
     expect(saved.servingGrams).toBe(80)
     expect(saved.servingLabel).toBe('2 slice')
+    expect(saved.brand).toBe('Hovis')
     expect(saved.source).toBe('ai')
     expect(saved.verified).toBe(true)
     expect(saved.lastUsedAt).not.toBeNull()

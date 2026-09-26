@@ -14,8 +14,10 @@ import { describe, expect, it } from 'vitest'
 import {
   buildEstimateSystemPrompt,
   buildEstimateUserMessage,
+  countryFromTimeZone,
   regionFromTimeZone,
   tidyEstimate,
+  tidyUrl,
 } from './estimate.js'
 import { searchWords } from '../log/foods-service.js'
 
@@ -56,6 +58,18 @@ describe('estimate prompt', () => {
     expect(system).toMatch(/no saved foods yet/)
   })
 
+  it('tells the model to search for named products only when the tool is offered', () => {
+    const withSearch = buildEstimateSystemPrompt(tess, [], { webSearch: true })
+    expect(withSearch).toMatch(/SEARCH THE WEB for that exact product's nutrition information/)
+    expect(withSearch).toMatch(/set source_url to the page you took the values from/)
+    expect(withSearch).toMatch(/Do not search for generic foods/)
+    expect(withSearch).toMatch(/Never invent a URL/)
+    const without = buildEstimateSystemPrompt(tess, [], { webSearch: false })
+    expect(without).not.toMatch(/SEARCH THE WEB/)
+    expect(without).toMatch(/published nutrition label from memory/)
+    expect(without).toMatch(/source_url to null/)
+  })
+
   it('lists the user’s verified foods as JSON with their ids for reuse', () => {
     const system = buildEstimateSystemPrompt(tess, [
       {
@@ -87,6 +101,15 @@ describe('estimate prompt', () => {
     expect(regionFromTimeZone('America/New_York')).toBe('the Americas (New York)')
     expect(regionFromTimeZone('UTC')).toBe('an English-speaking country')
   })
+
+  it('maps time zones to a search country only when it is unambiguous', () => {
+    expect(countryFromTimeZone('Europe/London')).toBe('GB')
+    expect(countryFromTimeZone('Australia/Sydney')).toBe('AU')
+    expect(countryFromTimeZone('America/New_York')).toBe('US')
+    expect(countryFromTimeZone('America/Toronto')).toBe('CA')
+    expect(countryFromTimeZone('Europe/Paris')).toBeNull()
+    expect(countryFromTimeZone('UTC')).toBeNull()
+  })
 })
 
 describe('tidyEstimate', () => {
@@ -100,6 +123,8 @@ describe('tidyEstimate', () => {
     assumptions: [' assumed large eggs ', '', 'a', 'b', 'c', 'd', 'e'],
     confidence: 'high',
     matched_food_id: '',
+    brand: '  ',
+    source_url: 'https://groceries.asda.com/product/123 ',
     nutrients: { ...emptyNutrientVector(), energy_kcal: 310, protein_g: 25 },
     food_groups: { ...emptyFoodGroupServes(), protein_foods: 2 },
   }
@@ -117,7 +142,20 @@ describe('tidyEstimate', () => {
     expect(first.preparation).toBeNull()
     expect(first.matched_food_id).toBeNull()
     expect(first.assumptions).toEqual(['assumed large eggs', 'a', 'b', 'c', 'd'])
+    expect(first.brand).toBeNull()
+    expect(first.source_url).toBe('https://groceries.asda.com/product/123')
     expect(tidy.clarifying_question).toBeNull()
+  })
+
+  it('keeps only absolute http(s) source urls', () => {
+    expect(tidyUrl('https://www.marksandspencer.com/fries/p/123')).toBe(
+      'https://www.marksandspencer.com/fries/p/123',
+    )
+    expect(tidyUrl('marksandspencer.com/fries')).toBeNull()
+    expect(tidyUrl('javascript:alert(1)')).toBeNull()
+    expect(tidyUrl('not found')).toBeNull()
+    expect(tidyUrl(null)).toBeNull()
+    expect(tidyUrl('')).toBeNull()
   })
 
   it('drops nameless items, fixes a zero quantity and caps the list at 15', () => {
@@ -147,10 +185,12 @@ describe('FoodEstimate fixtures', () => {
   const dir = fileURLToPath(new URL('./__fixtures__/', import.meta.url))
   const files = readdirSync(dir).filter((f) => f.startsWith('estimate-') && f.endsWith('.json'))
 
-  it('has the five canonical inputs recorded', () => {
+  it('has the seven canonical inputs recorded', () => {
     expect(files.sort()).toEqual([
       'estimate-4-eggs.json',
+      'estimate-asda-mozzarella-sticks.json',
       'estimate-flat-white.json',
+      'estimate-ms-fries.json',
       'estimate-protein-shake-banana.json',
       'estimate-stir-fry.json',
       'estimate-toast-butter.json',
@@ -194,6 +234,19 @@ describe('FoodEstimate fixtures', () => {
     expect(total.proteinServes).toBeLessThanOrEqual(2.5)
     expect(parsed.clarifying_question).toBeNull()
   })
+
+  it.each(['estimate-asda-mozzarella-sticks.json', 'estimate-ms-fries.json'])(
+    '%s names the retailer and links the page the label came from',
+    (file) => {
+      const fixture = JSON.parse(readFileSync(`${dir}${file}`, 'utf8')) as { response: unknown }
+      const parsed = tidyEstimate(foodEstimateSchema.parse(fixture.response))
+      expect(parsed.items.length).toBeGreaterThanOrEqual(1)
+      const product = parsed.items[0]!
+      expect(product.brand).not.toBeNull()
+      expect(product.source_url).toMatch(/^https?:\/\//)
+      expect(['high', 'medium']).toContain(product.confidence)
+    },
+  )
 
   it('the mixed meal returns several items with vegetable and grain serves', () => {
     const fixture = JSON.parse(readFileSync(`${dir}estimate-stir-fry.json`, 'utf8')) as {

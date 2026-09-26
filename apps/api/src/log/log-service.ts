@@ -132,7 +132,7 @@ async function saveEntryAsFood(
     userId,
     {
       name: entry.name,
-      brand: null,
+      brand: entry.brand,
       basis: 'per_serving',
       servingGrams: entry.grams > 0 ? entry.grams : 1,
       servingLabel: `${trimNumber(entry.quantity)} ${entry.unit}`,

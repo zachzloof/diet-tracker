@@ -32,8 +32,36 @@ function getClient(purpose: AiPurpose): OpenAI {
 }
 
 /** Reasoning models take an effort hint; other models reject the parameter. */
-function reasoningOptions(model: string): { reasoning: { effort: 'low' } } | Record<never, never> {
-  return /^(gpt-5|o\d)/.test(model) ? { reasoning: { effort: 'low' } } : {}
+function reasoningOptions(
+  model: string,
+  effort: ReasoningEffort,
+): { reasoning: { effort: ReasoningEffort } } | Record<never, never> {
+  return /^(gpt-5|o\d)/.test(model) ? { reasoning: { effort } } : {}
+}
+
+export type ReasoningEffort = 'low' | 'medium'
+
+/**
+ * OpenAI's built-in web search tool (D16), offered to the model alongside the schema. The
+ * model decides when to search; the prompt says when. Location steers results to the
+ * person's retailers.
+ */
+export interface WebSearchOptions {
+  /** ISO 3166-1 alpha-2, or null when the time zone gives no clear country. */
+  country: string | null
+  timezone: string
+}
+
+function webSearchTool(options: WebSearchOptions): OpenAI.Responses.WebSearchTool {
+  return {
+    type: 'web_search',
+    search_context_size: 'low',
+    user_location: {
+      type: 'approximate',
+      ...(options.country ? { country: options.country } : {}),
+      timezone: options.timezone,
+    },
+  }
 }
 
 export interface StructuredCall<T> {
@@ -45,6 +73,12 @@ export interface StructuredCall<T> {
   system: string
   user: string
   maxOutputTokens?: number
+  /** Offer the web search tool. Off unless set. */
+  webSearch?: WebSearchOptions | null
+  /** Per-call timeout; searches need longer than the 30 s default. */
+  timeoutMs?: number
+  /** Defaults to `low`; searches read better at `medium`. */
+  reasoningEffort?: ReasoningEffort
 }
 
 export interface StructuredResult<T> {
@@ -55,6 +89,8 @@ export interface StructuredResult<T> {
   inputTokens: number | null
   outputTokens: number | null
   latencyMs: number
+  /** Web search tool calls the model made in the successful attempt. */
+  webSearchCalls: number
 }
 
 function isRetryable(error: unknown): boolean {
@@ -88,6 +124,7 @@ async function logCall(row: {
   latencyMs: number
   ok: boolean
   error: string | null
+  webSearchCalls: number
 }): Promise<string> {
   const id = uuidv7()
   try {
@@ -104,10 +141,15 @@ async function logCall(row: {
       latencyMs: row.latencyMs,
       ok: row.ok,
       error: row.error,
+      webSearchCalls: row.webSearchCalls,
     },
     'ai call',
   )
   return id
+}
+
+function countWebSearches(output: OpenAI.Responses.ResponseOutputItem[]): number {
+  return output.filter((item) => item.type === 'web_search_call').length
 }
 
 export async function callStructured<T>(call: StructuredCall<T>): Promise<StructuredResult<T>> {
@@ -118,21 +160,27 @@ export async function callStructured<T>(call: StructuredCall<T>): Promise<Struct
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     const start = performance.now()
+    let webSearchCalls = 0
     try {
-      const response = await openai.responses.parse({
-        model,
-        input: [
-          { role: 'system', content: call.system },
-          { role: 'user', content: user },
-        ],
-        text: { format: zodTextFormat(call.schema, call.schemaName) },
-        max_output_tokens: call.maxOutputTokens ?? 1200,
-        store: false,
-        ...reasoningOptions(model),
-      })
+      const response = await openai.responses.parse(
+        {
+          model,
+          input: [
+            { role: 'system', content: call.system },
+            { role: 'user', content: user },
+          ],
+          text: { format: zodTextFormat(call.schema, call.schemaName) },
+          max_output_tokens: call.maxOutputTokens ?? 1200,
+          store: false,
+          ...(call.webSearch ? { tools: [webSearchTool(call.webSearch)] } : {}),
+          ...reasoningOptions(model, call.reasoningEffort ?? 'low'),
+        },
+        { timeout: call.timeoutMs ?? AI_TIMEOUT_MS },
+      )
       const latencyMs = Math.round(performance.now() - start)
       const inputTokens = response.usage?.input_tokens ?? null
       const outputTokens = response.usage?.output_tokens ?? null
+      webSearchCalls = countWebSearches(response.output)
       const parsed = response.output_parsed
 
       if (parsed === null || parsed === undefined) {
@@ -151,6 +199,7 @@ export async function callStructured<T>(call: StructuredCall<T>): Promise<Struct
           latencyMs,
           ok: false,
           error,
+          webSearchCalls,
         })
         if (attempt === 1 && !refusal) continue
         throw unavailable()
@@ -165,8 +214,17 @@ export async function callStructured<T>(call: StructuredCall<T>): Promise<Struct
         latencyMs,
         ok: true,
         error: null,
+        webSearchCalls,
       })
-      return { data: parsed, callId, model: response.model, inputTokens, outputTokens, latencyMs }
+      return {
+        data: parsed,
+        callId,
+        model: response.model,
+        inputTokens,
+        outputTokens,
+        latencyMs,
+        webSearchCalls,
+      }
     } catch (error) {
       if (error instanceof Error && error.name === 'AppError') throw error
       const latencyMs = Math.round(performance.now() - start)
@@ -180,6 +238,7 @@ export async function callStructured<T>(call: StructuredCall<T>): Promise<Struct
         latencyMs,
         ok: false,
         error: described,
+        webSearchCalls,
       })
       if (attempt === 1 && error instanceof ZodError) {
         // The JSON matched the schema but a value broke a rule (a negative amount, say).

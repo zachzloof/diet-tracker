@@ -139,6 +139,8 @@ describe('foodEstimateSchema', () => {
       assumptions: ['assumed large eggs (50 g each)'],
       confidence: 'high',
       matched_food_id: null,
+      brand: null,
+      source_url: null,
       nutrients: { ...emptyNutrientVector(), energy_kcal: 310, protein_g: 25 },
       food_groups: { ...emptyFoodGroupServes(), protein_foods: 2 },
     }

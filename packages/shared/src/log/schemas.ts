@@ -125,6 +125,8 @@ export const logEntryInputSchema = z.object({
   aiCallId: z.uuid().nullable(),
   assumptions: z.array(z.string().trim().max(200)).max(10),
   confidence: confidenceSchema.nullable(),
+  /** Brand or retailer, kept on the food when `saveToLibrary` is set so the library can match it later. */
+  brand: shortText(80).nullable().default(null),
   /** Save this item to My foods (as a per-serving food of `grams` grams) as well as logging it. */
   saveToLibrary: z.boolean().default(false),
 })
