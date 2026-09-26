@@ -1,21 +1,28 @@
-import type {
-  CreateEntriesRequest,
-  DailySummary,
-  DayLogResponse,
-  EstimateRequest,
-  Food,
-  FoodInput,
-  UpdateEntryRequest,
+import {
+  addFoodGroupServes,
+  addNutrientVectors,
+  emptyFoodGroupServes,
+  emptyNutrientVector,
+  isWaterEntry,
+  sumPortions,
+  type CreateEntriesRequest,
+  type CreateEntriesResponse,
+  type DailySummary,
+  type DayLogResponse,
+  type EstimateRequest,
+  type Food,
+  type FoodInput,
+  type UpdateEntryRequest,
 } from '@diet-tracker/shared'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { STATS_KEY } from '@/features/stats/useStats'
+import { ApiError } from '@/lib/api'
+import { useQueueStore } from '@/stores/queue'
 import { foodsApi, logApi } from './api'
+import { FOODS_KEY, LOG_KEY, dayKey, foodsKey } from './keys'
 
-export const LOG_KEY = ['log'] as const
-export const dayKey = (day: string) => ['log', 'day', day] as const
-export const FOODS_KEY = ['foods'] as const
-export const foodsKey = (q: string) => ['foods', q] as const
+export { FOODS_KEY, LOG_KEY, dayKey, foodsKey }
 
 export function dayQueryOptions(day: string) {
   return queryOptions({
@@ -25,12 +32,38 @@ export function dayQueryOptions(day: string) {
   })
 }
 
-/** One day's entries and totals. Re-runs when `day` changes. */
+/**
+ * One day's entries and totals, with anything queued offline for that day folded in so
+ * the log and the ring already count it. Re-runs when `day` changes.
+ */
 export function useDayLog(day: MaybeRefOrGetter<string>) {
+  const queue = useQueueStore()
   const query = useQuery(computed(() => dayQueryOptions(toValue(day))))
+  const pending = computed(() => queue.pendingFor(toValue(day)))
+  const entries = computed(() => [...(query.data.value?.entries ?? []), ...pending.value])
+  const summary = computed<DailySummary | null>(() => {
+    const base = query.data.value?.summary ?? null
+    if (pending.value.length === 0) return base
+    const extra = sumPortions(pending.value)
+    const start = base ?? {
+      day: toValue(day),
+      totals: emptyNutrientVector(),
+      foodGroups: emptyFoodGroupServes(),
+      entryCount: 0,
+    }
+    return {
+      day: start.day,
+      totals: addNutrientVectors(start.totals, extra.totals),
+      foodGroups: addFoodGroupServes(start.foodGroups, extra.foodGroups),
+      entryCount: start.entryCount + pending.value.filter((e) => !isWaterEntry(e)).length,
+    }
+  })
   return {
-    entries: computed(() => query.data.value?.entries ?? []),
-    summary: computed(() => query.data.value?.summary ?? null),
+    entries,
+    summary,
+    pending,
+    /** True once the server (or the offline mirror) has answered for this day. */
+    hasData: computed(() => query.data.value !== undefined),
     isLoading: query.isPending,
     isError: query.isError,
     error: query.error,
@@ -54,11 +87,44 @@ function applySummaries(
   ])
 }
 
+export interface CreateEntriesResult extends CreateEntriesResponse {
+  /** True when the write waits in the offline queue instead of having reached the server. */
+  queued: boolean
+}
+
+/**
+ * Logs entries. Offline, or when the server cannot be reached, the request goes into the
+ * queue and the entries show as pending until it is sent (D21).
+ */
 export function useCreateEntries() {
   const queryClient = useQueryClient()
+  const queue = useQueueStore()
+  const enqueue = (input: CreateEntriesRequest): CreateEntriesResult => {
+    const item = queue.enqueue(input)
+    return {
+      entries: item.entries,
+      summary: {
+        day: input.day,
+        totals: emptyNutrientVector(),
+        foodGroups: emptyFoodGroupServes(),
+        entryCount: 0,
+      },
+      foodsSaved: 0,
+      queued: true,
+    }
+  }
   return useMutation({
-    mutationFn: (input: CreateEntriesRequest) => logApi.createEntries(input),
+    mutationFn: async (input: CreateEntriesRequest): Promise<CreateEntriesResult> => {
+      if (!navigator.onLine) return enqueue(input)
+      try {
+        return { ...(await logApi.createEntries(input)), queued: false }
+      } catch (error) {
+        if (error instanceof ApiError && error.isNetwork) return enqueue(input)
+        throw error
+      }
+    },
     onSuccess: async (result, input) => {
+      if (result.queued) return
       queryClient.setQueryData(dayKey(input.day), (current: DayLogResponse | undefined) =>
         current
           ? {
@@ -86,11 +152,19 @@ export function useUpdateEntry() {
   })
 }
 
+/** Deletes an entry; a queued one is simply dropped from the queue. */
 export function useDeleteEntry() {
   const queryClient = useQueryClient()
+  const queue = useQueueStore()
   return useMutation({
-    mutationFn: (id: string) => logApi.deleteEntry(id),
-    onSuccess: (result) => applySummaries(queryClient, [result.summary]),
+    mutationFn: async (id: string) => {
+      if (queue.has(id)) {
+        queue.removeEntry(id)
+        return null
+      }
+      return logApi.deleteEntry(id)
+    },
+    onSuccess: (result) => (result ? applySummaries(queryClient, [result.summary]) : undefined),
   })
 }
 

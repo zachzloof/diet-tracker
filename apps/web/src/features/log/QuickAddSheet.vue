@@ -153,7 +153,8 @@ async function submitManual(): Promise<void> {
   const portion = portionOf(food, grams)
   let foodId: string | null = null
   try {
-    if (manualSave.value) foodId = (await createFood.mutateAsync(food)).id
+    // Saving to the library needs the server; offline the entry is queued on its own.
+    if (manualSave.value && ui.online) foodId = (await createFood.mutateAsync(food)).id
   } catch (error) {
     saveError.value = error instanceof ApiError ? error.message : 'Could not save the food.'
     return
@@ -190,7 +191,9 @@ function log(payload: { day: string; meal: Meal; entries: LogEntryInput[] }): vo
       onSuccess: (response) => {
         const kcal = response.entries.reduce((sum, e) => sum + e.nutrients.energy_kcal, 0)
         ui.toast(
-          `Added to ${MEAL_LABELS[payload.meal].toLowerCase()} · ${formatKcal(kcal)}`,
+          response.queued
+            ? `Saved offline · ${formatKcal(kcal)}. It will be sent when you're back online.`
+            : `Added to ${MEAL_LABELS[payload.meal].toLowerCase()} · ${formatKcal(kcal)}`,
           'success',
         )
         ui.closeQuickAdd()
@@ -343,7 +346,12 @@ watch(open, (isOpen) => {
           <Toggle
             v-model="manualSave"
             label="Save to My foods"
-            description="Log it again later with one tap, no AI needed."
+            :description="
+              ui.online
+                ? 'Log it again later with one tap, no AI needed.'
+                : 'Needs a connection; the entry itself will be queued.'
+            "
+            :disabled="!ui.online"
           />
           <MealDayPicker
             v-model:meal="manualMeal"
@@ -355,10 +363,9 @@ watch(open, (isOpen) => {
           <Button
             block
             :loading="create.isPending.value || createFood.isPending.value"
-            :disabled="!ui.online"
             @click="submitManual"
           >
-            {{ ui.online ? `Add to ${manualMeal}` : 'Offline' }}
+            {{ ui.online ? `Add to ${manualMeal}` : `Add to ${manualMeal} (offline)` }}
           </Button>
         </div>
       </template>

@@ -4,10 +4,16 @@ import { computed } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import Icon, { type IconName } from '@/components/ui/Icon.vue'
 import { formatGrams, formatKcal, formatQuantity } from '@/lib/format'
+import { useQueueStore } from '@/stores/queue'
 
-/** The day's food entries grouped by meal, each with a kcal subtotal. Tap a row to edit it. Water quick-adds live in the water card. */
+/**
+ * The day's food entries grouped by meal, each with a kcal subtotal. Tap a row to edit it.
+ * Water quick-adds live in the water card. Entries waiting in the offline queue are shown
+ * in place with a clock and cannot be edited until they have been sent.
+ */
 const props = defineProps<{ entries: LogEntry[] }>()
 const emit = defineEmits<{ select: [entry: LogEntry] }>()
+const queue = useQueueStore()
 
 const groups = computed(() =>
   MEALS.map((meal: Meal) => {
@@ -46,7 +52,29 @@ const CONFIDENCE_DOT: Record<NonNullable<LogEntry['confidence']>, string> = {
       </h2>
       <ul class="divide-y divide-border">
         <li v-for="entry in group.entries" :key="entry.id">
+          <div
+            v-if="queue.has(entry.id)"
+            class="flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left opacity-80"
+            :aria-label="`${entry.name}, waiting to send`"
+          >
+            <span
+              class="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg-muted"
+              aria-hidden="true"
+            >
+              <Icon name="clock" :size="16" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-base text-fg">{{ entry.name }}</span>
+              <span class="block text-xs text-fg-muted">
+                {{ formatQuantity(entry.quantity, entry.unit) }} · waiting for a connection
+              </span>
+            </span>
+            <span class="shrink-0 text-base font-semibold text-fg">
+              {{ formatKcal(entry.nutrients.energy_kcal) }}
+            </span>
+          </div>
           <button
+            v-else
             type="button"
             class="flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-surface-2 active:bg-border/40"
             @click="emit('select', entry)"

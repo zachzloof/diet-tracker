@@ -22,6 +22,7 @@ function toggle(item: string): void {
           v-for="item in COMMON_ALLERGENS"
           :key="item"
           type="button"
+          class="flex min-h-11 items-center"
           :aria-pressed="draft.allergies.includes(item)"
           @click="toggle(item)"
         >

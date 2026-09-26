@@ -3,6 +3,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/v
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError } from '@/lib/api'
+import { clearPersistedQueries } from '@/lib/query-client'
 import { authApi } from './api'
 
 export const ME_KEY = ['me'] as const
@@ -45,6 +46,7 @@ export function useLogout() {
     mutationFn: authApi.logout,
     onSettled: async () => {
       queryClient.clear()
+      clearPersistedQueries()
       queryClient.setQueryData(ME_KEY, null)
       await router.replace({ name: 'login' })
     },

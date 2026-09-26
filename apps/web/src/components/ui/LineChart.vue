@@ -1,26 +1,51 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { areaPath, linePath, makeScale, niceMax, type ChartBox } from '@/lib/chart'
+import { areaPath, linePath, makeScale, niceDomain, niceMax, type ChartBox } from '@/lib/chart'
 
 /**
- * A tiny single-series line chart (dataviz skill): a 2 px line with round joins, 8 px
- * markers with a 2 px surface ring, a 10% area wash, an optional solid hairline target,
- * and a tap-or-hover readout. Nulls leave gaps. Built for the week's energy now and the
- * weight trend in slice 5.
+ * A tiny line chart (dataviz skill): a 2 px line with round joins, 8 px markers with a
+ * 2 px surface ring, a 10% area wash, an optional solid hairline target, an optional
+ * secondary series drawn as a thicker muted line (the weight trend), and a tap-or-hover
+ * readout. Nulls leave gaps. `domain="auto"` hugs the data instead of starting at zero.
  */
 const props = withDefaults(
   defineProps<{
     points: (number | null)[]
     labels: string[]
     target?: number | null
+    targetLabel?: string
+    /** A smoothed companion series, one value per point; drawn behind the points. */
+    secondary?: (number | null)[] | null
+    secondaryLabel?: string
     height?: number
     color?: string
     label: string
     unit?: string
     /** Index highlighted with the accent ring (today). */
     highlight?: number | null
+    domain?: 'zero' | 'auto'
+    /** Render every n-th axis label (dense series). */
+    labelEvery?: number
+    decimals?: number
+    /** Draw the area wash under the line. */
+    area?: boolean
+    markers?: boolean
   }>(),
-  { target: null, height: 140, color: 'var(--accent)', unit: '', highlight: null },
+  {
+    target: null,
+    targetLabel: 'target',
+    secondary: null,
+    secondaryLabel: 'trend',
+    height: 140,
+    color: 'var(--accent)',
+    unit: '',
+    highlight: null,
+    domain: 'zero',
+    labelEvery: 1,
+    decimals: 0,
+    area: true,
+    markers: true,
+  },
 )
 
 const host = ref<HTMLElement | null>(null)
@@ -47,11 +72,23 @@ const box = computed<ChartBox>(() => ({
   top: 14,
   bottom: 24,
 }))
-const max = computed(() => niceMax([...props.points, props.target ?? null]))
-const scale = computed(() => makeScale(props.points.length, max.value, box.value))
+const allValues = computed(() => [
+  ...props.points,
+  ...(props.secondary ?? []),
+  props.target ?? null,
+])
+const range = computed(() =>
+  props.domain === 'auto' ? niceDomain(allValues.value) : { min: 0, max: niceMax(allValues.value) },
+)
+const scale = computed(() =>
+  makeScale(props.points.length, range.value.max, box.value, range.value.min),
+)
 const line = computed(() => linePath(props.points, scale.value))
-const area = computed(() => areaPath(props.points, scale.value))
-const markers = computed(() =>
+const area = computed(() => (props.area ? areaPath(props.points, scale.value) : ''))
+const secondaryLine = computed(() =>
+  props.secondary ? linePath(props.secondary, scale.value) : '',
+)
+const marks = computed(() =>
   props.points.flatMap((value, i) =>
     value === null ? [] : [{ i, x: scale.value.x(i), y: scale.value.y(value), value }],
   ),
@@ -62,6 +99,13 @@ const columnWidth = computed(() =>
     ? (box.value.width - box.value.left - box.value.right) / (props.points.length - 1)
     : box.value.width,
 )
+const axisLabels = computed(() =>
+  props.labels.map((text, i) => ({
+    i,
+    text,
+    show: props.labelEvery <= 1 || i % props.labelEvery === 0 || i === props.labels.length - 1,
+  })),
+)
 
 const active = ref<number | null>(null)
 const readout = computed(() => {
@@ -70,11 +114,19 @@ const readout = computed(() => {
   const value = props.points[i]
   const label = props.labels[i] ?? ''
   if (value === null || value === undefined) return `${label}: not logged`
-  return `${label}: ${Math.round(value).toLocaleString()} ${props.unit}`.trim()
+  const secondary = props.secondary?.[i]
+  const extra =
+    secondary !== null && secondary !== undefined
+      ? ` · ${props.secondaryLabel} ${format(secondary)}`
+      : ''
+  return `${label}: ${format(value)} ${props.unit}${extra}`.trim()
 })
 
 function format(value: number): string {
-  return Math.round(value).toLocaleString()
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: props.decimals,
+    maximumFractionDigits: props.decimals,
+  })
 }
 </script>
 
@@ -106,23 +158,36 @@ function format(value: number): string {
           font-size="10"
           fill="var(--fg-muted)"
         >
-          target {{ format(target ?? 0) }}
+          {{ targetLabel }} {{ format(target ?? 0) }}
         </text>
       </template>
 
       <path v-if="area" :d="area" :fill="color" opacity="0.1" />
       <path
+        v-if="secondaryLine"
+        :d="secondaryLine"
+        fill="none"
+        stroke="var(--fg-muted)"
+        stroke-width="3"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+        opacity="0.55"
+      />
+      <path
         v-if="line"
         :d="line"
         fill="none"
         :stroke="color"
-        stroke-width="2"
+        :stroke-width="secondary ? 1.5 : 2"
         stroke-linejoin="round"
         stroke-linecap="round"
+        :opacity="secondary ? 0.7 : 1"
       />
-      <g v-for="m in markers" :key="m.i">
-        <circle :cx="m.x" :cy="m.y" r="6" fill="var(--surface)" />
-        <circle :cx="m.x" :cy="m.y" r="4" :fill="color" />
+      <g v-for="m in marks" :key="m.i">
+        <template v-if="markers || highlight === m.i">
+          <circle :cx="m.x" :cy="m.y" r="6" fill="var(--surface)" />
+          <circle :cx="m.x" :cy="m.y" :r="secondary ? 3 : 4" :fill="color" />
+        </template>
         <circle
           v-if="highlight === m.i"
           :cx="m.x"
@@ -136,16 +201,17 @@ function format(value: number): string {
       </g>
 
       <text
-        v-for="(text, i) in labels"
-        :key="i"
-        :x="scale.x(i)"
+        v-for="l in axisLabels"
+        v-show="l.show"
+        :key="l.i"
+        :x="scale.x(l.i)"
         :y="height - 6"
         text-anchor="middle"
         font-size="11"
-        :fill="highlight === i ? 'var(--fg)' : 'var(--fg-muted)'"
-        :font-weight="highlight === i ? 600 : 400"
+        :fill="highlight === l.i ? 'var(--fg)' : 'var(--fg-muted)'"
+        :font-weight="highlight === l.i ? 600 : 400"
       >
-        {{ text }}
+        {{ l.text }}
       </text>
 
       <!-- Hit targets: a full-height column per point, wider than the mark. -->
@@ -164,7 +230,7 @@ function format(value: number): string {
     </svg>
     <p
       v-if="readout"
-      class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 rounded-control border border-border bg-surface px-2 py-1 text-xs text-fg shadow-card"
+      class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 rounded-control border border-border bg-surface px-2 py-1 text-xs whitespace-nowrap text-fg shadow-card"
       aria-live="polite"
     >
       {{ readout }}

@@ -140,13 +140,8 @@ function confirm(): void {
     />
 
     <p v-if="error" class="text-sm text-over" role="alert">{{ error }}</p>
-    <Button
-      block
-      :loading="saving"
-      :disabled="!amount || amount <= 0 || !ui.online"
-      @click="confirm"
-    >
-      {{ ui.online ? `Add to ${meal}` : 'Offline' }}
+    <Button block :loading="saving" :disabled="!amount || amount <= 0" @click="confirm">
+      {{ ui.online ? `Add to ${meal}` : `Add to ${meal} (offline)` }}
     </Button>
   </div>
 </template>

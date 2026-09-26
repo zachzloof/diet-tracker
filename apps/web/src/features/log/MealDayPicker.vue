@@ -51,7 +51,7 @@ function pick(value: string): void {
           type="button"
           role="radio"
           :aria-checked="day === today && !pickingOther"
-          class="h-9 rounded-full border px-3.5 text-sm font-medium transition"
+          class="h-11 rounded-full border px-4 text-sm font-medium transition"
           :class="
             day === today && !pickingOther
               ? 'border-accent bg-accent/15 text-fg'
@@ -65,7 +65,7 @@ function pick(value: string): void {
           type="button"
           role="radio"
           :aria-checked="day === yesterday && !pickingOther"
-          class="h-9 rounded-full border px-3.5 text-sm font-medium transition"
+          class="h-11 rounded-full border px-4 text-sm font-medium transition"
           :class="
             day === yesterday && !pickingOther
               ? 'border-accent bg-accent/15 text-fg'
@@ -79,7 +79,7 @@ function pick(value: string): void {
           type="button"
           role="radio"
           :aria-checked="pickingOther || isOther"
-          class="h-9 rounded-full border px-3.5 text-sm font-medium transition"
+          class="h-11 rounded-full border px-4 text-sm font-medium transition"
           :class="
             pickingOther || isOther
               ? 'border-accent bg-accent/15 text-fg'

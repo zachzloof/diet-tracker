@@ -15,19 +15,19 @@ export interface ChartBox {
 export interface ChartScale {
   /** x for the i-th of `count` evenly spaced points, first at the left edge, last at the right. */
   x: (index: number) => number
-  /** y for a value, 0 at the bottom of the plot and `max` at the top. */
+  /** y for a value: `min` at the bottom of the plot and `max` at the top. */
   y: (value: number) => number
   plotBottom: number
 }
 
-export function makeScale(count: number, max: number, box: ChartBox): ChartScale {
+export function makeScale(count: number, max: number, box: ChartBox, min = 0): ChartScale {
   const plotWidth = box.width - box.left - box.right
   const plotHeight = box.height - box.top - box.bottom
   const step = count > 1 ? plotWidth / (count - 1) : 0
-  const safeMax = max > 0 ? max : 1
+  const span = max > min ? max - min : 1
   return {
     x: (index) => box.left + (count > 1 ? index * step : plotWidth / 2),
-    y: (value) => box.top + plotHeight - (Math.max(0, value) / safeMax) * plotHeight,
+    y: (value) => box.top + plotHeight - ((Math.max(min, value) - min) / span) * plotHeight,
     plotBottom: box.top + plotHeight,
   }
 }
@@ -79,4 +79,24 @@ export function niceMax(values: readonly (number | null)[]): number {
   const magnitude = 10 ** Math.floor(Math.log10(padded))
   const step = magnitude / 2
   return Math.ceil(padded / step) * step
+}
+
+/**
+ * A y-axis domain hugging the data (a weight trend of 74 to 76 kg should not start at 0):
+ * pad the range by a tenth, then snap the edges outward to a clean step.
+ */
+export function niceDomain(values: readonly (number | null)[]): { min: number; max: number } {
+  const present = values.filter((v): v is number => v !== null)
+  if (present.length === 0) return { min: 0, max: 1 }
+  const lo = Math.min(...present)
+  const hi = Math.max(...present)
+  const range = hi - lo
+  const pad = range > 0 ? range * 0.15 : Math.max(0.5, Math.abs(hi) * 0.02)
+  const rawStep = (range > 0 ? range : pad * 2) / 4
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep))
+  const step = [1, 2, 5, 10].map((m) => m * magnitude).find((s) => s >= rawStep) ?? magnitude
+  return {
+    min: Math.floor((lo - pad) / step) * step,
+    max: Math.ceil((hi + pad) / step) * step,
+  }
 }

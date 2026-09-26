@@ -186,6 +186,23 @@ const todayIndex = computed(() => {
 
       <Card :padded="false">
         <RouterLink
+          :to="{ name: 'progress' }"
+          class="flex min-h-14 items-center gap-3 border-b border-border px-4 py-3 transition hover:bg-surface-2"
+        >
+          <span
+            class="flex size-10 items-center justify-center rounded-full bg-accent/15 text-accent"
+          >
+            <Icon name="trending-up" :size="20" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-base font-semibold">Progress</span>
+            <span class="block truncate text-sm text-fg-muted"
+              >Weight trend, pace and the fortnightly plan check</span
+            >
+          </span>
+          <Icon name="chevron-right" :size="18" class="text-fg-muted" />
+        </RouterLink>
+        <RouterLink
           :to="{ name: 'history' }"
           class="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
         >

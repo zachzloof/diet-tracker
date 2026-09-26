@@ -5,35 +5,19 @@ import { RouterLink } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
-import Icon from '@/components/ui/Icon.vue'
-import SegmentedControl from '@/components/ui/SegmentedControl.vue'
+import Icon, { type IconName } from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { useLogout, useSession } from '@/features/auth/useSession'
 import { useProfile } from '@/features/profile/useProfile'
 import InstallHint from '@/features/pwa/InstallHint.vue'
 import { useTargets } from '@/features/targets/useTargets'
 import { formatDay, formatNumber, formatWeight } from '@/lib/format'
-import { useUiStore, type ThemePreference } from '@/stores/ui'
 
 const session = useSession()
 const profile = useProfile()
 const targets = useTargets()
 const appVersion = __APP_VERSION__
 const logout = useLogout()
-const ui = useUiStore()
-
-const theme = computed({
-  get: () => ui.theme,
-  set: (value: string) => {
-    if (value === 'system' || value === 'dark' || value === 'light') ui.setTheme(value)
-  },
-})
-
-const THEMES: { value: ThemePreference; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'light', label: 'Light' },
-]
 
 const memberSince = computed(() => {
   const user = session.user.value
@@ -52,6 +36,31 @@ const targetsSummary = computed(() => {
   if (!v) return 'Computed from your profile'
   return `${formatNumber(targetValue(v.effective, 'energy_kcal'))} kcal · ${formatNumber(targetValue(v.effective, 'protein_g'))} g protein · since ${formatDay(v.effectiveFrom)}`
 })
+
+interface NavItem {
+  name: string
+  label: string
+  sub: string
+  icon: IconName
+  accent?: boolean
+}
+const NAV = computed<NavItem[]>(() => [
+  { name: 'profile', label: 'Profile', sub: profileSummary.value, icon: 'edit' },
+  { name: 'targets', label: 'Targets', sub: targetsSummary.value, icon: 'target', accent: true },
+  {
+    name: 'progress',
+    label: 'Progress',
+    sub: 'Weight trend and the fortnightly plan check',
+    icon: 'trending-up',
+  },
+  { name: 'foods', label: 'My foods', sub: 'Saved foods for one-tap logging', icon: 'book' },
+  {
+    name: 'settings',
+    label: 'Settings',
+    sub: 'Theme, units, reminders, password, export, delete',
+    icon: 'settings',
+  },
+])
 </script>
 
 <template>
@@ -80,60 +89,26 @@ const targetsSummary = computed(() => {
       </Card>
 
       <Card :padded="false">
-        <nav class="divide-y divide-border" aria-label="Profile and targets">
+        <nav class="divide-y divide-border" aria-label="Profile, targets and settings">
           <RouterLink
-            :to="{ name: 'profile' }"
+            v-for="item in NAV"
+            :key="item.name"
+            :to="{ name: item.name }"
             class="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
           >
             <span
-              class="flex size-10 items-center justify-center rounded-full bg-surface-2 text-fg-muted"
+              class="flex size-10 shrink-0 items-center justify-center rounded-full"
+              :class="item.accent ? 'bg-accent/15 text-accent' : 'bg-surface-2 text-fg-muted'"
             >
-              <Icon name="edit" :size="20" />
+              <Icon :name="item.icon" :size="20" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block text-base font-semibold">Profile</span>
-              <span class="block truncate text-sm text-fg-muted">{{ profileSummary }}</span>
+              <span class="block text-base font-semibold">{{ item.label }}</span>
+              <span class="block truncate text-sm text-fg-muted">{{ item.sub }}</span>
             </span>
-            <Icon name="chevron-right" :size="18" class="text-fg-muted" />
-          </RouterLink>
-          <RouterLink
-            :to="{ name: 'foods' }"
-            class="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
-          >
-            <span
-              class="flex size-10 items-center justify-center rounded-full bg-surface-2 text-fg-muted"
-            >
-              <Icon name="book" :size="20" />
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="block text-base font-semibold">My foods</span>
-              <span class="block truncate text-sm text-fg-muted"
-                >Saved foods for one-tap logging</span
-              >
-            </span>
-            <Icon name="chevron-right" :size="18" class="text-fg-muted" />
-          </RouterLink>
-          <RouterLink
-            :to="{ name: 'targets' }"
-            class="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
-          >
-            <span
-              class="flex size-10 items-center justify-center rounded-full bg-accent/15 text-accent"
-            >
-              <Icon name="target" :size="20" />
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="block text-base font-semibold">Targets</span>
-              <span class="block truncate text-sm text-fg-muted">{{ targetsSummary }}</span>
-            </span>
-            <Icon name="chevron-right" :size="18" class="text-fg-muted" />
+            <Icon name="chevron-right" :size="18" class="shrink-0 text-fg-muted" />
           </RouterLink>
         </nav>
-      </Card>
-
-      <Card>
-        <h2 class="mb-3 text-base font-semibold">Appearance</h2>
-        <SegmentedControl v-model="theme" label="Theme" :options="THEMES" />
       </Card>
 
       <InstallHint />
@@ -151,6 +126,9 @@ const targetsSummary = computed(() => {
       <p class="px-2 text-center text-xs text-fg-muted">
         Diet Tracker {{ appVersion }}. Not medical advice: targets are general guidance, not a
         prescription.
+        <RouterLink :to="{ name: 'privacy' }" class="font-semibold text-fg">Privacy</RouterLink>
+        ·
+        <RouterLink :to="{ name: 'terms' }" class="font-semibold text-fg">Terms</RouterLink>
       </p>
     </div>
   </AppShell>

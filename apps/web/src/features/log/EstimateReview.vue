@@ -313,8 +313,8 @@ function confirm(): void {
     />
 
     <p v-if="error" class="text-sm text-over" role="alert">{{ error }}</p>
-    <Button block :loading="saving" :disabled="items.length === 0 || !ui.online" @click="confirm">
-      {{ ui.online ? `Add to ${meal}` : 'Offline' }}
+    <Button block :loading="saving" :disabled="items.length === 0" @click="confirm">
+      {{ ui.online ? `Add to ${meal}` : `Add to ${meal} (offline)` }}
     </Button>
     <p class="text-center text-xs text-fg-muted">
       Estimated by AI. Tap an item to change the amount, fix any number or read its assumptions.

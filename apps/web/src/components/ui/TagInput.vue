@@ -60,7 +60,7 @@ function remove(item: string): void {
       <li v-for="item in model" :key="item">
         <button
           type="button"
-          class="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface-2 pr-2 pl-3 text-sm font-medium text-fg transition hover:bg-border/60"
+          class="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-surface-2 pr-3 pl-4 text-sm font-medium text-fg transition hover:bg-border/60"
           :aria-label="`Remove ${item}`"
           @click="remove(item)"
         >

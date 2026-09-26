@@ -6,8 +6,10 @@ import { queryClient } from '@/lib/query-client'
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** Reachable without a session (login, register). */
+    /** Reachable without a session (login, register); a signed-in visit goes to Today. */
     public?: boolean
+    /** Reachable by anyone, signed in or not, with no lookups (privacy, terms). */
+    open?: boolean
     /** Reachable before onboarding is complete. */
     preOnboarding?: boolean
   }
@@ -26,7 +28,17 @@ const routes: RouteRecordRaw[] = [
     name: 'history',
     component: () => import('@/features/history/HistoryScreen.vue'),
   },
+  {
+    path: '/progress',
+    name: 'progress',
+    component: () => import('@/features/progress/ProgressScreen.vue'),
+  },
   { path: '/you', name: 'you', component: () => import('@/features/you/YouScreen.vue') },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('@/features/settings/SettingsScreen.vue'),
+  },
   {
     path: '/onboarding',
     name: 'onboarding',
@@ -65,6 +77,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/auth/RegisterScreen.vue'),
     meta: { public: true },
   },
+  {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@/features/legal/PrivacyScreen.vue'),
+    meta: { open: true },
+  },
+  {
+    path: '/terms',
+    name: 'terms',
+    component: () => import('@/features/legal/TermsScreen.vue'),
+    meta: { open: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
@@ -75,10 +99,13 @@ export const router = createRouter({
 })
 
 /**
- * Auth and onboarding guard. Both lookups are cached; `undefined` means the server could
- * not be reached (offline), in which case navigation proceeds and screens show the error.
+ * Auth and onboarding guard. Both lookups are cached (and mirrored to localStorage, so
+ * they answer offline); `undefined` means the server could not be reached and nothing was
+ * cached, in which case navigation proceeds and screens show the error.
  */
 router.beforeEach(async (to) => {
+  if (to.meta.open) return true
+
   // Both lookups go out at once: on a slow network each round trip costs more than the
   // render, and the first paint of every screen waits on this guard.
   const [userResult, profileResult] = await Promise.allSettled([

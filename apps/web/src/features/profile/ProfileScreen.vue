@@ -346,6 +346,7 @@ function submit(): void {
               v-for="item in COMMON_ALLERGENS"
               :key="item"
               type="button"
+              class="flex min-h-11 items-center"
               :aria-pressed="form.allergies.includes(item)"
               @click="toggleAllergen(item)"
             >

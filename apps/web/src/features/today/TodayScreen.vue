@@ -14,9 +14,13 @@ import DayLog from '@/features/log/DayLog.vue'
 import EntrySheet from '@/features/log/EntrySheet.vue'
 import { useDayLog } from '@/features/log/useLog'
 import { useLocalDay } from '@/features/log/useLocalDay'
+import RecalibrationCard from '@/features/progress/RecalibrationCard.vue'
+import WeightCard from '@/features/progress/WeightCard.vue'
+import { useRecalibration } from '@/features/progress/useProgress'
 import InstallHint from '@/features/pwa/InstallHint.vue'
 import { useTargets } from '@/features/targets/useTargets'
 import { formatDay } from '@/lib/format'
+import { useQueueStore } from '@/stores/queue'
 import { useUiStore } from '@/stores/ui'
 import DayStatus from './DayStatus.vue'
 import EnergyCard from './EnergyCard.vue'
@@ -26,6 +30,7 @@ import WaterCard from './WaterCard.vue'
 import { useDayScore } from './useDayScore'
 
 const ui = useUiStore()
+const queue = useQueueStore()
 const session = useSession()
 const targets = useTargets()
 const route = useRoute()
@@ -69,6 +74,14 @@ const greeting = computed(() => {
 
 const foodEntries = computed(() => log.entries.value.filter((e) => !isWaterEntry(e)))
 
+// The fortnightly plan check only surfaces here when it has a proposal to confirm.
+const recalibration = useRecalibration(
+  computed(() => isToday.value && targets.version.value !== null),
+)
+const proposal = computed(() =>
+  recalibration.assessment.value?.status === 'proposal' ? recalibration.assessment.value : null,
+)
+
 const editing = ref<LogEntry | null>(null)
 const entrySheetOpen = computed({
   get: () => editing.value !== null,
@@ -77,10 +90,16 @@ const entrySheetOpen = computed({
   },
 })
 
+// Cached data always wins over an error: offline, the last known day stays on screen.
 const loading = computed(
   () => session.isLoading.value || targets.isLoading.value || log.isLoading.value,
 )
-const failed = computed(() => session.isError.value || targets.isError.value || log.isError.value)
+const failed = computed(
+  () =>
+    (session.isError.value && !session.user.value) ||
+    (targets.isError.value && !targets.version.value) ||
+    (log.isError.value && !log.hasData.value),
+)
 const errorMessage = computed(
   () =>
     session.error.value?.message ??
@@ -105,7 +124,7 @@ function retry(): void {
         />
         <button
           type="button"
-          class="min-w-[5.5rem] text-center text-sm font-semibold text-fg"
+          class="min-h-11 min-w-[5.5rem] text-center text-sm font-semibold text-fg"
           :disabled="isToday"
           @click="viewedDay = today"
         >
@@ -120,7 +139,18 @@ function retry(): void {
       </div>
     </template>
 
-    <div v-if="loading" class="space-y-4" aria-busy="true">
+    <Card v-if="loading && !ui.online">
+      <h2 class="flex items-center gap-2 text-base font-semibold">
+        <Icon name="wifi-off" :size="20" class="text-fg-muted" /> You're offline
+      </h2>
+      <p class="mt-1 text-sm text-fg-muted">
+        This day isn't saved on this phone yet. Days you have opened before stay available offline,
+        and anything you log now is queued until you're back online.
+      </p>
+      <Button class="mt-4" variant="secondary" @click="retry">Try again</Button>
+    </Card>
+
+    <div v-else-if="loading" class="space-y-4" aria-busy="true">
       <Skeleton class="h-7 w-48" />
       <Skeleton class="h-56 w-full" rounded="card" />
       <Skeleton class="h-32 w-full" rounded="card" />
@@ -142,10 +172,24 @@ function retry(): void {
       </div>
       <InstallHint v-if="isToday" />
 
+      <p
+        v-if="queue.pendingMeals > 0"
+        class="flex items-center gap-2 rounded-card border border-border bg-surface-2 px-3 py-2 text-sm text-fg-muted"
+        role="status"
+      >
+        <Icon name="clock" :size="18" class="shrink-0" />
+        {{ queue.pendingMeals }} {{ queue.pendingMeals === 1 ? 'entry is' : 'entries are' }} waiting
+        for a connection. {{ ui.online ? 'Sending…' : 'They send when you are back online.' }}
+      </p>
+
+      <RecalibrationCard v-if="proposal" :assessment="proposal" compact />
+
       <template v-if="score">
         <EnergyCard :score="score" />
         <WaterCard :score="score" :entries="log.entries.value" :day="viewedDay" />
       </template>
+
+      <WeightCard v-if="isToday" :today="today" />
 
       <DayLog v-if="foodEntries.length" :entries="foodEntries" @select="editing = $event" />
 
