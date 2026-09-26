@@ -125,6 +125,14 @@ describe('createEntriesRequestSchema and updateEntryRequestSchema', () => {
       true,
     )
   })
+
+  it('accepts saving an entry to My foods on its own, but not a lone "do not save"', () => {
+    expect(updateEntryRequestSchema.safeParse({ saveToLibrary: true }).success).toBe(true)
+    expect(updateEntryRequestSchema.safeParse({ saveToLibrary: false }).success).toBe(false)
+    expect(
+      updateEntryRequestSchema.safeParse({ saveToLibrary: false, meal: 'dinner' }).success,
+    ).toBe(true)
+  })
 })
 
 describe('foodEstimateSchema', () => {

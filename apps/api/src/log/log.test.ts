@@ -235,6 +235,73 @@ describe('day log', () => {
     expect((await send('PATCH', `/api/v1/log/entries/${id}`, {})).status).toBe(400)
   })
 
+  it('saves a logged entry to My foods after the fact, edits included, and only once', async () => {
+    const created = createEntriesResponseSchema.parse(
+      await (
+        await send('POST', '/api/v1/log/entries', {
+          day: DAY,
+          meal: 'breakfast',
+          loggedAt: LOGGED_AT,
+          entries: [{ ...eggs, confidence: 'medium' }],
+        })
+      ).json(),
+    )
+    const id = created.entries[0]!.id
+    expect(created.foodsSaved).toBe(0)
+    expect(created.entries[0]?.foodId).toBeNull()
+
+    // Three eggs instead of four, saved to My foods in the same request.
+    const res = await send('PATCH', `/api/v1/log/entries/${id}`, {
+      quantity: 3,
+      grams: 150,
+      nutrients: { ...eggs.nutrients, energy_kcal: 232.5, protein_g: 18.75, fat_g: 15.75 },
+      foodGroups: { ...eggs.foodGroups, protein_foods: 1.5 },
+      saveToLibrary: true,
+    })
+    expect(res.status).toBe(200)
+    const body = updateEntryResponseSchema.parse(await res.json())
+    expect(body.entry.quantity).toBe(3)
+    expect(body.entry.source).toBe('ai')
+    expect(body.entry.foodId).toBeTruthy()
+    expect(body.summaries[0]?.totals.energy_kcal).toBe(232.5)
+
+    const library = foodsResponseSchema.parse(await (await send('GET', '/api/v1/foods')).json())
+    expect(library.foods).toHaveLength(1)
+    const saved = library.foods[0]!
+    expect(saved.id).toBe(body.entry.foodId)
+    expect(saved.name).toBe('Egg, whole, large, boiled')
+    expect(saved.basis).toBe('per_serving')
+    expect(saved.servingGrams).toBe(150)
+    expect(saved.servingLabel).toBe('3 egg')
+    expect(saved.nutrients.energy_kcal).toBe(232.5)
+    expect(saved.foodGroups.protein_foods).toBe(1.5)
+    expect(saved.brand).toBeNull()
+    expect(saved.source).toBe('ai')
+    expect(saved.verified).toBe(true)
+    expect(saved.lastUsedAt).not.toBeNull()
+
+    // A second save of the same entry, now linked, changes nothing.
+    const again = updateEntryResponseSchema.parse(
+      await (await send('PATCH', `/api/v1/log/entries/${id}`, { saveToLibrary: true })).json(),
+    )
+    expect(again.entry.foodId).toBe(body.entry.foodId)
+    expect(await db.select().from(foods)).toHaveLength(1)
+
+    // Saving alone is a change; "don't save" alone is not.
+    expect(
+      (await send('PATCH', `/api/v1/log/entries/${id}`, { saveToLibrary: false })).status,
+    ).toBe(400)
+
+    // Deleting the food unlinks the entry, which can then be saved again.
+    expect((await send('DELETE', `/api/v1/foods/${saved.id}`)).status).toBe(204)
+    const resaved = updateEntryResponseSchema.parse(
+      await (await send('PATCH', `/api/v1/log/entries/${id}`, { saveToLibrary: true })).json(),
+    )
+    expect(resaved.entry.foodId).toBeTruthy()
+    expect(resaved.entry.foodId).not.toBe(saved.id)
+    expect(await db.select().from(foods)).toHaveLength(1)
+  })
+
   it('refuses another user’s food and entry', async () => {
     const other = await register('tess@example.com')
     const mine = cookie
@@ -268,6 +335,14 @@ describe('day log', () => {
     expect((await send('DELETE', `/api/v1/log/entries/${theirEntry.entries[0]!.id}`)).status).toBe(
       404,
     )
+    expect(
+      (
+        await send('PATCH', `/api/v1/log/entries/${theirEntry.entries[0]!.id}`, {
+          saveToLibrary: true,
+        })
+      ).status,
+    ).toBe(404)
+    expect(await db.select().from(foods)).toHaveLength(1)
     const mineToday = dayLogResponseSchema.parse(
       await (await send('GET', `/api/v1/log/day/${DAY}`)).json(),
     )

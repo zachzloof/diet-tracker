@@ -183,7 +183,8 @@ export type CreateEntriesResponse = z.infer<typeof createEntriesResponseSchema>
 /**
  * Edit an entry. Send `quantity`, `grams`, `nutrients` and `foodGroups` together to change
  * how much was eaten (the client rescales with `rescaleToQuantity`); `meal` or `day` to
- * move it. Every field is optional but at least one must be present.
+ * move it; `saveToLibrary: true` to save the entry, as it stands after the edit, to My foods
+ * when it is not linked to a food yet. Every field is optional but something must change.
  */
 export const updateEntryRequestSchema = z
   .object({
@@ -194,11 +195,14 @@ export const updateEntryRequestSchema = z
     foodGroups: foodGroupServesSchema,
     meal: mealSchema,
     day: z.iso.date(),
+    saveToLibrary: z.boolean(),
   })
   .partial()
-  .refine((value) => Object.values(value).some((v) => v !== undefined), {
-    message: 'Nothing to change',
-  })
+  .refine(
+    ({ saveToLibrary, ...fields }) =>
+      saveToLibrary === true || Object.values(fields).some((v) => v !== undefined),
+    { message: 'Nothing to change' },
+  )
 export type UpdateEntryRequest = z.infer<typeof updateEntryRequestSchema>
 
 export const updateEntryResponseSchema = z.object({

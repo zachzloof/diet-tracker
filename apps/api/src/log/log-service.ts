@@ -132,7 +132,10 @@ async function ownedAiCallIds(tx: Tx, userId: string, ids: string[]): Promise<Se
 async function saveEntryAsFood(
   tx: Tx,
   userId: string,
-  entry: LogEntryInput,
+  entry: Pick<
+    LogEntryInput,
+    'name' | 'brand' | 'quantity' | 'unit' | 'grams' | 'nutrients' | 'foodGroups' | 'source'
+  >,
   now: Date,
 ): Promise<string> {
   const food = await createFood(
@@ -242,7 +245,7 @@ export async function updateEntry(
 ): Promise<UpdateEntryResponse> {
   return db.transaction(async (tx) => {
     const current = await requireEntry(tx, userId, id)
-    const updated = (
+    let updated = (
       await tx
         .update(logEntries)
         .set({
@@ -259,6 +262,16 @@ export async function updateEntry(
         .returning()
     )[0]
     if (!updated) throw errors.notFound()
+
+    // Saved to My foods after the fact: the entry as it now stands becomes the food, once.
+    // Entries keep no brand, so a named product relies on its name ("ASDA 10 Mozzarella Sticks").
+    if (patch.saveToLibrary && updated.foodId === null) {
+      const foodId = await saveEntryAsFood(tx, userId, { ...updated, brand: null }, now)
+      await touchFoods(tx, userId, [foodId], now)
+      updated =
+        (await tx.update(logEntries).set({ foodId }).where(eq(logEntries.id, id)).returning())[0] ??
+        updated
+    }
 
     const days = [...new Set([current.day, updated.day])]
     const summaries = []
