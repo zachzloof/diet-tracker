@@ -397,6 +397,9 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 - Icons are rendered from `favicon.svg` at 16 to 1024 px by a one-off Playwright script kept out of the repo; the 1024 px store icon and the Apple touch icon have no alpha and no rounded corners. Slice 5.
 - Capacitor app id `app.diettracker.mobile`, app name "Diet Tracker" (a working name). The native projects are committed; the web build that `cap sync` copies into them is ignored. Slice 5.
 - `robots.txt` allows everything except `/api/`. Slice 5.
+- An entry that was not saved to My foods when it was logged (D14 saves only confident items) can be saved later from its entry sheet: a "Save to My foods" switch that "Save changes" applies, through `saveToLibrary: true` on the entry update. The food is the entry as it stands after the edit, per serving like a save at log time, created once; a later save of a linked entry does nothing. Log entries keep no brand, so a food saved this way has none; named products carry it in the name ("ASDA 10 Mozzarella Sticks"), which the library search matches. After slice 5, 2026-09-26.
+- The energy ring's "kcal left" and "kcal over" follow the arithmetic (eaten against target), while the red ring and the chip follow the status, which stays "close" up to 120% of energy. After slice 5, 2026-09-26.
+- The panels behind Today's food-group rows and nutrient tiles list the viewed day's entries (queued offline ones included, so they add up to the tile) by amount, top five with the rest folded into one line, each with its share of the day's total rather than of the target. Food ideas come from the same filtered lists as the weekly gaps and appear for a minimum that is short or close and a limit that is close or over. One panel per card is open at a time. After slice 5, 2026-09-26.
 
 ## Open questions for later slices (not blocking)
 

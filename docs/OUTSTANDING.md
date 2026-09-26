@@ -20,6 +20,10 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 - **Lighthouse performance is in the 70s** under its simulated slow 4G with 4x CPU throttle (accessibility, SEO and best practices are at 100). The app-shell JavaScript is about 500 KB uncompressed; moving the score means code-splitting the vendor bundle. Real-device feel matters more than this number; judge it during the week.
 - **The estimator's "Describe" path stays disabled offline** by design; My foods and manual entries queue.
 
+## Noticed after slice 5, not fixed yet
+
+- **Contrast in the entry sheet** (axe-core, 2026-09-26). In dark mode the Delete button's red text is 4.05:1 on its tinted background, under the 4.5:1 AA line; lightening the dark `--danger` token slightly (for example `#f0595e`, about 4.8:1) would fix it everywhere the destructive button appears. In light mode the P, C and F letters in the sheet's summary strip use the macro colours on a pale surface (1.5 to 2.3:1), the same known issue as the light-mode macro colours in the slice 4 deferrals. Both predate the fixes after slice 5; the slice 5 Lighthouse runs did not open this sheet.
+
 ## Worth watching during the week
 
 - Whether the AI estimates feel right for the foods you actually eat, and whether "4 eggs" the second time reuses your saved food (D5, D14).
