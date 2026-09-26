@@ -239,7 +239,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** A now; add B only when local notifications exist and the owner wants "your week is ready" pushes.
 
-**Status.** `proposed` (2026-09-26); built on A.
+**Status.** `accepted` (2026-09-26): A, confirmed by the owner.
 
 ---
 
@@ -253,7 +253,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** A. Revisit only if water needs to be shown separately from food water, which would then be a display change, not a storage one.
 
-**Status.** `proposed` (2026-09-26); built on A.
+**Status.** `accepted` (2026-09-26): A, confirmed by the owner.
 
 ---
 
