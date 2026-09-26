@@ -6,12 +6,14 @@ import Icon from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import Button from '@/components/ui/Button.vue'
 import { formatKcal } from '@/lib/format'
+import { useUiStore } from '@/stores/ui'
 import { basisLabel } from './food-form'
 import { useFoods } from './useLog'
 
 /** Search My foods and pick one. Re-logging from here never makes an AI call (D5). */
 const emit = defineEmits<{ pick: [food: Food]; manual: [] }>()
 
+const ui = useUiStore()
 const q = ref('')
 const foods = useFoods(q)
 </script>
@@ -33,7 +35,12 @@ const foods = useFoods(q)
       />
     </div>
 
-    <div v-if="foods.isLoading.value" class="space-y-2" aria-busy="true">
+    <p v-if="foods.isLoading.value && !ui.online" class="text-sm text-fg-muted">
+      You're offline and your foods aren't saved on this phone yet. They will be after the next
+      visit to My foods with a connection.
+    </p>
+
+    <div v-else-if="foods.isLoading.value" class="space-y-2" aria-busy="true">
       <Skeleton v-for="i in 4" :key="i" class="h-14 w-full" />
     </div>
 

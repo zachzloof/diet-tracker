@@ -30,6 +30,8 @@ const props = withDefaults(
     /** Draw the area wash under the line. */
     area?: boolean
     markers?: boolean
+    /** Readout for a slot with no value. */
+    emptyLabel?: string
   }>(),
   {
     target: null,
@@ -45,6 +47,7 @@ const props = withDefaults(
     decimals: 0,
     area: true,
     markers: true,
+    emptyLabel: 'not logged',
   },
 )
 
@@ -85,8 +88,9 @@ const scale = computed(() =>
 )
 const line = computed(() => linePath(props.points, scale.value))
 const area = computed(() => (props.area ? areaPath(props.points, scale.value) : ''))
+// The secondary series is a trend through sparse points, so it is drawn across the gaps.
 const secondaryLine = computed(() =>
-  props.secondary ? linePath(props.secondary, scale.value) : '',
+  props.secondary ? linePath(props.secondary, scale.value, true) : '',
 )
 const marks = computed(() =>
   props.points.flatMap((value, i) =>
@@ -103,7 +107,7 @@ const axisLabels = computed(() =>
   props.labels.map((text, i) => ({
     i,
     text,
-    show: props.labelEvery <= 1 || i % props.labelEvery === 0 || i === props.labels.length - 1,
+    show: props.labelEvery <= 1 || (props.labels.length - 1 - i) % props.labelEvery === 0,
   })),
 )
 
@@ -113,7 +117,7 @@ const readout = computed(() => {
   if (i === null) return null
   const value = props.points[i]
   const label = props.labels[i] ?? ''
-  if (value === null || value === undefined) return `${label}: not logged`
+  if (value === null || value === undefined) return `${label}: ${props.emptyLabel}`
   const secondary = props.secondary?.[i]
   const extra =
     secondary !== null && secondary !== undefined

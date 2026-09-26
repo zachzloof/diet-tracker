@@ -34,13 +34,20 @@ export function makeScale(count: number, max: number, box: ChartBox, min = 0): C
 
 const r1 = (n: number) => Math.round(n * 10) / 10
 
-/** One `M`/`L` run per unbroken stretch of values; nulls leave a gap rather than a line to zero. */
-export function linePath(points: readonly (number | null)[], scale: ChartScale): string {
+/**
+ * One `M`/`L` run per unbroken stretch of values; nulls leave a gap rather than a line to
+ * zero. With `connectNulls` the line skips the gaps instead (a trend through sparse weigh-ins).
+ */
+export function linePath(
+  points: readonly (number | null)[],
+  scale: ChartScale,
+  connectNulls = false,
+): string {
   const parts: string[] = []
   let drawing = false
   points.forEach((value, i) => {
     if (value === null) {
-      drawing = false
+      if (!connectNulls) drawing = false
       return
     }
     parts.push(`${drawing ? 'L' : 'M'}${r1(scale.x(i))} ${r1(scale.y(value))}`)

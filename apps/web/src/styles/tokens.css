@@ -11,7 +11,8 @@
   --fg: #0f1419;
   --fg-muted: #5b6472;
 
-  --accent: #16a34a;
+  /* 5.0:1 on white for button labels; the dark accent is the brighter lime. */
+  --accent: #15803d;
   --accent-fg: #ffffff;
 
   --protein: #60a5fa;
@@ -23,8 +24,9 @@
   --met: #22c55e;
   --close: #f59e0b;
   --short: #8b93a1;
-  --over: #f0564f;
-  --danger: #e5484d;
+  /* Both read as text (errors, "Delete account") so they must clear 4.5:1 on white. */
+  --over: #dc2626;
+  --danger: #c53030;
 
   --shadow-card: 0 1px 2px rgb(16 24 40 / 0.06), 0 4px 12px rgb(16 24 40 / 0.06);
 
@@ -42,6 +44,8 @@
 
     --accent: #7cf29a;
     --accent-fg: #06110a;
+    --over: #f0564f;
+    --danger: #e5484d;
 
     --shadow-card: none;
 
@@ -59,6 +63,8 @@
 
   --accent: #7cf29a;
   --accent-fg: #06110a;
+  --over: #f0564f;
+  --danger: #e5484d;
 
   --shadow-card: none;
 

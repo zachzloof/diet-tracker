@@ -20,7 +20,7 @@ function verdict(d: ScoredDay): 'met' | 'short' | null {
 
 function describe(d: ScoredDay): string {
   const state = !d.score.logged ? 'not logged' : d.score.dayMet ? 'day met' : 'day not met'
-  return `${formatDay(d.day)}, ${state}. Open this day's log`
+  return `${formatDay(d.day)}, ${state}, open this day's log`
 }
 </script>
 
@@ -31,13 +31,17 @@ function describe(d: ScoredDay): string {
         type="button"
         class="flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-control border py-2 text-fg transition hover:bg-surface-2 active:bg-border/40"
         :class="d.day === today ? 'border-accent bg-accent/10' : 'border-border bg-surface'"
-        :aria-label="describe(d)"
         :aria-current="d.day === today ? 'date' : undefined"
         @click="open(d.day)"
       >
-        <span class="text-[11px] font-medium text-fg-muted">{{ weekdayShort(d.day) }}</span>
-        <span class="text-sm font-semibold">{{ Number(d.day.slice(8, 10)) }}</span>
+        <span class="text-[11px] font-medium text-fg-muted" aria-hidden="true">{{
+          weekdayShort(d.day)
+        }}</span>
+        <span class="text-sm font-semibold" aria-hidden="true">{{
+          Number(d.day.slice(8, 10))
+        }}</span>
         <StatusDot :status="verdict(d)" size="md" />
+        <span class="sr-only">{{ describe(d) }}</span>
       </button>
     </li>
   </ol>

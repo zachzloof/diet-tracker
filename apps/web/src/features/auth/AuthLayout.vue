@@ -10,7 +10,7 @@ defineProps<{ title: string; subtitle: string }>()
       paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)',
     }"
   >
-    <div class="mx-auto flex w-full max-w-[480px] flex-1 flex-col px-4">
+    <main class="mx-auto flex w-full max-w-[480px] flex-1 flex-col px-4">
       <div class="mb-8 flex items-center gap-3">
         <img src="/favicon.svg" alt="" width="40" height="40" class="rounded-[10px]" />
         <span class="text-base font-semibold text-fg-muted">Diet Tracker</span>
@@ -23,6 +23,6 @@ defineProps<{ title: string; subtitle: string }>()
       <div class="mt-auto pt-8 text-center text-sm text-fg-muted">
         <slot name="footer" />
       </div>
-    </div>
+    </main>
   </div>
 </template>

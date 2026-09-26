@@ -42,6 +42,10 @@ describe('linePath and areaPath', () => {
     expect(linePath([null, null, null, null, null], scale)).toBe('')
   })
 
+  it('connects across nulls when asked, for a trend through sparse points', () => {
+    expect(linePath([0, null, 100, null, 0], scale, true)).toBe('M10 50 L60 10 L110 50')
+  })
+
   it('closes one area per run down to the baseline', () => {
     expect(areaPath([0, 50, null, 100, 100], scale)).toBe(
       'M10 50 L10 50 L35 30 L35 50 Z M85 50 L85 10 L110 10 L110 50 Z',

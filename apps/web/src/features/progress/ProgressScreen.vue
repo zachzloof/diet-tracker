@@ -34,7 +34,7 @@ const RANGES = [
   { value: '90', label: '3 months' },
   { value: '365', label: '1 year' },
 ]
-const range = ref('90')
+const range = ref('28')
 const days = computed(() => Number(range.value))
 
 const weights = useWeights(days)
@@ -172,6 +172,7 @@ const recent = computed(() => [...entries.value].reverse().slice(0, 14))
               domain="auto"
               :area="false"
               :unit="unitLabel"
+              empty-label="no weigh-in"
               label="Weigh-ins with the seven-day trend and the goal weight"
             />
             <p class="mt-2 text-sm text-fg-muted">{{ paceText }}</p>
@@ -222,9 +223,9 @@ const recent = computed(() => [...entries.value].reverse().slice(0, 14))
               <button
                 type="button"
                 class="flex min-h-14 min-w-0 flex-1 items-center gap-3 py-2 text-left"
-                :aria-label="`Edit the weigh-in for ${formatDay(entry.day)}`"
                 @click="openSheet(entry.day)"
               >
+                <span class="sr-only">Edit the weigh-in:</span>
                 <span class="min-w-0 flex-1">
                   <span class="block text-base text-fg">{{ formatDay(entry.day) }}</span>
                   <span v-if="entry.note" class="block truncate text-xs text-fg-muted">

@@ -73,22 +73,26 @@ const goal = (key: NutrientKey) => props.score.scores[key]?.target ?? 0
         <span class="mt-1 text-xs text-fg-muted">{{ over ? 'kcal over' : 'kcal left' }}</span>
       </Ring>
 
+      <!-- dt and dd sit directly in the group div (a11y "dlitem"); the grid keeps the row layout. -->
       <dl class="min-w-0 flex-1 space-y-2.5">
-        <div v-for="bar in BARS" :key="bar.key">
-          <div class="flex items-baseline justify-between gap-2 text-xs">
-            <dt class="font-medium text-fg">{{ bar.label }}</dt>
-            <dd class="truncate text-fg-muted">
-              <span class="font-semibold text-fg">{{ formatNumber(actual(bar.key), 0) }}</span>
-              / {{ formatNumber(goal(bar.key), 0) }} g
-            </dd>
-          </div>
-          <ProgressBar
-            class="mt-1"
-            :value="actual(bar.key)"
-            :max="goal(bar.key)"
-            :color="bar.color"
-            :label="bar.label"
-          />
+        <div
+          v-for="bar in BARS"
+          :key="bar.key"
+          class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 text-xs"
+        >
+          <dt class="font-medium text-fg">{{ bar.label }}</dt>
+          <dd class="truncate text-right text-fg-muted">
+            <span class="font-semibold text-fg">{{ formatNumber(actual(bar.key), 0) }}</span>
+            / {{ formatNumber(goal(bar.key), 0) }} g
+          </dd>
+          <dd class="col-span-2 mt-1">
+            <ProgressBar
+              :value="actual(bar.key)"
+              :max="goal(bar.key)"
+              :color="bar.color"
+              :label="bar.label"
+            />
+          </dd>
         </div>
       </dl>
     </div>
