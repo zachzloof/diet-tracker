@@ -93,7 +93,8 @@ describe('weekly-review prompt', () => {
     )
     expect(message).toMatch(/2\. \[medium\] Fibre short/)
     expect(message).toMatch(/Suggestions: Frozen mixed vegetables/)
-    expect(message).not.toMatch(/liver/i)
+    // Finn dislikes liver: it appears in the profile line only, never as a suggestion.
+    expect(message.split('GAPS, RANKED')[1]).not.toMatch(/liver/i)
   })
 })
 
