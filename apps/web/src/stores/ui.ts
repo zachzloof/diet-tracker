@@ -63,9 +63,28 @@ export const useUiStore = defineStore('ui', () => {
     toasts.value = toasts.value.filter((item) => item.id !== id)
   }
 
+  /** The quick-add sheet is opened from the tab bar or any screen; `day` presets the log day. */
+  const quickAdd = ref<{ open: boolean; day: string | null }>({ open: false, day: null })
+  function openQuickAdd(day: string | null = null): void {
+    quickAdd.value = { open: true, day }
+  }
+  function closeQuickAdd(): void {
+    quickAdd.value = { open: false, day: null }
+  }
+
   const online = ref(navigator.onLine)
   window.addEventListener('online', () => (online.value = true))
   window.addEventListener('offline', () => (online.value = false))
 
-  return { theme, setTheme, toasts, toast, dismissToast, online }
+  return {
+    theme,
+    setTheme,
+    toasts,
+    toast,
+    dismissToast,
+    online,
+    quickAdd,
+    openQuickAdd,
+    closeQuickAdd,
+  }
 })

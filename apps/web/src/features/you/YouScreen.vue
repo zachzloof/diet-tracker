@@ -97,6 +97,23 @@ const targetsSummary = computed(() => {
             <Icon name="chevron-right" :size="18" class="text-fg-muted" />
           </RouterLink>
           <RouterLink
+            :to="{ name: 'foods' }"
+            class="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
+          >
+            <span
+              class="flex size-10 items-center justify-center rounded-full bg-surface-2 text-fg-muted"
+            >
+              <Icon name="book" :size="20" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-base font-semibold">My foods</span>
+              <span class="block truncate text-sm text-fg-muted"
+                >Saved foods for one-tap logging</span
+              >
+            </span>
+            <Icon name="chevron-right" :size="18" class="text-fg-muted" />
+          </RouterLink>
+          <RouterLink
             :to="{ name: 'targets' }"
             class="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
           >

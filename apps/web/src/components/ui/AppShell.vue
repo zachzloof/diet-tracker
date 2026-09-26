@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useRouter, type RouteLocationRaw } from 'vue-router'
 import QuickAddSheet from '@/features/log/QuickAddSheet.vue'
+import { useUiStore } from '@/stores/ui'
 import IconButton from './IconButton.vue'
 import TabBar from './TabBar.vue'
 
@@ -12,7 +12,7 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
-const quickAddOpen = ref(false)
+const ui = useUiStore()
 
 function goBack(): void {
   if (!props.back) return
@@ -52,7 +52,7 @@ function goBack(): void {
       <slot />
     </main>
 
-    <TabBar @add="quickAddOpen = true" />
-    <QuickAddSheet v-model:open="quickAddOpen" />
+    <TabBar @add="ui.openQuickAdd()" />
+    <QuickAddSheet />
   </div>
 </template>

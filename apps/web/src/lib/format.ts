@@ -61,3 +61,24 @@ export function formatInstant(iso: string): string {
     minute: '2-digit',
   })
 }
+
+/** "4 eggs", "1.5 cups", "50 g": whole numbers stay whole, fractions get one or two decimals. */
+export function formatQuantity(quantity: number, unit: string): string {
+  const q = Number.isInteger(quantity)
+    ? String(quantity)
+    : quantity.toFixed(quantity < 1 ? 2 : 1).replace(/\.?0+$/, '')
+  return unit === 'g' || unit === 'ml' ? `${q} ${unit}` : `${q} ${unit}`
+}
+
+export function formatKcal(kcal: number): string {
+  return `${formatNumber(Math.round(kcal), 0)} kcal`
+}
+
+/** Grams to one decimal, dropping the decimal when whole. */
+export function formatGrams(grams: number): string {
+  return `${formatNumber(Math.round(grams * 10) / 10, 1)} g`
+}
+
+export function formatMealTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}

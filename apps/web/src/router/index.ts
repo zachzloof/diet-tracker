@@ -34,6 +34,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/targets/TargetsHistoryScreen.vue'),
   },
   {
+    path: '/foods',
+    name: 'foods',
+    component: () => import('@/features/log/FoodsScreen.vue'),
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('@/features/profile/ProfileScreen.vue'),
