@@ -75,6 +75,7 @@ export const errors = {
       'ai_unclear',
       "Couldn't work out what that was. Try rephrasing, or add it manually.",
     ),
+  conflict: (message: string) => new AppError(409, 'conflict', message),
   rateLimited: (retryAfterSeconds: number) =>
     new AppError(
       429,

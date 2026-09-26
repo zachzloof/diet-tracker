@@ -81,6 +81,14 @@ export function addDays(day: string, days: number): string {
   return shifted.toISOString().slice(0, 10)
 }
 
+/** Calendar days from `from` to `to` (negative when `to` is earlier), both `YYYY-MM-DD`. */
+export function daysBetween(from: string, to: string): number {
+  if (!DAY_RE.test(from) || !DAY_RE.test(to)) throw new Error('daysBetween expects YYYY-MM-DD')
+  const [fy, fm, fd] = from.split('-').map(Number) as [number, number, number]
+  const [ty, tm, td] = to.split('-').map(Number) as [number, number, number]
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000)
+}
+
 /** Whole years between a date of birth and a day, both `YYYY-MM-DD`. */
 export function ageOn(dob: string, day: string): number {
   if (!DAY_RE.test(dob) || !DAY_RE.test(day)) throw new Error('ageOn expects YYYY-MM-DD')

@@ -49,6 +49,8 @@ export const profiles = pgTable('profiles', {
   timezone: text('timezone').notNull(),
   units: text('units').notNull(),
   flags: jsonb('flags').$type<SafetyFlags>().notNull(),
+  /** "Not now" on a recalibration proposal hides it until this local day (slice 5). */
+  recalibrationSnoozedUntil: day('recalibration_snoozed_until'),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
   updatedAt: timestamptz('updated_at').notNull().defaultNow(),
 })

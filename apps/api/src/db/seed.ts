@@ -8,6 +8,7 @@ import { saveProfile } from '../profile/profile-service.js'
 import { closeDb, db } from './client.js'
 import { foods, profiles, users } from './schema/index.js'
 import { SEED_FOODS, SEED_USERS } from './seed-data.js'
+import { backdateTargets, seedEarlierWeek, seedWeights } from './seed-progress.js'
 import { seedWeek } from './seed-weeks.js'
 
 /**
@@ -65,6 +66,13 @@ async function seed(): Promise<void> {
       { email, entries },
       entries > 0 ? 'seed week of meals' : 'seed log already present, left alone',
     )
+
+    // Slice 5: a second week, two weeks of weigh-ins and a backdated first version so the
+    // recalibration check is due (Tess gets a proposal, Finn is on track).
+    const earlier = await seedEarlierWeek(user.id, email, profile.timezone)
+    const weights = await seedWeights(user.id, email, profile.timezone)
+    const backdated = await backdateTargets(user.id, profile.timezone)
+    logger.info({ email, earlier, weights, backdated }, 'seed progress history')
   }
 }
 

@@ -58,6 +58,12 @@ export const targetInputSchema = z.object({
   goalWeightKg: z.number().nullable(),
   dietPattern: dietPatternSchema,
   flags: safetyFlagsSchema,
+  /**
+   * Slice 5: the cumulative energy adjustment from recalibration (targets.md section 10),
+   * applied after the pace and before the clamps and the floor. Absent means 0; profile
+   * changes carry it forward and the next recalibration replaces it.
+   */
+  recalibrationKcal: z.number().min(-2000).max(2000).optional(),
 })
 export type TargetInput = z.infer<typeof targetInputSchema>
 
@@ -93,6 +99,8 @@ export const targetsMetaSchema = z.object({
   goalApplied: goalSchema,
   paceApplied: paceSchema.nullable(),
   energyAdjustmentKcal: z.number(),
+  /** The recalibration part of the adjustment as applied (0 before slice 5 or when flagged). */
+  recalibrationKcal: z.number().default(0),
   floorKcal: z.number(),
   referenceWeightKg: z.number(),
   proteinGPerKg: z.number(),
@@ -259,16 +267,22 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
     )
   }
 
-  // 3. Energy: pace adjustment, then clamps, then the floor.
+  // 3. Energy: pace adjustment, then recalibration, then clamps, then the floor.
   const paceKcal = pace ? PACE_KCAL[pace] : 0
-  let energyRaw = tdee + paceKcal
+  // A flagged person stays at maintenance: no recalibration can move them into a deficit.
+  const recalibrationKcal = flagged ? 0 : Math.round(input.recalibrationKcal ?? 0)
+  let energyRaw = tdee + paceKcal + recalibrationKcal
   const floorKcal = Math.max(bmr, SEX_FLOOR_KCAL[sex])
   const energyNotes: string[] = []
-  if (goal === 'lose' && energyRaw < tdee * (1 - MAX_DEFICIT_SHARE)) {
+  if (energyRaw < tdee * (1 - MAX_DEFICIT_SHARE)) {
     energyRaw = tdee * (1 - MAX_DEFICIT_SHARE)
-    energyNotes.push('capped at a 25% deficit; a gentler pace would fit better')
+    energyNotes.push(
+      goal === 'lose'
+        ? 'capped at a 25% deficit; a gentler pace would fit better'
+        : 'capped at a 25% deficit',
+    )
   }
-  if (goal === 'gain' && energyRaw > tdee * (1 + MAX_SURPLUS_SHARE)) {
+  if (energyRaw > tdee * (1 + MAX_SURPLUS_SHARE)) {
     energyRaw = tdee * (1 + MAX_SURPLUS_SHARE)
     energyNotes.push('capped at a 20% surplus')
   }
@@ -280,7 +294,7 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
   }
   const energyComputed = roundTo(energyRaw, 10)
   const energy = pin('energy_kcal') ?? energyComputed
-  /** The pace adjustment actually applied, after clamps and the floor. */
+  /** The pace and recalibration adjustment actually applied, after clamps and the floor. */
   const energyAdjustment = Math.round(energyRaw - tdee)
 
   const formulaName =
@@ -292,6 +306,9 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
     energyReason = `${tdeeText}, ${sign} ${fmt(Math.abs(paceKcal))} kcal a day for a ${PACE_LABELS[pace].label.toLowerCase()} pace of about ${fmt(Math.abs(PACE_KG_PER_WEEK[pace]), 2)} kg a week (7700 kcal per kg).`
   } else {
     energyReason = `${tdeeText}. ${GOAL_LABELS[goal].label} means eating at maintenance.`
+  }
+  if (recalibrationKcal !== 0) {
+    energyReason = `${energyReason.replace(/\.$/, '')}, then ${recalibrationKcal > 0 ? 'plus' : 'minus'} ${fmt(Math.abs(recalibrationKcal))} kcal from recalibration against your logged weight and intake.`
   }
   if (energyNotes.length > 0) energyReason += ` Then ${energyNotes.join('; ')}.`
   for (const note of energyNotes) notes.push(`Energy was ${note}.`)
@@ -552,6 +569,7 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
       goalApplied: goal,
       paceApplied: pace,
       energyAdjustmentKcal: energyAdjustment,
+      recalibrationKcal,
       floorKcal: roundTo(floorKcal, 10),
       referenceWeightKg: round2(referenceWeight),
       proteinGPerKg: round2(gPerKg),

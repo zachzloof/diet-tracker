@@ -145,7 +145,13 @@ export async function saveProfile(
     if (!saved) throw new Error('profile upsert returned no row')
 
     const current = await latestVersion(userId, tx)
-    const targetInput = buildTargetInput(input, today)
+    // A recalibration adjustment survives profile edits; only the next recalibration replaces it.
+    const targetInput: TargetInput = {
+      ...buildTargetInput(input, today),
+      ...(current?.inputs.recalibrationKcal !== undefined
+        ? { recalibrationKcal: current.inputs.recalibrationKcal }
+        : {}),
+    }
     let version = current
     let targetsChanged = false
 

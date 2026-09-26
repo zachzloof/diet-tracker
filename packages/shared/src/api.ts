@@ -16,6 +16,7 @@ export const apiErrorCodeSchema = z.enum([
   'ai_unavailable',
   'ai_cap_reached',
   'ai_unclear',
+  'conflict',
 ])
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>
 

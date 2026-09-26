@@ -57,8 +57,10 @@ export const loginEmailLimiter = new SlidingWindowLimiter(10, 15 * MINUTE)
 export const loginIpLimiter = new SlidingWindowLimiter(30, 15 * MINUTE)
 /** Registrations per IP: 10 per hour. */
 export const registerIpLimiter = new SlidingWindowLimiter(10, 60 * MINUTE)
+/** Wrong-password attempts on change password or delete account, per user: 10 in 15 minutes. */
+export const passwordAttemptLimiter = new SlidingWindowLimiter(10, 15 * MINUTE)
 
-const limiters = [loginEmailLimiter, loginIpLimiter, registerIpLimiter]
+const limiters = [loginEmailLimiter, loginIpLimiter, registerIpLimiter, passwordAttemptLimiter]
 
 export function sweepRateLimits(): void {
   for (const limiter of limiters) limiter.sweep()

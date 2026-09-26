@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "recalibration_snoozed_until" date;

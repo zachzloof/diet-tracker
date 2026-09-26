@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { requestId } from 'hono/request-id'
 import { secureHeaders } from 'hono/secure-headers'
+import { accountRoutes } from './account/routes.js'
 import { authRoutes } from './auth/routes.js'
 import { sessionMiddleware } from './auth/session-middleware.js'
 import { errors, handleError } from './errors.js'
@@ -9,6 +10,7 @@ import { aiRoutes, foodsRoutes, logRoutes } from './log/routes.js'
 import { requestLog } from './middleware/request-log.js'
 import { healthRoutes } from './routes/health.js'
 import { profileRoutes, targetsRoutes } from './profile/routes.js'
+import { recalibrationRoutes, weightRoutes } from './progress/routes.js'
 import { meRoutes } from './routes/me.js'
 import { statsRoutes, weeklyReviewRoutes } from './stats/routes.js'
 import { registerStatic } from './static.js'
@@ -47,6 +49,9 @@ export function createApp(): Hono<AppEnv> {
   app.route('/api/v1/ai', aiRoutes)
   app.route('/api/v1/ai', weeklyReviewRoutes)
   app.route('/api/v1/stats', statsRoutes)
+  app.route('/api/v1/weight', weightRoutes)
+  app.route('/api/v1/recalibration', recalibrationRoutes)
+  app.route('/api/v1/account', accountRoutes)
 
   // Unknown API paths get the JSON error format, never the SPA fallback.
   app.all('/api/*', () => {

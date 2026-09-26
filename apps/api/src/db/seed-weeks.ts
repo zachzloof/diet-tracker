@@ -592,7 +592,7 @@ export const SEED_WEEKS: Record<string, SeedDay[]> = {
   ],
 }
 
-function entryFor(email: string, key: string): LogEntryInput {
+export function entryFor(email: string, key: string): LogEntryInput {
   const water = /^W(\d+)$/.exec(key)
   if (water) return waterEntryInput(Number(water[1]))
   const found = SEED_MEALS[email]?.[key]
