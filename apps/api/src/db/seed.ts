@@ -8,11 +8,12 @@ import { saveProfile } from '../profile/profile-service.js'
 import { closeDb, db } from './client.js'
 import { foods, profiles, users } from './schema/index.js'
 import { SEED_FOODS, SEED_USERS } from './seed-data.js'
+import { seedWeek } from './seed-weeks.js'
 
 /**
- * Creates Finn and Tess with their profiles, first target version and a few library foods.
- * Idempotent: existing accounts, profiles and libraries are left alone, so re-running never
- * overwrites a change you made by hand in the app.
+ * Creates Finn and Tess with their profiles, first target version, a few library foods and
+ * a week of logged meals (slice 4). Idempotent: existing accounts, profiles, libraries and
+ * logs are left alone, so re-running never overwrites a change you made by hand in the app.
  */
 async function seed(): Promise<void> {
   for (const { email, password, profile } of SEED_USERS) {
@@ -52,12 +53,18 @@ async function seed(): Promise<void> {
       .limit(1)
     if (library.length > 0) {
       logger.info({ email }, 'seed foods already present, left alone')
-      continue
+    } else {
+      for (const food of SEED_FOODS[email] ?? []) {
+        await createFood(user.id, food, { source: 'manual', verified: true })
+      }
+      logger.info({ email, count: SEED_FOODS[email]?.length ?? 0 }, 'seed foods')
     }
-    for (const food of SEED_FOODS[email] ?? []) {
-      await createFood(user.id, food, { source: 'manual', verified: true })
-    }
-    logger.info({ email, count: SEED_FOODS[email]?.length ?? 0 }, 'seed foods')
+
+    const entries = await seedWeek(user.id, email, profile.timezone)
+    logger.info(
+      { email, entries },
+      entries > 0 ? 'seed week of meals' : 'seed log already present, left alone',
+    )
   }
 }
 

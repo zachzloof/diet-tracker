@@ -10,6 +10,7 @@ import { requestLog } from './middleware/request-log.js'
 import { healthRoutes } from './routes/health.js'
 import { profileRoutes, targetsRoutes } from './profile/routes.js'
 import { meRoutes } from './routes/me.js'
+import { statsRoutes, weeklyReviewRoutes } from './stats/routes.js'
 import { registerStatic } from './static.js'
 import type { AppEnv } from './types.js'
 
@@ -44,6 +45,8 @@ export function createApp(): Hono<AppEnv> {
   app.route('/api/v1/foods', foodsRoutes)
   app.route('/api/v1/log', logRoutes)
   app.route('/api/v1/ai', aiRoutes)
+  app.route('/api/v1/ai', weeklyReviewRoutes)
+  app.route('/api/v1/stats', statsRoutes)
 
   // Unknown API paths get the JSON error format, never the SPA fallback.
   app.all('/api/*', () => {

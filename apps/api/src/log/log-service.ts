@@ -2,6 +2,7 @@ import {
   dailySummarySchema,
   emptyFoodGroupServes,
   emptyNutrientVector,
+  isWaterEntry,
   logEntrySchema,
   sumPortions,
   type CreateEntriesRequest,
@@ -71,14 +72,20 @@ export async function recomputeSummary(
   now: Date,
 ): Promise<DailySummaryRow> {
   const rows = await tx
-    .select({ nutrients: logEntries.nutrients, foodGroups: logEntries.foodGroups })
+    .select({
+      name: logEntries.name,
+      unit: logEntries.unit,
+      nutrients: logEntries.nutrients,
+      foodGroups: logEntries.foodGroups,
+    })
     .from(logEntries)
     .where(and(eq(logEntries.userId, userId), eq(logEntries.day, day)))
   const totals = sumPortions(rows)
   const values = {
     totals: totals.totals,
     foodGroups: totals.foodGroups,
-    entryCount: totals.entryCount,
+    // Water quick-adds add to the totals but a day of water alone is still "unlogged".
+    entryCount: rows.filter((row) => !isWaterEntry(row)).length,
     updatedAt: now,
   }
   const upserted = await tx

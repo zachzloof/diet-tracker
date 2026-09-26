@@ -20,7 +20,7 @@ process.env.AI_DAILY_CALL_CAP = '3'
 beforeAll(async () => {
   const { db } = await import('../db/client.js')
   await db.execute(
-    sql`truncate table log_entries, daily_summaries, foods, ai_calls, weight_entries, target_versions, profiles, sessions, users cascade`,
+    sql`truncate table weekly_reviews, log_entries, daily_summaries, foods, ai_calls, weight_entries, target_versions, profiles, sessions, users cascade`,
   )
 })
 
