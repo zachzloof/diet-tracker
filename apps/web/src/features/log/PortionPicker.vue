@@ -80,6 +80,7 @@ function confirm(): void {
       source: 'library',
       foodId: props.food.id,
       aiCallId: null,
+      brand: props.food.brand,
       assumptions: [],
       confidence: null,
       saveToLibrary: false,

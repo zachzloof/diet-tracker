@@ -74,7 +74,11 @@ function nudge(direction: 1 | -1): void {
         :aria-describedby="error ? `${id}-error` : helper ? `${id}-helper` : undefined"
         class="min-w-0 flex-1 bg-transparent text-center text-base font-semibold text-fg outline-none"
       />
-      <span v-if="unit" class="flex items-center pr-2 text-sm text-fg-muted" aria-hidden="true">
+      <span
+        v-if="unit"
+        class="flex items-center pl-1.5 pr-2 text-sm text-fg-muted"
+        aria-hidden="true"
+      >
         {{ unit }}
       </span>
       <button

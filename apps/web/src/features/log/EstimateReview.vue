@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   CONFIDENCE_LABELS,
-  rescaleToQuantity,
   roundFoodGroupServes,
   roundNutrientVector,
   sumPortions,
@@ -18,15 +17,18 @@ import Chip, { type ChipTone } from '@/components/ui/Chip.vue'
 import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Input from '@/components/ui/Input.vue'
-import NumberField from '@/components/ui/NumberField.vue'
 import { formatGrams, formatKcal, formatNumber, formatQuantity } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
+import ItemEditor from './ItemEditor.vue'
 import MealDayPicker from './MealDayPicker.vue'
+import { applyItemEdit, snapshotItem, type EditableItem, type ItemEdit } from './item-edit'
 
 /**
  * The review card: every item the estimator found, with its grams, key nutrients,
- * confidence and assumptions. Edit a quantity (the numbers rescale), remove an item, choose
- * meal and day, then confirm. Nothing is saved until the confirm button.
+ * confidence, assumptions and, for a named product, the page its label came from. Tap an
+ * item to change the quantity or weight (everything rescales) or to correct any single
+ * nutrient (only that number changes), remove it, choose meal and day, then confirm.
+ * Nothing is saved until the confirm button.
  */
 const props = defineProps<{
   result: EstimateResponse
@@ -42,9 +44,11 @@ const emit = defineEmits<{
   edit: []
 }>()
 
-interface ReviewItem {
+interface ReviewItem extends EditableItem {
   key: number
   name: string
+  brand: string | null
+  sourceUrl: string | null
   unit: string
   quantity: number
   grams: number
@@ -53,6 +57,8 @@ interface ReviewItem {
   confidence: Confidence
   assumptions: string[]
   matchedFoodId: string | null
+  /** What portion edits scale from; see item-edit.ts. */
+  base: EditableItem
   /** Save to My foods on confirm. Defaults on for confident items, per the skill. */
   save: boolean
   edited: boolean
@@ -71,6 +77,8 @@ watch(
     items.value = result.estimate.items.map((item, index) => ({
       key: index,
       name: item.name,
+      brand: item.brand,
+      sourceUrl: item.source_url,
       unit: item.unit,
       quantity: item.quantity,
       grams: item.grams,
@@ -79,6 +87,12 @@ watch(
       confidence: item.confidence,
       assumptions: item.assumptions,
       matchedFoodId: item.matched_food_id,
+      base: snapshotItem({
+        quantity: item.quantity,
+        grams: item.grams,
+        nutrients: item.nutrients,
+        foodGroups: item.food_groups,
+      }),
       save: item.confidence === 'high' && item.matched_food_id === null,
       edited: false,
       expanded: false,
@@ -94,10 +108,23 @@ const totals = computed(() => sumPortions(items.value))
 
 const TONE: Record<Confidence, ChipTone> = { high: 'met', medium: 'close', low: 'short' }
 
-function setQuantity(item: ReviewItem, quantity: number | null): void {
-  if (quantity === null || quantity < 0) return
-  const scaled = rescaleToQuantity(item, quantity)
-  Object.assign(item, scaled, { edited: true })
+/** The brand line is only worth showing when the name does not already say it. */
+function brandLine(item: ReviewItem): string | null {
+  if (!item.brand) return null
+  return item.name.toLowerCase().includes(item.brand.toLowerCase()) ? null : item.brand
+}
+
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return 'the web'
+  }
+}
+
+function edit(item: ReviewItem, change: ItemEdit): void {
+  const result = applyItemEdit(item.base, item, change)
+  Object.assign(item, result.item, { base: result.base, edited: true })
 }
 
 function remove(item: ReviewItem): void {
@@ -121,6 +148,7 @@ function confirm(): void {
       aiCallId: props.result.aiCallId,
       assumptions: item.assumptions,
       confidence: item.confidence,
+      brand: item.brand,
       saveToLibrary: item.save && item.matchedFoodId === null,
     })),
   })
@@ -179,6 +207,7 @@ function confirm(): void {
           <span class="min-w-0 flex-1">
             <span class="block text-base font-medium text-fg">{{ item.name }}</span>
             <span class="mt-0.5 block text-sm text-fg-muted">
+              <template v-if="brandLine(item)">{{ brandLine(item) }} · </template>
               {{ formatQuantity(item.quantity, item.unit) }} · {{ formatGrams(item.grams) }} ·
               <span class="text-protein">P {{ formatNumber(item.nutrients.protein_g, 0) }}</span>
               <span class="text-carbs"> C {{ formatNumber(item.nutrients.carbs_g, 0) }}</span>
@@ -187,6 +216,12 @@ function confirm(): void {
             <span class="mt-1.5 flex flex-wrap items-center gap-1.5">
               <Chip :tone="TONE[item.confidence]" class="!h-6 !px-2 !text-xs">
                 {{ CONFIDENCE_LABELS[item.confidence] }}
+              </Chip>
+              <Chip v-if="item.sourceUrl" tone="accent" class="!h-6 !px-2 !text-xs">
+                <Icon name="globe" :size="12" /> Label found online
+              </Chip>
+              <Chip v-if="item.edited" tone="neutral" class="!h-6 !px-2 !text-xs">
+                <Icon name="pencil" :size="12" /> Edited
               </Chip>
               <Chip v-if="item.matchedFoodId" tone="accent" class="!h-6 !px-2 !text-xs">
                 <Icon name="book" :size="12" /> From My foods
@@ -210,14 +245,20 @@ function confirm(): void {
         </button>
 
         <div v-if="item.expanded" class="space-y-3 px-4 pb-4">
-          <NumberField
-            :model-value="item.quantity"
-            label="Quantity"
-            :unit="item.unit"
-            :min="0"
-            :step="item.unit === 'g' || item.unit === 'ml' ? 10 : 0.5"
-            @update:model-value="setQuantity(item, $event)"
-          />
+          <ItemEditor :item="item" :unit="item.unit" @edit="edit(item, $event)" />
+
+          <a
+            v-if="item.sourceUrl"
+            :href="item.sourceUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex min-h-11 items-center gap-2 text-sm font-semibold text-accent"
+          >
+            <Icon name="globe" :size="16" class="shrink-0" />
+            <span class="min-w-0 truncate">Label read from {{ hostOf(item.sourceUrl) }}</span>
+            <Icon name="share" :size="14" class="shrink-0" />
+          </a>
+
           <ul v-if="item.assumptions.length" class="space-y-1">
             <li
               v-for="assumption in item.assumptions"
@@ -276,7 +317,7 @@ function confirm(): void {
       {{ ui.online ? `Add to ${meal}` : 'Offline' }}
     </Button>
     <p class="text-center text-xs text-fg-muted">
-      Estimated by AI. Tap an item to adjust the quantity or read its assumptions.
+      Estimated by AI. Tap an item to change the amount, fix any number or read its assumptions.
       <template v-if="result.callsRemaining < 10">
         {{ result.callsRemaining }} estimates left today.
       </template>

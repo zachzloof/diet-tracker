@@ -17,6 +17,7 @@ export type IconName =
   | 'chevron-right'
   | 'chevron-left'
   | 'sparkles'
+  | 'globe'
   | 'clock'
   | 'edit'
   | 'info'
@@ -54,6 +55,8 @@ const PATHS: Record<IconName, string> = {
   refresh: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5',
   trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
   search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',
+  globe:
+    'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18',
   book: 'M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z',
   minus: 'M5 12h14',
   'chevron-down': 'M6 9l6 6 6-6',

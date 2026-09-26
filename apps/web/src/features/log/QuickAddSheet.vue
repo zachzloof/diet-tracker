@@ -170,6 +170,7 @@ async function submitManual(): Promise<void> {
     aiCallId: null,
     assumptions: [],
     confidence: null,
+    brand: food.brand,
     saveToLibrary: false,
   }
   log({ day: manualDay.value, meal: manualMeal.value, entries: [entry] })
@@ -270,7 +271,7 @@ watch(open, (isOpen) => {
             :maxlength="MAX_ESTIMATE_CHARS"
             :rows="3"
             enterkeyhint="send"
-            :helper="`Quantities help. Missing ones are assumed and shown so you can fix them. ${text.length}/${MAX_ESTIMATE_CHARS}`"
+            :helper="`Quantities and brand names help. Missing details are assumed and shown so you can fix them. ${text.length}/${MAX_ESTIMATE_CHARS}`"
             @submit="submitText"
           />
 
