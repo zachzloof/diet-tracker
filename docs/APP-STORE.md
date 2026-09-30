@@ -36,6 +36,8 @@ Apple Developer account.
 
 ### Needs a decision or a detail from the owner
 
+0. **Legal and conduct.** `docs/LEGAL.md` is the data-protection, health-conduct, terms and IP checklist with what is still open. Its blanks (legal identity, contact address, Railway region) are the same ones the store listing needs.
+
 1. **Contact email.** `apps/web/src/features/legal/legal.ts` has `LEGAL_CONTACT_EMAIL = null`, so the privacy policy says "contact the person who gave you the link". Apple wants a real contact in the policy and a support URL in the listing. One constant; a dedicated address is better than a personal one.
 2. **A stable API address.** The native build has the API origin baked in (`VITE_API_ORIGIN`). If the Railway subdomain is ever swapped for a custom domain, every installed copy needs an update, so settle the domain before the first upload.
 3. **Forgot my password.** Not required by the guidelines, but a store audience will lock themselves out and there is no reset flow (needs an email provider; open question in DECISIONS.md).
