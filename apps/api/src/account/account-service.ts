@@ -111,7 +111,7 @@ export async function exportAccount(user: User, now: Date = new Date()): Promise
   const ai = usage[0] ?? { calls: 0, inputTokens: 0, outputTokens: 0, webSearchCalls: 0 }
   return accountExportSchema.parse({
     exportedAt: now.toISOString(),
-    app: { name: 'diet-tracker', version: APP_VERSION, schema: ACCOUNT_EXPORT_SCHEMA_VERSION },
+    app: { name: 'minori', version: APP_VERSION, schema: ACCOUNT_EXPORT_SCHEMA_VERSION },
     user: toPublicUser(user),
     profile,
     targetVersions: versions.map(toWireVersion),

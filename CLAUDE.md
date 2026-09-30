@@ -1,4 +1,4 @@
-# diet-tracker (working name)
+# Minori
 
 Free, phone-first nutrition tracker. A person onboards once (body, goals, training, diet), gets personalised daily targets, logs food by typing "I had 4 eggs" (AI estimates the nutrients) or by entering a meal manually, and sees where they stand today and across the week. Friends use it from a home-screen bookmark first; App Store later via Capacitor.
 

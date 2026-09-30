@@ -4,6 +4,10 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Name and logo (2026-09-30)
+- The app is now called Minori. The name shows on the sign-in screens, the browser tab, the home-screen label, Settings, You, the privacy page and the native shells; export files are named `minori-<day>`.
+- New logo: the home-screen, launcher, store and favicon icons are all drawn from it, and the sign-in screens show it beside the name. The Android and iOS shells no longer carry the Capacitor placeholder icon.
+
 ### Fixes after slice 5 (2026-09-26)
 - Save a logged item to My foods after the fact. An estimate that was not saved when you logged it (by default only high-confidence items are) now shows a "Save to My foods" switch in its entry sheet; turn it on and tap "Save changes". Any edits you made in the sheet are saved with it, and an item already in My foods says so. The sheet's main button is now "Save changes", so it is clear why it stays grey until something changes.
 - The energy ring says "kcal over" as soon as you eat past your target. Before, it said "335 kcal left" when you were 335 over, because energy still scores "close" up to 20% over target. The ring still turns red only once the day is actually over.

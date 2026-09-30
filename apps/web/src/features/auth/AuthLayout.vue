@@ -12,8 +12,8 @@ defineProps<{ title: string; subtitle: string }>()
   >
     <main class="mx-auto flex w-full max-w-[480px] flex-1 flex-col px-4">
       <div class="mb-8 flex items-center gap-3">
-        <img src="/favicon.svg" alt="" width="40" height="40" class="rounded-[10px]" />
-        <span class="text-base font-semibold text-fg-muted">Diet Tracker</span>
+        <img src="/logo.png" alt="" width="40" height="40" />
+        <span class="text-base font-semibold text-fg-muted">Minori</span>
       </div>
       <h1 class="text-[28px] leading-tight font-bold">{{ title }}</h1>
       <p class="mt-1 text-base text-fg-muted">{{ subtitle }}</p>

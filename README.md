@@ -1,8 +1,8 @@
-# diet-tracker
+# Minori
 
 A free, phone-first nutrition tracker. Tell it about yourself once, get daily targets that fit your body and your goal, then log food by typing what you ate ("4 eggs and two slices of toast") or entering a meal by hand. See where you stand today, how many days you hit your targets this week, and where you're falling short.
 
-Working name. Built for a small group of friends first, from a home-screen bookmark on their phones. The App Store comes later.
+Minori (実り) is Japanese for harvest or ripening. Built for a small group of friends first, from a home-screen bookmark on their phones. The App Store comes later. The repo, packages and database still use the working name `diet-tracker`.
 
 ## Status
 

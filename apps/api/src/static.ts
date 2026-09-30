@@ -26,7 +26,7 @@ export function registerStatic(app: Hono<AppEnv>): void {
   if (!dist) {
     logger.warn('web build not found; serving the API only (use the Vite dev server on :5173)')
     app.get('*', (c) =>
-      c.text('diet-tracker API is running. In development, open http://localhost:5173', 200),
+      c.text('Minori API is running. In development, open http://localhost:5173', 200),
     )
     return
   }

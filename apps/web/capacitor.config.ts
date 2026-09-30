@@ -8,7 +8,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  */
 const config: CapacitorConfig = {
   appId: 'app.diettracker.mobile',
-  appName: 'Diet Tracker',
+  appName: 'Minori',
   webDir: 'dist',
   // Uncomment to make the shell a thin wrapper of the deployed site (D23 option A). The
   // session cookie then works unchanged because the page and the API share an origin.

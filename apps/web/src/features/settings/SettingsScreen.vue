@@ -239,7 +239,7 @@ const EXPORTS: { format: ExportFormat; label: string; sub: string; icon: IconNam
           </li>
         </ul>
         <p class="px-4 py-3 text-xs text-fg-muted">
-          Diet Tracker {{ appVersion }}. Not medical advice: targets are general guidance, not a
+          Minori {{ appVersion }}. Not medical advice: targets are general guidance, not a
           prescription. For adults 18 and over.
         </p>
       </Card>

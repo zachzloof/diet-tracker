@@ -142,7 +142,7 @@ describe('GET /api/v1/account/export', () => {
     const res = await send('GET', '/api/v1/account/export/json')
     expect(res.status).toBe(200)
     expect(res.headers.get('content-disposition')).toMatch(
-      new RegExp(`attachment; filename="diet-tracker-${localDay(new Date(), TZ)}\\.json"`),
+      new RegExp(`attachment; filename="minori-${localDay(new Date(), TZ)}\\.json"`),
     )
     const data = accountExportSchema.parse(await res.json())
     expect(data.user.email).toBe(tess.email)

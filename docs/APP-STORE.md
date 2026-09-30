@@ -16,7 +16,7 @@ review guidelines as of September 2026.
 | Health disclaimer, no medical claims (Apple 1.4.1, 5.1.1)          | Onboarding, You, Settings, Register, Privacy and Terms all say the targets are guidance, not medical advice           |
 | Age gate: adults only (Apple 1.4.3 for diet content)               | Onboarding refuses a date of birth under 18 (D10)                                                                     |
 | Safety defaults for pregnancy, breastfeeding, eating disorders     | Maintenance targets plus a professional-guidance note (D10); recalibration disabled for flagged profiles              |
-| Icons at every size, including a 1024 px store icon               | `apps/web/public/icons/` (generated from `favicon.svg`; 1024 has no alpha and no rounded corners, as Apple requires) |
+| Icons at every size, including a 1024 px store icon               | `apps/web/public/icons/` (generated from `docs/brand/minori-logo.png`; 1024 has no alpha and no rounded corners, as Apple requires) |
 | Change password                                                    | Settings                                                                                                             |
 | Works offline / degrades gracefully                                | Offline mirror of recent data plus a queue for writes (D21)                                                          |
 
@@ -30,7 +30,7 @@ review guidelines as of September 2026.
 6. **Minimum functionality (Apple 4.2).** A pure web wrapper can be rejected. Loading the bundled build (D23 option B) plus at least one native capability (local notifications for reminders, haptics, share sheet for the export) makes the case. Reminders are the obvious first plugin: `@capacitor/local-notifications` replaces the in-tab timer in `stores/reminders.ts`.
 7. **Age rating.** Choose 17+ / Mature on Apple ("Medical/Treatment Information" is not needed; "Unrestricted Web Access" is not either once the bundle is local). On Google, complete the content questionnaire; the diet content usually lands at Teen or Mature 17+.
 8. **Screenshots.** 6.7" and 6.1" iPhone, plus 12.9" iPad if iPad is supported (set `UIDeviceFamily` to iPhone only to skip it). Android: phone at 1080 x 1920 or larger.
-9. **App name.** "Diet Tracker" is generic and may collide; the working name is fine for TestFlight and internal testing but pick a real name before the listing (the icon and `capacitor.config.ts` `appName` change together).
+9. **App name.** Minori, chosen 2026-09-30. Before the listing, check the name is free on both stores, and decide whether the app id `app.diettracker.mobile` should follow it (it cannot change after the first store upload).
 10. **Session cookies in the native shell.** WKWebView and the Android WebView do keep cookies for the app's own origin, but the bundled build runs on `capacitor://localhost` while the API is on the Railway domain, so the `SameSite=Lax` cookie will not be sent cross-site. Either load the deployed site (option A) or switch the session transport to a bearer token in secure storage for native (option B, the change D4 anticipated).
 
 ## Testing paths

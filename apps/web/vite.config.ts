@@ -11,15 +11,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: [
-        'favicon.svg',
-        'favicon-32.png',
-        'favicon-16.png',
-        'apple-touch-icon-180.png',
-      ],
+      includeAssets: ['favicon-32.png', 'favicon-16.png', 'apple-touch-icon-180.png'],
       manifest: {
-        name: 'Diet Tracker',
-        short_name: 'Diet',
+        name: 'Minori',
+        short_name: 'Minori',
         description: 'Phone-first nutrition tracker with AI food logging.',
         start_url: '/',
         scope: '/',
@@ -27,7 +22,7 @@ export default defineConfig({
         orientation: 'portrait',
         background_color: '#0c0f14',
         theme_color: '#0c0f14',
-        // Every size a launcher, a store or a splash screen asks for; generated from favicon.svg.
+        // Every size a launcher, a store or a splash screen asks for; generated from docs/brand/minori-logo.png.
         icons: [
           ...[48, 72, 96, 128, 144, 152, 192, 256, 384, 512].map((size) => ({
             src: `/icons/icon-${size}.png`,

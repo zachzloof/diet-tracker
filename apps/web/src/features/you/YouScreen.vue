@@ -124,7 +124,7 @@ const NAV = computed<NavItem[]>(() => [
       </Button>
 
       <p class="px-2 text-center text-xs text-fg-muted">
-        Diet Tracker {{ appVersion }}. Not medical advice: targets are general guidance, not a
+        Minori {{ appVersion }}. Not medical advice: targets are general guidance, not a
         prescription.
         <RouterLink :to="{ name: 'privacy' }" class="font-semibold text-fg">Privacy</RouterLink>
         ·

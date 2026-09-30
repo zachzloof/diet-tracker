@@ -38,7 +38,7 @@ export const accountRoutes = new Hono<AppEnv>()
     const data = await exportAccount(user)
     const profile = await getProfile(user.id)
     const stamp = localDay(new Date(), profile?.timezone ?? 'UTC')
-    const base = `diet-tracker-${stamp}`
+    const base = `minori-${stamp}`
     switch (format.data) {
       case 'json':
         c.header('Content-Disposition', `attachment; filename="${base}.json"`)
