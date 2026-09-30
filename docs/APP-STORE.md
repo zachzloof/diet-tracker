@@ -30,7 +30,7 @@ review guidelines as of September 2026.
 6. **Minimum functionality (Apple 4.2).** A pure web wrapper can be rejected. Loading the bundled build (D23 option B) plus at least one native capability (local notifications for reminders, haptics, share sheet for the export) makes the case. Reminders are the obvious first plugin: `@capacitor/local-notifications` replaces the in-tab timer in `stores/reminders.ts`.
 7. **Age rating.** Choose 17+ / Mature on Apple ("Medical/Treatment Information" is not needed; "Unrestricted Web Access" is not either once the bundle is local). On Google, complete the content questionnaire; the diet content usually lands at Teen or Mature 17+.
 8. **Screenshots.** 6.7" and 6.1" iPhone, plus 12.9" iPad if iPad is supported (set `UIDeviceFamily` to iPhone only to skip it). Android: phone at 1080 x 1920 or larger.
-9. **App name.** Minori, chosen 2026-09-30. Before the listing, check the name is free on both stores, and decide whether the app id `app.diettracker.mobile` should follow it (it cannot change after the first store upload).
+9. **App name.** Minori, app id `app.minori.mobile` (both set 2026-09-30; the id is fixed once the first build is uploaded). Before the listing, check the name is free on both stores.
 10. **Session cookies in the native shell.** WKWebView and the Android WebView do keep cookies for the app's own origin, but the bundled build runs on `capacitor://localhost` while the API is on the Railway domain, so the `SameSite=Lax` cookie will not be sent cross-site. Either load the deployed site (option A) or switch the session transport to a bearer token in secure storage for native (option B, the change D4 anticipated).
 
 ## Testing paths

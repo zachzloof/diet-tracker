@@ -7,7 +7,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  * loads the bundled web app or the deployed site.
  */
 const config: CapacitorConfig = {
-  appId: 'app.diettracker.mobile',
+  appId: 'app.minori.mobile',
   appName: 'Minori',
   webDir: 'dist',
   // Uncomment to make the shell a thin wrapper of the deployed site (D23 option A). The

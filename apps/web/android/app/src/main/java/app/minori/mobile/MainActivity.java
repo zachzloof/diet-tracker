@@ -1,4 +1,4 @@
-package app.diettracker.mobile;
+package app.minori.mobile;
 
 import com.getcapacitor.BridgeActivity;
 
