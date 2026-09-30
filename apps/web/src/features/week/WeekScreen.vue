@@ -11,9 +11,11 @@ import IconButton from '@/components/ui/IconButton.vue'
 import LineChart from '@/components/ui/LineChart.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import StatTile from '@/components/ui/StatTile.vue'
+import AiConsent from '@/features/ai/AiConsent.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { useRegenerateReview, useWeekStats, useWeeklyReview } from '@/features/stats/useStats'
 import { formatDayShort, weekdayShort } from '@/lib/format'
+import { useAiConsentStore } from '@/stores/ai-consent'
 import { useUiStore } from '@/stores/ui'
 import DayStrip from './DayStrip.vue'
 import GapsList from './GapsList.vue'
@@ -44,9 +46,13 @@ const week = useWeekStats(end)
 const stats = week.stats
 const summary = computed(() => (stats.value ? summariseWeek(stats.value.days) : null))
 
+const consent = useAiConsentStore()
 const reviewEnabled = computed(
   () =>
-    stats.value !== null && !week.isPlaceholder.value && stats.value.daysLogged >= MIN_REVIEW_DAYS,
+    consent.granted &&
+    stats.value !== null &&
+    !week.isPlaceholder.value &&
+    stats.value.daysLogged >= MIN_REVIEW_DAYS,
 )
 const review = useWeeklyReview(end, reviewEnabled)
 const regenerate = useRegenerateReview()
@@ -173,13 +179,16 @@ const todayIndex = computed(() => {
 
       <GapsList :gaps="stats.gaps" :days-logged="stats.daysLogged" />
 
+      <Card v-if="!consent.granted && stats.daysLogged >= MIN_REVIEW_DAYS">
+        <AiConsent lead="Have AI review your week and suggest two changes." />
+      </Card>
       <WeeklyReviewCard
-        v-if="stats.daysLogged > 0"
+        v-else-if="stats.daysLogged > 0"
         :response="review.response.value"
         :loading="review.isLoading.value"
         :regenerating="regenerate.isPending.value"
         :error="review.error.value?.message ?? null"
-        :idle="!reviewEnabled && stats.daysLogged >= MIN_REVIEW_DAYS"
+        :idle="!reviewEnabled && consent.granted && stats.daysLogged >= MIN_REVIEW_DAYS"
         @retry="review.refetch()"
         @regenerate="regenerateReview"
       />

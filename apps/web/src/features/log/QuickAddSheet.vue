@@ -19,8 +19,10 @@ import Sheet from '@/components/ui/Sheet.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import Textarea from '@/components/ui/Textarea.vue'
 import Toggle from '@/components/ui/Toggle.vue'
+import AiConsent from '@/features/ai/AiConsent.vue'
 import { ApiError } from '@/lib/api'
 import { formatKcal } from '@/lib/format'
+import { useAiConsentStore } from '@/stores/ai-consent'
 import { useUiStore } from '@/stores/ui'
 import EstimateReview from './EstimateReview.vue'
 import FoodPicker from './FoodPicker.vue'
@@ -37,6 +39,7 @@ import { useLocalDay } from './useLocalDay'
  * screen through the UI store.
  */
 const ui = useUiStore()
+const consent = useAiConsentStore()
 const { today, suggestion } = useLocalDay()
 const estimate = useEstimate()
 const create = useCreateEntries()
@@ -94,7 +97,7 @@ function runEstimate(input: string): void {
 
 function submitText(): void {
   const trimmed = text.value.trim()
-  if (!trimmed || estimate.isPending.value || !ui.online) return
+  if (!trimmed || estimate.isPending.value || !ui.online || !consent.granted) return
   runEstimate(trimmed)
 }
 
@@ -264,6 +267,12 @@ watch(open, (isOpen) => {
           @confirm="log"
           @clarify="clarify"
           @edit="editText"
+        />
+
+        <AiConsent
+          v-else-if="!consent.granted"
+          lead="Type what you ate and AI estimates the nutrients."
+          @navigate="ui.closeQuickAdd()"
         />
 
         <template v-else>

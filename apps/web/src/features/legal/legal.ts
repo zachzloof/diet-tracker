@@ -4,5 +4,5 @@
  * the person who shared the link.
  */
 export const LEGAL_CONTACT_EMAIL: string | null = null
-export const LEGAL_UPDATED = '26 September 2026'
+export const LEGAL_UPDATED = '30 September 2026'
 export const APP_NAME = 'Minori'

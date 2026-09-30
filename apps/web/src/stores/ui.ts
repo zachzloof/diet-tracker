@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import { isNative } from '@/lib/native'
 
 export type ThemePreference = 'system' | 'dark' | 'light'
 export type ToastKind = 'info' | 'success' | 'error'
@@ -33,6 +34,17 @@ function applyTheme(theme: ThemePreference): void {
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', THEME_COLORS[effective])
+  if (isNative) void applyStatusBar(effective)
+}
+
+/** Native shells: light status bar text on the dark theme, dark text on the light one. */
+async function applyStatusBar(effective: 'dark' | 'light'): Promise<void> {
+  try {
+    const { StatusBar, Style } = await import('@capacitor/status-bar')
+    await StatusBar.setStyle({ style: effective === 'dark' ? Style.Dark : Style.Light })
+  } catch {
+    // The system default follows the phone's own light or dark setting.
+  }
 }
 
 /** Theme, toasts and connectivity: client-only state shared by every screen. */

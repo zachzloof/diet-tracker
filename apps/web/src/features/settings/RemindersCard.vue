@@ -5,12 +5,14 @@ import Card from '@/components/ui/Card.vue'
 import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Toggle from '@/components/ui/Toggle.vue'
+import { isNative } from '@/lib/native'
 import { useInstallStore } from '@/stores/install'
 import { MAX_REMINDERS, useRemindersStore } from '@/stores/reminders'
 
 /**
  * Daily reminders to log food. Honest about the platform: a web app only fires them while
  * it is open on this device (D22), and iOS needs it installed on the Home Screen first.
+ * The native shells schedule them with the operating system, so they fire when closed.
  */
 const reminders = useRemindersStore()
 const install = useInstallStore()
@@ -63,12 +65,22 @@ const nextText = computed(() => {
         v-model="enabled"
         class="mt-2"
         label="Remind me to log"
-        description="A notification at the times below while the app is open on this device."
+        :description="
+          isNative
+            ? 'A notification at the times below, every day, even when the app is closed.'
+            : 'A notification at the times below while the app is open on this device.'
+        "
       />
 
       <p v-if="reminders.permission === 'denied'" class="mt-2 text-sm text-over" role="alert">
-        Notifications are blocked for this site. Allow them in your browser or phone settings, then
-        turn the reminder on again.
+        <template v-if="isNative">
+          Notifications are turned off for Minori. Allow them in your phone's Settings, then turn
+          the reminder on again.
+        </template>
+        <template v-else>
+          Notifications are blocked for this site. Allow them in your browser or phone settings,
+          then turn the reminder on again.
+        </template>
       </p>
 
       <template v-if="reminders.prefs.enabled && reminders.permission === 'granted'">
@@ -105,7 +117,7 @@ const nextText = computed(() => {
         <p v-if="nextText" class="mt-2 text-xs text-fg-muted">Next reminder: {{ nextText }}.</p>
       </template>
 
-      <p class="mt-3 text-xs text-fg-muted">
+      <p v-if="!isNative" class="mt-3 text-xs text-fg-muted">
         Web apps cannot wake themselves up, so a reminder only fires when the app is open or in the
         background on this phone. Reliable reminders with the app closed arrive with the App Store
         version.

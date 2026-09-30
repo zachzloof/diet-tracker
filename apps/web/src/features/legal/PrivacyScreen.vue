@@ -27,30 +27,40 @@ import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_UPDATED } from './legal'
         For each AI request: which model answered, how many tokens it used, how long it took and
         whether it worked. Not the text.
       </li>
-      <li>Session records so you stay signed in, with the browser's user agent string.</li>
+      <li>
+        Session records so you stay signed in, with the browser's or the app's user agent string.
+      </li>
     </ul>
 
     <h2>What the AI sees</h2>
     <p>
-      When you type what you ate, ask for a plan explanation or open the weekly review, the app
-      sends a request to OpenAI. The request contains the text you typed, a summary of your profile
-      (sex, age, height, weight, goal, activity, diet pattern, allergies and dislikes) and your
-      targets or your week's numbers. It never contains your email address or any account
-      identifier. Requests are sent with storage switched off, so OpenAI does not keep them to train
-      models. For a named product the AI may search the web for the label; the search query is the
-      product name, nothing else.
+      The AI features are off until you allow them, and you can turn them off again in
+      <RouterLink :to="{ name: 'settings' }">Settings</RouterLink>. Once allowed, when you type what
+      you ate, open your plan's explanation or open the weekly review, the app sends a request to
+      OpenAI, a separate company that provides the AI model. The request contains the text you
+      typed, a summary of your profile (sex, age, height, weight, goal, activity, diet pattern,
+      allergies and dislikes) and your targets or your week's numbers. It never contains your email
+      address or any account identifier. Requests are sent with storage switched off, so OpenAI does
+      not keep them to train models. For a named product the AI may search the web for the label;
+      the search query is the product name, nothing else.
     </p>
 
     <h2>On your phone</h2>
     <p>
-      The app keeps a copy of your recent days, targets and weigh-ins in the browser so it works
-      without a connection, plus any meals waiting to be sent, your theme and reminder settings.
-      Signing out clears the copy. Reminders run on your device and are never sent anywhere.
+      The app keeps a copy of your recent days, targets and weigh-ins on the device so it works
+      without a connection, plus any meals waiting to be sent, your theme, your reminder settings
+      and your answer about the AI features. Signing out clears the copy. The iPhone and Android
+      apps keep the key that keeps you signed in in the phone's secure storage. Reminders run on
+      your device and are never sent anywhere. The apps ask for no other permissions: no location,
+      no contacts, no camera, no health data from the phone.
     </p>
 
     <h2>What we do not do</h2>
     <ul>
-      <li>No advertising, no analytics, no tracking pixels, no third-party cookies.</li>
+      <li>
+        No advertising, no analytics, no tracking across apps or websites, no cookies from anyone
+        else.
+      </li>
       <li>We do not sell or share your data with anyone other than the processors below.</li>
     </ul>
 

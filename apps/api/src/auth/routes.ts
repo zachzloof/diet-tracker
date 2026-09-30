@@ -1,6 +1,13 @@
-import { loginInputSchema, registerInputSchema, type AuthResponse } from '@diet-tracker/shared'
+import {
+  SESSION_TRANSPORT_HEADER,
+  SESSION_TRANSPORT_TOKEN,
+  loginInputSchema,
+  registerInputSchema,
+  type AuthResponse,
+  type PublicUser,
+} from '@diet-tracker/shared'
 import { eq } from 'drizzle-orm'
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { v7 as uuidv7 } from 'uuid'
 import { db } from '../db/client.js'
 import { users } from '../db/schema/index.js'
@@ -26,6 +33,19 @@ import {
 /** Verified against when the email is unknown, so timing does not reveal which emails exist. */
 const dummyHash = await hashPassword('not-a-real-password-just-for-constant-time')
 
+/**
+ * Starts a session and builds the answer. Browsers get the cookie; a native shell that
+ * asked for the token transport gets the token in the body and no cookie.
+ */
+async function startSession(c: Context<AppEnv>, user: PublicUser): Promise<AuthResponse> {
+  const { token, expiresAt } = await createSession(user.id, c.req.header('user-agent') ?? null)
+  if (c.req.header(SESSION_TRANSPORT_HEADER) === SESSION_TRANSPORT_TOKEN) {
+    return { user, session: { token, expiresAt: expiresAt.toISOString() } }
+  }
+  await setSessionCookie(c, token, expiresAt)
+  return { user }
+}
+
 export const authRoutes = new Hono<AppEnv>()
   .post('/register', requireJson, jsonBody(registerInputSchema), async (c) => {
     const ip = clientIp(c)
@@ -43,10 +63,7 @@ export const authRoutes = new Hono<AppEnv>()
     const user = inserted[0]
     if (!user) throw errors.emailTaken()
 
-    const { token, expiresAt } = await createSession(user.id, c.req.header('user-agent') ?? null)
-    await setSessionCookie(c, token, expiresAt)
-    const body: AuthResponse = { user: toPublicUser(user) }
-    return c.json(body, 201)
+    return c.json(await startSession(c, toPublicUser(user)), 201)
   })
 
   .post('/login', requireJson, jsonBody(loginInputSchema), async (c) => {
@@ -71,10 +88,7 @@ export const authRoutes = new Hono<AppEnv>()
     }
     loginEmailLimiter.reset(emailKey)
 
-    const { token, expiresAt } = await createSession(user.id, c.req.header('user-agent') ?? null)
-    await setSessionCookie(c, token, expiresAt)
-    const body: AuthResponse = { user: toPublicUser(user) }
-    return c.json(body, 200)
+    return c.json(await startSession(c, toPublicUser(user)), 200)
   })
 
   .post('/logout', async (c) => {

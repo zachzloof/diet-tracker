@@ -57,7 +57,7 @@ Notes:
 - `AI_DAILY_CALL_CAP` (default 150) caps OpenAI calls per person per local day. Logging from My foods never calls OpenAI.
 - `AI_WEB_SEARCH` (default `true`) lets the estimator look up a named product's label online with OpenAI's web search tool (decision D16). Each search is billed per call; `ai_calls.web_search_calls` counts them. Set `false` to switch it off without a deploy.
 - To try it on your phone over Wi-Fi: `pnpm --filter @diet-tracker/web dev --host`, then open the LAN address Vite prints. Installing to the home screen needs HTTPS, so that only works on the deployed URL.
-- Native shells: `pnpm --filter @diet-tracker/web build`, then from `apps/web` run `pnpm exec cap sync` and `pnpm exec cap open android` or `ios`. Android builds anywhere with Android Studio; iOS needs a Mac with Xcode. Details and the open decision on what the shell loads are in [docs/NATIVE.md](docs/NATIVE.md).
+- Native shells: copy `apps/web/.env.example` to `apps/web/.env.native` and set the API origin, run `pnpm --filter @diet-tracker/web cap:sync`, then from `apps/web` run `pnpm exec cap open android` or `ios`. Android builds anywhere with Android Studio; iOS needs a Mac with Xcode. Details are in [docs/NATIVE.md](docs/NATIVE.md); what is left before a store listing is in [docs/APP-STORE.md](docs/APP-STORE.md).
 
 Other commands:
 

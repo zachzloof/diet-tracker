@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { isNative } from '@/lib/native'
 
 const DISMISSED_KEY = 'dt.install-hint-dismissed'
 
 function isStandaloneNow(): boolean {
+  if (isNative) return true
   return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
 }
 

@@ -89,6 +89,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/legal/TermsScreen.vue'),
     meta: { open: true },
   },
+  {
+    path: '/sources',
+    name: 'sources',
+    component: () => import('@/features/legal/SourcesScreen.vue'),
+    meta: { open: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 

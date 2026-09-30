@@ -59,7 +59,13 @@ const showPassword = ref(false)
       <Button type="submit" block :loading="form.submitting.value">Create account</Button>
 
       <p class="text-center text-xs text-fg-muted">
-        This app is not medical advice. Targets are general guidance, not a prescription.
+        By creating an account you agree to the
+        <RouterLink :to="{ name: 'terms' }" class="font-semibold text-fg">Terms</RouterLink>
+        and the
+        <RouterLink :to="{ name: 'privacy' }" class="font-semibold text-fg"
+          >Privacy policy</RouterLink
+        >. This app is for adults and is not medical advice: targets are general guidance, not a
+        prescription.
       </p>
     </form>
 

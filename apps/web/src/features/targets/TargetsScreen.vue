@@ -15,8 +15,10 @@ import Card from '@/components/ui/Card.vue'
 import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
+import AiConsent from '@/features/ai/AiConsent.vue'
 import { ApiError } from '@/lib/api'
 import { formatDay, formatNumber } from '@/lib/format'
+import { useAiConsentStore } from '@/stores/ai-consent'
 import { useUiStore } from '@/stores/ui'
 import ExplanationCard from './ExplanationCard.vue'
 import OverrideSheet from './OverrideSheet.vue'
@@ -26,6 +28,7 @@ import { useExplainPlan, useSetOverrides, useTargets } from './useTargets'
 const route = useRoute()
 const router = useRouter()
 const ui = useUiStore()
+const consent = useAiConsentStore()
 const targets = useTargets()
 const explain = useExplainPlan()
 const overrides = useSetOverrides()
@@ -62,12 +65,12 @@ const macroKcal = computed(() => {
 const macroShare = (kcal: number) =>
   macroKcal.value.total > 0 ? Math.round((kcal / macroKcal.value.total) * 100) : 0
 
-// The explanation is generated on first view and cached on the version.
+// The explanation is generated on first view, once AI is allowed, and cached on the version.
 let requested = false
 watch(
-  version,
-  (current) => {
-    if (current && !current.explanation && !requested && ui.online) {
+  [version, () => consent.granted],
+  ([current]) => {
+    if (current && !current.explanation && !requested && ui.online && consent.granted) {
       requested = true
       explain.mutate(false)
     }
@@ -202,7 +205,11 @@ function applyOverride(value: number | null, confirm: boolean): void {
         </div>
       </Card>
 
+      <Card v-if="!version.explanation && !consent.granted">
+        <AiConsent lead="Have AI explain your plan in plain words." />
+      </Card>
       <ExplanationCard
+        v-else
         :explanation="version.explanation"
         :loading="explain.isPending.value"
         :error="explainError"

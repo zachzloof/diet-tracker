@@ -11,8 +11,8 @@ import { env } from '../env.js'
 /**
  * Sessions live in Postgres so they survive redeploys. The browser holds a random token
  * in a signed, HttpOnly cookie; the database holds only its sha256, so a leaked table
- * cannot be replayed. Lookup is by token, and the cookie is just the transport, which
- * keeps a later switch to a bearer token inside a Capacitor shell contained (D4).
+ * cannot be replayed. Lookup is by token, and the cookie is just the transport: the
+ * native shells send the same token as `Authorization: Bearer` instead (D4, D23).
  */
 export const SESSION_COOKIE = 'dt_session'
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -109,8 +109,26 @@ export function clearSessionCookie(c: Context): void {
   deleteCookie(c, SESSION_COOKIE, baseCookieOptions())
 }
 
-/** The raw token from a validly signed cookie, or null. */
-export async function readSessionToken(c: Context): Promise<string | null> {
+export type SessionTransport = 'cookie' | 'bearer'
+
+/** The raw token from the `Authorization: Bearer` header, or null. */
+function readBearerToken(c: Context): string | null {
+  const match = /^Bearer\s+([A-Za-z0-9_-]{20,200})$/i.exec(c.req.header('authorization') ?? '')
+  return match?.[1] ?? null
+}
+
+/** The raw token and how it arrived: a bearer header wins over a validly signed cookie. */
+export async function readSession(
+  c: Context,
+): Promise<{ token: string; transport: SessionTransport } | null> {
+  const bearer = readBearerToken(c)
+  if (bearer) return { token: bearer, transport: 'bearer' }
   const value = await getSignedCookie(c, env.SESSION_SECRET, SESSION_COOKIE)
-  return typeof value === 'string' && value.length > 0 ? value : null
+  return typeof value === 'string' && value.length > 0
+    ? { token: value, transport: 'cookie' }
+    : null
+}
+
+export async function readSessionToken(c: Context): Promise<string | null> {
+  return (await readSession(c))?.token ?? null
 }

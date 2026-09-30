@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { isNative } from '@/lib/native'
 import { useUiStore } from './ui'
 
 /**
  * Daily "log your food" reminders (slice 5, D22). Everything is local to this device:
  * the times live in localStorage and a timer in the running app fires a notification
  * through the service worker (or falls back to an in-app toast). A web app cannot wake
- * itself when it is closed, so the settings card says so; Capacitor's LocalNotifications
- * plugin takes over in the native shell.
+ * itself when it is closed, so the settings card says so. In the native shells the
+ * operating system owns the schedule (Capacitor's LocalNotifications), so reminders fire
+ * with the app closed.
  */
 
 export interface ReminderPrefs {
@@ -40,12 +42,43 @@ function readPrefs(): ReminderPrefs {
   }
 }
 
+const TITLE = 'Time to log your food'
+const BODY = 'Type what you ate and the app does the numbers.'
+
 function supported(): boolean {
-  return typeof window !== 'undefined' && 'Notification' in window
+  return isNative || (typeof window !== 'undefined' && 'Notification' in window)
 }
 
+/** The browser's answer. Native shells start at "default" and ask the OS in `start()`. */
 function permissionNow(): NotificationPermission | 'unsupported' {
+  if (isNative) return 'default'
   return supported() ? Notification.permission : 'unsupported'
+}
+
+async function nativePermission(ask: boolean): Promise<NotificationPermission> {
+  const { LocalNotifications } = await import('@capacitor/local-notifications')
+  const { display } = ask
+    ? await LocalNotifications.requestPermissions()
+    : await LocalNotifications.checkPermissions()
+  return display === 'granted' ? 'granted' : display === 'denied' ? 'denied' : 'default'
+}
+
+/** Replaces the OS schedule with one daily notification per time; none clears it. */
+async function scheduleNative(times: readonly string[]): Promise<void> {
+  const { LocalNotifications } = await import('@capacitor/local-notifications')
+  const pending = await LocalNotifications.getPending()
+  if (pending.notifications.length > 0) {
+    await LocalNotifications.cancel({
+      notifications: pending.notifications.map(({ id }) => ({ id })),
+    })
+  }
+  if (times.length === 0) return
+  await LocalNotifications.schedule({
+    notifications: times.map((time, index) => {
+      const [hour, minute] = time.split(':').map(Number) as [number, number]
+      return { id: index + 1, title: TITLE, body: BODY, schedule: { on: { hour, minute } } }
+    }),
+  })
 }
 
 /** The next instant at or after `from` that matches one of the times. */
@@ -72,6 +105,8 @@ export const useRemindersStore = defineStore('reminders', () => {
   const permission = ref(permissionNow())
   const isSupported = supported()
   let timer: number | null = null
+  /** Native schedule changes run one after another so a cancel never lands after a schedule. */
+  let nativeQueue: Promise<void> = Promise.resolve()
 
   const active = computed(
     () => prefs.value.enabled && prefs.value.times.length > 0 && permission.value === 'granted',
@@ -89,6 +124,10 @@ export const useRemindersStore = defineStore('reminders', () => {
 
   async function requestPermission(): Promise<NotificationPermission | 'unsupported'> {
     if (!isSupported) return 'unsupported'
+    if (isNative) {
+      permission.value = await nativePermission(true).catch(() => 'denied' as const)
+      return permission.value
+    }
     try {
       permission.value = await Notification.requestPermission()
     } catch {
@@ -123,8 +162,8 @@ export const useRemindersStore = defineStore('reminders', () => {
     } catch {
       // Fire anyway.
     }
-    const title = 'Time to log your food'
-    const body = 'Type what you ate and the app does the numbers.'
+    const title = TITLE
+    const body = BODY
     try {
       const registration = await navigator.serviceWorker?.ready
       if (registration && 'showNotification' in registration) {
@@ -147,6 +186,11 @@ export const useRemindersStore = defineStore('reminders', () => {
   }
 
   function schedule(): void {
+    if (isNative) {
+      const times = active.value ? [...prefs.value.times] : []
+      nativeQueue = nativeQueue.then(() => scheduleNative(times)).catch(() => undefined)
+      return
+    }
     if (timer !== null) {
       window.clearTimeout(timer)
       timer = null
@@ -163,12 +207,23 @@ export const useRemindersStore = defineStore('reminders', () => {
     }, delay)
   }
 
-  /** Called once from the app root: keeps the timer in step with the prefs and the tab. */
+  async function refreshPermission(): Promise<void> {
+    permission.value = isNative
+      ? await nativePermission(false).catch(() => permission.value)
+      : permissionNow()
+  }
+
+  /** Called once from the app root: keeps the schedule in step with the prefs and the tab. */
   function start(): void {
-    watch(active, schedule, { immediate: true })
+    watch(active, schedule, { immediate: !isNative })
     watch(() => prefs.value.times.join(','), schedule)
+    // Native: the first schedule waits for the OS's answer, so a saved reminder is never
+    // cancelled at launch just because the permission had not been read yet.
+    if (isNative) void refreshPermission().then(schedule)
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState !== 'visible') return
+      if (isNative) void refreshPermission()
+      else {
         permission.value = permissionNow()
         schedule()
       }

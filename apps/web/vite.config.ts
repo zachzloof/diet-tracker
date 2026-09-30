@@ -1,12 +1,34 @@
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import { loadEnv, type Plugin } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
 import pkg from './package.json' with { type: 'json' }
 
+/**
+ * `vite build --mode native` makes the bundle the iOS and Android shells ship (D23). It
+ * runs on capacitor://localhost, so it must be told where the API is; fail the build
+ * rather than ship an app that calls itself.
+ */
+function requireApiOrigin(): Plugin {
+  return {
+    name: 'require-api-origin',
+    config(_config, { mode }) {
+      if (mode !== 'native') return
+      const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), 'VITE_')
+      if (!/^https:\/\//.test(env.VITE_API_ORIGIN ?? '')) {
+        throw new Error(
+          'VITE_API_ORIGIN must be the https origin of the API for a native build. Copy apps/web/.env.example to apps/web/.env.native and set it.',
+        )
+      }
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
+    requireApiOrigin(),
     vue(),
     tailwindcss(),
     VitePWA({

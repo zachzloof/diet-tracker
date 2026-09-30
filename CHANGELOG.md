@@ -4,6 +4,13 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### App Store preparation (2026-09-30)
+- AI features now ask first. The first time you use "Describe", open your plan's explanation or reach the weekly review, a card says what is sent to OpenAI (what you type, a profile summary, your numbers; never your email) and asks you to allow it. One yes covers all three, and Settings has an "AI features" switch to turn it off again. Until you allow it nothing is sent, and My foods and manual entry work as before.
+- "Where the numbers come from" in Settings lists the published source behind every target: the energy equations, protein range, fibre, sugar, saturated fat and sodium limits, vitamin and mineral intakes and food-group serves, with links.
+- The register screen links the terms and the privacy policy. The privacy policy covers the AI permission and what the phone apps keep on the device.
+- The iPhone and Android shells are ready to build: app id `app.minori.mobile`, Minori icon and splash, iPhone-only and portrait. Inside them the app runs from the bundled build, stays signed in with a token kept in the phone's secure storage, schedules reminders with the operating system so they fire when the app is closed, shares exports through the share sheet, and matches the status bar to the theme. None of this has been run on a device yet.
+- API: login and register return the session token in the body, and set no cookie, for a client that sends `x-session-transport: token`; every endpoint accepts `Authorization: Bearer`; CORS allows the two native origins. The web app's cookie session is unchanged.
+
 ### Name and logo (2026-09-30)
 - The app is now called Minori. The name shows on the sign-in screens, the browser tab, the home-screen label, Settings, You, the privacy page and the native shells; export files are named `minori-<day>`.
 - New logo: the home-screen, launcher, store and favicon icons are all drawn from it, and the sign-in screens show it beside the name. The Android and iOS shells no longer carry the Capacitor placeholder icon.

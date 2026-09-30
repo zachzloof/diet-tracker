@@ -1,5 +1,7 @@
+import { SESSION_TRANSPORT_HEADER } from '@diet-tracker/shared'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
+import { cors } from 'hono/cors'
 import { requestId } from 'hono/request-id'
 import { secureHeaders } from 'hono/secure-headers'
 import { accountRoutes } from './account/routes.js'
@@ -19,6 +21,14 @@ import type { AppEnv } from './types.js'
 /** Requests bodies are small JSON; anything bigger is a mistake or abuse. */
 const MAX_BODY_BYTES = 64 * 1024
 
+/**
+ * Where the bundled web app runs inside the native shells (D23): Capacitor serves it from
+ * `capacitor://localhost` on iOS and `https://localhost` on Android. Those clients hold a
+ * bearer token, so CORS is allowed without credentials; the browser app is same-origin and
+ * never needs it.
+ */
+const NATIVE_ORIGINS = ['capacitor://localhost', 'https://localhost']
+
 export function createApp(): Hono<AppEnv> {
   const app = new Hono<AppEnv>()
 
@@ -35,6 +45,16 @@ export function createApp(): Hono<AppEnv> {
         const error = errors.payloadTooLarge()
         return c.json(error.toBody(), error.status)
       },
+    }),
+  )
+  app.use(
+    '/api/*',
+    cors({
+      origin: NATIVE_ORIGINS,
+      allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+      allowHeaders: ['content-type', 'authorization', SESSION_TRANSPORT_HEADER],
+      exposeHeaders: ['content-disposition', 'retry-after'],
+      maxAge: 86400,
     }),
   )
   app.use('/api/*', sessionMiddleware)

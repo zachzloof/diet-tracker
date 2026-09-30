@@ -39,7 +39,23 @@ export const publicUserSchema = z.object({
 })
 export type PublicUser = z.infer<typeof publicUserSchema>
 
+/**
+ * Native shells run on `capacitor://localhost`, where the session cookie is never sent
+ * (D23). A client that sends this header with the value `token` on login or register gets
+ * the session token in the body instead and sends it back as `Authorization: Bearer`.
+ */
+export const SESSION_TRANSPORT_HEADER = 'x-session-transport'
+export const SESSION_TRANSPORT_TOKEN = 'token'
+
+export const sessionTokenSchema = z.object({
+  token: z.string().min(1),
+  expiresAt: z.iso.datetime(),
+})
+export type SessionToken = z.infer<typeof sessionTokenSchema>
+
 export const authResponseSchema = z.object({
   user: publicUserSchema,
+  /** Only present when the client asked for the token transport. */
+  session: sessionTokenSchema.optional(),
 })
 export type AuthResponse = z.infer<typeof authResponseSchema>

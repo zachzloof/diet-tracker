@@ -217,6 +217,91 @@ describe('sessions', () => {
   })
 })
 
+describe('token transport for the native shells', () => {
+  const native = { 'x-session-transport': 'token' }
+
+  it('returns the token in the body instead of a cookie, and it works as a bearer', async () => {
+    const res = await post('/api/v1/auth/register', finn, native)
+    expect(res.status).toBe(201)
+    expect(sessionCookie(res)).toBeNull()
+    const { session } = authResponseSchema.parse(await res.json())
+    expect(session?.token).toBeTruthy()
+    expect(new Date(session?.expiresAt ?? 0).getTime()).toBeGreaterThan(Date.now())
+
+    const me = await get('/api/v1/me', { authorization: `Bearer ${session?.token}` })
+    expect(me.status).toBe(200)
+    expect(sessionCookie(me)).toBeNull()
+    expect(authResponseSchema.parse(await me.json()).user.email).toBe(finn.email)
+
+    const login = await post('/api/v1/auth/login', finn, native)
+    expect(login.status).toBe(200)
+    expect(sessionCookie(login)).toBeNull()
+    expect(authResponseSchema.parse(await login.json()).session?.token).toBeTruthy()
+  })
+
+  it('leaves the body without a token for a browser', async () => {
+    const res = await post('/api/v1/auth/register', finn)
+    expect(authResponseSchema.parse(await res.json()).session).toBeUndefined()
+    expect(sessionCookie(res)).not.toBeNull()
+  })
+
+  it('rejects an unknown or malformed bearer and ends the session on logout', async () => {
+    const res = await post('/api/v1/auth/register', finn, native)
+    const token = authResponseSchema.parse(await res.json()).session?.token ?? ''
+
+    expect((await get('/api/v1/me', { authorization: `Bearer ${'x'.repeat(43)}` })).status).toBe(
+      401,
+    )
+    expect((await get('/api/v1/me', { authorization: 'Bearer nope' })).status).toBe(401)
+    expect((await get('/api/v1/me', { authorization: `Basic ${token}` })).status).toBe(401)
+
+    const auth = { authorization: `Bearer ${token}` }
+    const out = await app.request('/api/v1/auth/logout', { method: 'POST', headers: auth })
+    expect(out.status).toBe(204)
+    expect((await get('/api/v1/me', auth)).status).toBe(401)
+  })
+
+  it('renews a bearer session without setting a cookie', async () => {
+    const res = await post('/api/v1/auth/register', finn, native)
+    const token = authResponseSchema.parse(await res.json()).session?.token ?? ''
+    const soon = new Date(Date.now() + 60 * 60 * 1000)
+    await db
+      .update(sessions)
+      .set({ lastSeenAt: new Date(Date.now() - 2 * 60 * 60 * 1000), expiresAt: soon })
+
+    const me = await get('/api/v1/me', { authorization: `Bearer ${token}` })
+    expect(me.status).toBe(200)
+    expect(sessionCookie(me)).toBeNull()
+    const [row] = await db.select().from(sessions)
+    expect(row?.expiresAt.getTime()).toBeGreaterThan(soon.getTime())
+  })
+})
+
+describe('CORS', () => {
+  it('answers the preflight from the native shells and nobody else', async () => {
+    const preflight = (origin: string) =>
+      app.request('/api/v1/me', {
+        method: 'OPTIONS',
+        headers: {
+          origin,
+          'access-control-request-method': 'GET',
+          'access-control-request-headers': 'authorization',
+        },
+      })
+
+    for (const origin of ['capacitor://localhost', 'https://localhost']) {
+      const res = await preflight(origin)
+      expect(res.status).toBe(204)
+      expect(res.headers.get('access-control-allow-origin')).toBe(origin)
+      expect(res.headers.get('access-control-allow-headers')).toMatch(/authorization/i)
+      expect(res.headers.get('access-control-allow-credentials')).toBeNull()
+    }
+
+    const other = await preflight('https://evil.example')
+    expect(other.headers.get('access-control-allow-origin')).toBeNull()
+  })
+})
+
 describe('password hashing', () => {
   it('produces argon2id hashes with the configured cost', async () => {
     const hashed = await hashPassword('correct horse battery staple')

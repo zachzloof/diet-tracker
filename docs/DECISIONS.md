@@ -327,7 +327,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** A for a first TestFlight to friends, B before a store submission.
 
-**Status.** `proposed`
+**Status.** `accepted` (2026-09-30): B. The owner asked for the app to be App Store ready, and Apple rejects a bare wrapper of a website (guideline 4.2), so the store path needs the bundled build. Built: login and register answer with the session token in the body when the client sends `x-session-transport: token`, and no cookie; every `/api/*` request accepts `Authorization: Bearer` next to the cookie; CORS allows `capacitor://localhost` and `https://localhost` without credentials; the native client keeps the token in the Keychain or Keystore; `vite build --mode native` reads `VITE_API_ORIGIN` from `apps/web/.env.native` and refuses to build without it. The browser app on Railway is unchanged: same cookie, same origin, no CORS.
 
 ---
 
@@ -341,6 +341,21 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **Recommendation.** B.
 
 **Status.** `accepted` (2026-09-26): B, confirmed by the owner.
+
+---
+
+## D25. Permission before anything is sent to the AI provider (adopted, please confirm)
+
+**Context.** Apple's guideline 5.1.2(i) requires an app to say where personal data is shared with a third party, third-party AI included, and to get explicit permission first. The estimate, the plan explanation and the weekly review all send profile data to OpenAI, and the last two used to fire as soon as their screen opened.
+
+**Options.**
+- **A. Ask once on the device, in place of the feature.** Each AI feature shows a card that says what is sent, to whom and what is not, with "Allow AI features". One yes covers all three; Settings has a switch to turn it off. The answer is kept in `localStorage` against the account that gave it, so another person signing in on the phone is asked again. No schema change. Built.
+- **B. Store the consent on the profile and enforce it in the API.** Follows the account across devices and the server refuses AI calls without it. A migration, a column later slices would depend on, and new API surface.
+- **C. A consent step in onboarding.** One more screen for everyone, and existing accounts still need A or B.
+
+**Recommendation.** A now; B if the app ever gets a second client that is not this web app.
+
+**Status.** `accepted` (2026-09-30): A, adopted so the store preparation could ship; the owner confirms or redirects. Friends on the Railway app see the card once.
 
 ---
 
@@ -397,6 +412,9 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 - Icons are rendered from `docs/brand/minori-logo.png` (the Minori logo, transparent background) onto the app background `#0c0f14` at 16 to 1024 px by a one-off script kept out of the repo; favicons and the in-app `logo.png` stay transparent; the 1024 px store icon and the Apple touch icon have no alpha and no rounded corners. Replaced the slice 5 `favicon.svg` ring on 2026-09-30.
 - Capacitor app id `app.minori.mobile`, app name "Minori" (named 2026-09-30; the internal `diet-tracker` package, repo and database names keep the working name). The native projects are committed; the web build that `cap sync` copies into them is ignored. Slice 5.
 - `robots.txt` allows everything except `/api/`. Slice 5.
+- Native plugins (2026-09-30, store preparation): `@capacitor/local-notifications` (reminders that fire with the app closed; the OS owns the schedule, one repeating notification per time), `@capacitor/filesystem` and `@capacitor/share` (exports go to the share sheet, since a web view has no download manager), `@capacitor/status-bar` (status bar text follows the theme) and `@aparajita/capacitor-secure-storage` (the session token in the Keychain or Keystore). All are loaded with dynamic imports behind `isNative`, so the browser bundle does not carry them. The service worker is not registered in the shells.
+- The iOS app is iPhone only and portrait only (`TARGETED_DEVICE_FAMILY = 1`), so the listing needs no iPad screenshots; `ITSAppUsesNonExemptEncryption` is false (HTTPS only); the web view does not inset content (`contentInset: 'never'`) because the app pads for the safe areas itself. 2026-09-30.
+- `/sources` ("Where the numbers come from", linked from Settings) cites the published source behind each target formula and reference intake, because the stores ask a health app for citations. It is an open route like privacy and terms. The register screen links the terms and the privacy policy. 2026-09-30.
 - An entry that was not saved to My foods when it was logged (D14 saves only confident items) can be saved later from its entry sheet: a "Save to My foods" switch that "Save changes" applies, through `saveToLibrary: true` on the entry update. The food is the entry as it stands after the edit, per serving like a save at log time, created once; a later save of a linked entry does nothing. Log entries keep no brand, so a food saved this way has none; named products carry it in the name ("ASDA 10 Mozzarella Sticks"), which the library search matches. After slice 5, 2026-09-26.
 - The energy ring's "kcal left" and "kcal over" follow the arithmetic (eaten against target), while the red ring and the chip follow the status, which stays "close" up to 120% of energy. After slice 5, 2026-09-26.
 - The panels behind Today's food-group rows and nutrient tiles list the viewed day's entries (queued offline ones included, so they add up to the tile) by amount, top five with the rest folded into one line, each with its share of the day's total rather than of the target. Food ideas come from the same filtered lists as the weekly gaps and appear for a minimum that is short or close and a limit that is close or over. One panel per card is open at a time. After slice 5, 2026-09-26.
@@ -405,5 +423,4 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 - Custom domain vs Railway subdomain. Still open after slice 5; the Railway subdomain works for the friends group.
 - Email provider (Resend free tier is the obvious pick) for password reset. Change password exists; "forgot my password" does not, and nothing in the repo resets one (a short admin script against the database is the stopgap). Decide before opening the app beyond friends.
-- D23: what the native shell loads. Parked with the rest of the outstanding items in `docs/OUTSTANDING.md` until after the first week of real use.
 - Photo-of-meal estimation and barcode lookup via Open Food Facts (ideas after slice 5).

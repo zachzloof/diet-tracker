@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ZodType } from 'zod'
 import { ApiError } from '@/lib/api'
+import { useAiConsentStore } from '@/stores/ai-consent'
 import { useQueueStore } from '@/stores/queue'
 import { ME_KEY } from './useSession'
 
@@ -30,6 +31,7 @@ export function useAuthForm<T extends { email: string; password: string }>(
       // Whatever the previous person on this device left in the cache goes.
       queryClient.clear()
       queryClient.setQueryData(ME_KEY, user)
+      useAiConsentStore().syncUser(user.id)
       void useQueueStore().flush()
       const next = typeof route.query.next === 'string' ? route.query.next : '/'
       await router.replace(next.startsWith('/') ? next : '/')

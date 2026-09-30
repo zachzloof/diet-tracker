@@ -1,7 +1,15 @@
-import { apiErrorSchema, validationDetailsSchema, type ApiErrorCode } from '@diet-tracker/shared'
+import {
+  SESSION_TRANSPORT_HEADER,
+  SESSION_TRANSPORT_TOKEN,
+  apiErrorSchema,
+  validationDetailsSchema,
+  type ApiErrorCode,
+} from '@diet-tracker/shared'
 import type { ZodType } from 'zod'
+import { API_ORIGIN, isNative } from './native'
+import { saveSessionToken, sessionToken } from './session-token'
 
-const BASE = '/api/v1'
+const BASE = `${API_ORIGIN}/api/v1`
 
 export type ApiErrorKind = ApiErrorCode | 'network'
 
@@ -50,6 +58,20 @@ async function toApiError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, 'internal_error', 'Something went wrong. Please try again.')
 }
 
+/**
+ * A browser authenticates with its same-origin session cookie. The native shells call
+ * the API cross-origin, where that cookie is never sent, so they ask login for the token
+ * and send it back as a bearer header (D23).
+ */
+function authHeaders(): Record<string, string> {
+  if (!isNative) return {}
+  const token = sessionToken()
+  return {
+    [SESSION_TRANSPORT_HEADER]: SESSION_TRANSPORT_TOKEN,
+    ...(token ? { authorization: `Bearer ${token}` } : {}),
+  }
+}
+
 async function send(path: string, init: RequestInit): Promise<Response> {
   let res: Response
   try {
@@ -58,14 +80,20 @@ async function send(path: string, init: RequestInit): Promise<Response> {
       headers: {
         accept: 'application/json',
         ...(init.body !== undefined ? { 'content-type': 'application/json' } : {}),
+        ...authHeaders(),
       },
       body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
-      credentials: 'same-origin',
+      credentials: isNative ? 'omit' : 'same-origin',
     })
   } catch {
     throw new ApiError(0, 'network', offlineMessage())
   }
-  if (!res.ok) throw await toApiError(res)
+  if (!res.ok) {
+    const error = await toApiError(res)
+    // The server no longer knows this token: forget it so the app goes back to sign-in.
+    if (error.code === 'unauthenticated') await saveSessionToken(null)
+    throw error
+  }
   return res
 }
 
@@ -77,6 +105,13 @@ export async function request<T>(
 ): Promise<T> {
   const res = await send(path, init)
   return schema.parse(await res.json())
+}
+
+/** For endpoints that answer with a file: its text and the name the server gave it. */
+export async function requestFile(path: string): Promise<{ text: string; filename: string }> {
+  const res = await send(path, {})
+  const named = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')
+  return { text: await res.text(), filename: named?.[1] ?? 'minori-export.txt' }
 }
 
 /** For endpoints that answer 204. */
