@@ -1,8 +1,11 @@
 import {
   accountExportSchema,
   apiErrorSchema,
+  emptyFoodGroupServes,
+  emptyNutrientVector,
   localDay,
   type ProfileInput,
+  type SavedMealInput,
 } from '@diet-tracker/shared'
 import { sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -17,6 +20,8 @@ import {
   foods,
   logEntries,
   profiles,
+  savedMealItems,
+  savedMeals,
   sessions,
   targetVersions,
   users,
@@ -73,6 +78,21 @@ async function signInAs(email: string, password: string, profile: ProfileInput):
 }
 
 const tess = SEED_USERS.find((u) => u.email === 'tess@example.com')!
+
+const porridge: SavedMealInput = {
+  name: 'Porridge',
+  items: [
+    {
+      name: 'Rolled oats',
+      quantity: 40,
+      unit: 'g',
+      grams: 40,
+      nutrients: { ...emptyNutrientVector(), energy_kcal: 152, protein_g: 5.2 },
+      foodGroups: { ...emptyFoodGroupServes(), whole_grains: 1.32 },
+      foodId: null,
+    },
+  ],
+}
 
 beforeEach(async () => {
   resetRateLimits()
@@ -136,9 +156,10 @@ describe('POST /api/v1/account/password', () => {
 })
 
 describe('GET /api/v1/account/export', () => {
-  it('returns every log entry, weigh-in, food and target version as JSON', async () => {
+  it('returns every log entry, weigh-in, food, saved meal and target version as JSON', async () => {
     const logged = await seedWeek(userId, tess.email, TZ)
     await seedWeights(userId, tess.email, TZ)
+    expect((await send('POST', '/api/v1/meals', porridge)).status).toBe(201)
     const res = await send('GET', '/api/v1/account/export/json')
     expect(res.status).toBe(200)
     expect(res.headers.get('content-disposition')).toMatch(
@@ -151,6 +172,9 @@ describe('GET /api/v1/account/export', () => {
     expect(data.logEntries).toHaveLength(logged)
     expect(data.logEntries.every((e) => e.nutrients.energy_kcal >= 0)).toBe(true)
     expect(data.weightEntries.length).toBeGreaterThanOrEqual(8)
+    expect(data.savedMeals).toHaveLength(1)
+    expect(data.savedMeals[0]).toMatchObject({ name: 'Porridge', items: porridge.items })
+    expect(data.app.schema).toBe(2)
     expect(data.dailySummaries.length).toBeGreaterThan(0)
     expect(data.aiUsage.calls).toBe(0)
     const rows = await db.select().from(logEntries)
@@ -192,10 +216,13 @@ describe('DELETE /api/v1/account', () => {
     await seedWeek(userId, tess.email, TZ)
     await seedWeights(userId, tess.email, TZ)
     expect((await send('POST', '/api/v1/foods', SEED_FOODS[tess.email]![0])).status).toBe(201)
+    expect((await send('POST', '/api/v1/meals', porridge)).status).toBe(201)
     const before = await Promise.all([
       db.select().from(logEntries),
       db.select().from(foods),
       db.select().from(weightEntries),
+      db.select().from(savedMeals),
+      db.select().from(savedMealItems),
     ])
     expect(before.every((rows) => rows.length > 0)).toBe(true)
 
@@ -212,8 +239,10 @@ describe('DELETE /api/v1/account', () => {
       db.select().from(foods),
       db.select().from(logEntries),
       db.select().from(dailySummaries),
+      db.select().from(savedMeals),
+      db.select().from(savedMealItems),
     ])
-    expect(after.map((rows) => rows.length)).toEqual([0, 0, 0, 0, 0, 0, 0, 0])
+    expect(after.map((rows) => rows.length)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     expect((await send('GET', '/api/v1/me')).status).toBe(401)
     expect((await login(tess.email, tess.password)).status).toBe(401)
   })

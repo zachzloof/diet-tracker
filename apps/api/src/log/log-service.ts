@@ -28,6 +28,7 @@ import {
 import { errors } from '../errors.js'
 import type { Tx } from '../profile/targets-service.js'
 import { createFood, ownedFoodIds, touchFoods } from './foods-service.js'
+import { touchSavedMeal } from './saved-meals-service.js'
 
 /**
  * Log entries and the daily summary that shadows them. Every write recomputes the summary
@@ -217,6 +218,7 @@ export async function createEntries(
       rows.flatMap((row) => (row.foodId ? [row.foodId] : [])),
       now,
     )
+    if (request.savedMealId) await touchSavedMeal(tx, userId, request.savedMealId, now)
     const summary = await recomputeSummary(tx, userId, request.day, now)
     return {
       entries: inserted.map(toWireEntry),

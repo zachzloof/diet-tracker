@@ -4,6 +4,7 @@ import {
   foodInputSchema,
   foodsQuerySchema,
   isValidDay,
+  savedMealInputSchema,
   updateEntryRequestSchema,
   type CreateEntriesResponse,
   type DayLogResponse,
@@ -11,6 +12,8 @@ import {
   type EstimateResponse,
   type FoodResponse,
   type FoodsResponse,
+  type SavedMealResponse,
+  type SavedMealsResponse,
   type UpdateEntryResponse,
 } from '@diet-tracker/shared'
 import { Hono } from 'hono'
@@ -23,6 +26,12 @@ import { getProfile } from '../profile/profile-service.js'
 import type { AppEnv } from '../types.js'
 import { createFood, deleteFood, listFoods, toWireFood, updateFood } from './foods-service.js'
 import { createEntries, deleteEntry, getDay, updateEntry } from './log-service.js'
+import {
+  createSavedMeal,
+  deleteSavedMeal,
+  listSavedMeals,
+  updateSavedMeal,
+} from './saved-meals-service.js'
 
 const uuid = z.uuid()
 
@@ -69,6 +78,33 @@ export const foodsRoutes = new Hono<AppEnv>()
   .delete('/:id', async (c) => {
     const { user } = requireAuth(c)
     await deleteFood(user.id, idParam(c.req.param('id')))
+    return c.body(null, 204)
+  })
+
+export const savedMealsRoutes = new Hono<AppEnv>()
+  .get('/', async (c) => {
+    const { user } = requireAuth(c)
+    const body: SavedMealsResponse = { meals: await listSavedMeals(user.id) }
+    return c.json(body, 200)
+  })
+
+  .post('/', requireJson, jsonBody(savedMealInputSchema), async (c) => {
+    const { user } = requireAuth(c)
+    const body: SavedMealResponse = { meal: await createSavedMeal(user.id, c.req.valid('json')) }
+    return c.json(body, 201)
+  })
+
+  .patch('/:id', requireJson, jsonBody(savedMealInputSchema), async (c) => {
+    const { user } = requireAuth(c)
+    const body: SavedMealResponse = {
+      meal: await updateSavedMeal(user.id, idParam(c.req.param('id')), c.req.valid('json')),
+    }
+    return c.json(body, 200)
+  })
+
+  .delete('/:id', async (c) => {
+    const { user } = requireAuth(c)
+    await deleteSavedMeal(user.id, idParam(c.req.param('id')))
     return c.body(null, 204)
   })
 

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { storedWeeklyReviewSchema } from './ai/schemas.js'
 import { PASSWORD_MAX_LENGTH, newPasswordSchema, publicUserSchema } from './auth.js'
-import { dailySummarySchema, foodSchema, logEntrySchema } from './log/schemas.js'
+import { dailySummarySchema, foodSchema, logEntrySchema, savedMealSchema } from './log/schemas.js'
 import { profileSchema } from './profile.js'
 import { weightEntrySchema } from './progress-api.js'
 import { targetVersionSchema } from './targets-api.js'
@@ -45,6 +45,7 @@ export const accountExportSchema = z.object({
   targetVersions: z.array(targetVersionSchema),
   weightEntries: z.array(weightEntrySchema),
   foods: z.array(foodSchema),
+  savedMeals: z.array(savedMealSchema),
   logEntries: z.array(logEntrySchema),
   dailySummaries: z.array(dailySummarySchema),
   weeklyReviews: z.array(exportedWeeklyReviewSchema),
@@ -57,4 +58,5 @@ export const accountExportSchema = z.object({
 })
 export type AccountExport = z.infer<typeof accountExportSchema>
 
-export const ACCOUNT_EXPORT_SCHEMA_VERSION = 1
+/** 2 added `savedMeals`. */
+export const ACCOUNT_EXPORT_SCHEMA_VERSION = 2

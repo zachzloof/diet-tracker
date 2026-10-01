@@ -61,6 +61,36 @@ export const SEED_USERS: { email: string; password: string; profile: ProfileInpu
 ]
 
 /**
+ * One saved meal per persona, built from their seed foods below, so Meals is not empty on
+ * first open. Finn's comes to 579.5 kcal and 48.9 g protein, Tess's to 327 kcal and 13.5 g.
+ */
+export const SEED_MEALS: Record<
+  string,
+  { name: string; items: { food: string; grams: number }[] }[]
+> = {
+  'finn@example.com': [
+    {
+      name: 'Protein oats',
+      items: [
+        { food: 'Rolled oats', grams: 80 },
+        { food: 'Whey protein shake', grams: 35 },
+        { food: 'Greek yoghurt, full fat', grams: 150 },
+      ],
+    },
+  ],
+  'tess@example.com': [
+    {
+      name: 'Banana porridge',
+      items: [
+        { food: 'Rolled oats', grams: 40 },
+        { food: 'Skim milk', grams: 200 },
+        { food: 'Banana', grams: 120 },
+      ],
+    },
+  ],
+}
+
+/**
  * A few library foods per persona so My foods is not empty on first open. Per-100g values
  * are typical label figures; per-serving ones describe one scoop or one piece.
  */

@@ -23,6 +23,7 @@ import {
 import { errors } from '../errors.js'
 import { toWireFood } from '../log/foods-service.js'
 import { toWireEntry, toWireSummary } from '../log/log-service.js'
+import { listSavedMeals } from '../log/saved-meals-service.js'
 import { passwordAttemptLimiter } from '../middleware/rate-limit.js'
 import { getProfile } from '../profile/profile-service.js'
 import { toWireVersion } from '../profile/targets-service.js'
@@ -73,7 +74,7 @@ export async function deleteAccount(user: User, password: string): Promise<void>
 }
 
 export async function exportAccount(user: User, now: Date = new Date()): Promise<AccountExport> {
-  const [profile, versions, weights, library, entries, summaries, reviews, usage] =
+  const [profile, versions, weights, library, meals, entries, summaries, reviews, usage] =
     await Promise.all([
       getProfile(user.id),
       db
@@ -83,6 +84,7 @@ export async function exportAccount(user: User, now: Date = new Date()): Promise
         .orderBy(asc(targetVersions.effectiveFrom), asc(targetVersions.createdAt)),
       allWeights(user.id),
       db.select().from(foods).where(eq(foods.userId, user.id)).orderBy(asc(foods.createdAt)),
+      listSavedMeals(user.id, 'created'),
       db
         .select()
         .from(logEntries)
@@ -117,6 +119,7 @@ export async function exportAccount(user: User, now: Date = new Date()): Promise
     targetVersions: versions.map(toWireVersion),
     weightEntries: weights.map(toWireWeight),
     foods: library.map(toWireFood),
+    savedMeals: meals,
     logEntries: entries.map(toWireEntry),
     dailySummaries: summaries.map((row) => toWireSummary(row, row.day)),
     weeklyReviews: reviews.map((row) => ({ isoWeek: row.isoWeek, ...row.review })),

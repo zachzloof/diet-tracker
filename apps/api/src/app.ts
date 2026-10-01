@@ -8,7 +8,7 @@ import { accountRoutes } from './account/routes.js'
 import { authRoutes } from './auth/routes.js'
 import { sessionMiddleware } from './auth/session-middleware.js'
 import { errors, handleError } from './errors.js'
-import { aiRoutes, foodsRoutes, logRoutes } from './log/routes.js'
+import { aiRoutes, foodsRoutes, logRoutes, savedMealsRoutes } from './log/routes.js'
 import { requestLog } from './middleware/request-log.js'
 import { healthRoutes } from './routes/health.js'
 import { profileRoutes, targetsRoutes } from './profile/routes.js'
@@ -65,6 +65,7 @@ export function createApp(): Hono<AppEnv> {
   app.route('/api/v1/profile', profileRoutes)
   app.route('/api/v1/targets', targetsRoutes)
   app.route('/api/v1/foods', foodsRoutes)
+  app.route('/api/v1/meals', savedMealsRoutes)
   app.route('/api/v1/log', logRoutes)
   app.route('/api/v1/ai', aiRoutes)
   app.route('/api/v1/ai', weeklyReviewRoutes)
