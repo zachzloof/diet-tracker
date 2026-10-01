@@ -7,6 +7,7 @@ import {
   rescaleToGrams,
   rescaleToQuantity,
   sanitiseNutrientVector,
+  scalePortion,
   sumPortions,
   type PortionSource,
 } from './portions.js'
@@ -127,6 +128,37 @@ describe('rescaleToGrams', () => {
     const zero = { ...fourEggs, grams: 0 }
     expect(rescaleToGrams(zero, 50).quantity).toBe(4)
     expect(rescaleToGrams(zero, 50).grams).toBe(50)
+  })
+})
+
+describe('scalePortion', () => {
+  const fourEggs = {
+    quantity: 4,
+    grams: 200,
+    nutrients: { ...emptyNutrientVector(), energy_kcal: 300, protein_g: 26, fat_g: 20 },
+    foodGroups: { ...emptyFoodGroupServes(), protein_foods: 2 },
+    name: 'Egg, whole, large, boiled',
+  }
+
+  it('multiplies quantity, grams, nutrients and serves and keeps other fields', () => {
+    const half = scalePortion(fourEggs, 0.5)
+    expect(half.quantity).toBe(2)
+    expect(half.grams).toBe(100)
+    expect(half.nutrients.energy_kcal).toBe(150)
+    expect(half.nutrients.protein_g).toBe(13)
+    expect(half.foodGroups.protein_foods).toBe(1)
+    expect(half.name).toBe(fourEggs.name)
+    expect(fourEggs.quantity).toBe(4)
+  })
+
+  it('agrees with rescaleToQuantity and leaves the item alone at 1', () => {
+    expect(scalePortion(fourEggs, 1.5).nutrients).toEqual(rescaleToQuantity(fourEggs, 6).nutrients)
+    expect(scalePortion(fourEggs, 1)).toEqual(fourEggs)
+  })
+
+  it('refuses a negative or non-finite factor', () => {
+    expect(() => scalePortion(fourEggs, -1)).toThrow()
+    expect(() => scalePortion(fourEggs, Number.NaN)).toThrow()
   })
 })
 

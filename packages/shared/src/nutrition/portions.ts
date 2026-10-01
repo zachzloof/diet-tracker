@@ -98,6 +98,23 @@ export function rescaleToGrams<T extends Scalable>(item: T, grams: number): T {
   }
 }
 
+/**
+ * An item multiplied by `factor`: half a saved meal is every ingredient at 0.5, a double
+ * portion at 2. Unlike `rescaleToQuantity` this takes the multiplier itself, so a list of
+ * items in different units scales by one number.
+ */
+export function scalePortion<T extends Scalable>(item: T, factor: number): T {
+  if (!Number.isFinite(factor) || factor < 0)
+    throw new Error('factor must be a non-negative number')
+  return {
+    ...item,
+    quantity: item.quantity * factor,
+    grams: item.grams * factor,
+    nutrients: scaleNutrientVector(item.nutrients, factor),
+    foodGroups: scaleFoodGroupServes(item.foodGroups, factor),
+  }
+}
+
 export interface Totals {
   totals: NutrientVector
   foodGroups: FoodGroupServes

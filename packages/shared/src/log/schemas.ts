@@ -9,7 +9,7 @@ import {
   mealSchema,
 } from './enums.js'
 
-/** Wire shapes for `/api/v1/foods`, `/api/v1/log` and `/api/v1/ai/estimate`. */
+/** Wire shapes for `/api/v1/foods`, `/api/v1/meals`, `/api/v1/log` and `/api/v1/ai/estimate`. */
 
 const foodName = z
   .string({ error: 'Give the food a name' })
@@ -139,6 +139,8 @@ export const createEntriesRequestSchema = z.object({
   meal: mealSchema,
   loggedAt: z.iso.datetime(),
   entries: z.array(logEntryInputSchema).min(1, 'Nothing to log').max(MAX_ENTRIES_PER_REQUEST),
+  /** The saved meal these entries came from, so it sorts to the top of Meals next time. */
+  savedMealId: z.uuid().optional(),
 })
 export type CreateEntriesRequest = z.infer<typeof createEntriesRequestSchema>
 
@@ -214,3 +216,51 @@ export type UpdateEntryResponse = z.infer<typeof updateEntryResponseSchema>
 
 export const deleteEntryResponseSchema = z.object({ summary: dailySummarySchema })
 export type DeleteEntryResponse = z.infer<typeof deleteEntryResponseSchema>
+
+// --- Saved meals ---------------------------------------------------------------------------
+
+/** A saved meal is logged in one request, so it holds no more ingredients than that allows. */
+export const MAX_SAVED_MEAL_ITEMS = MAX_ENTRIES_PER_REQUEST
+export const MAX_SAVED_MEALS = 100
+
+const savedMealName = z
+  .string({ error: 'Give the meal a name' })
+  .trim()
+  .min(1, 'Give the meal a name')
+  .max(80, 'Keep the name under 80 characters')
+
+/**
+ * One ingredient of a saved meal, for one portion of the meal. The numbers are a snapshot
+ * taken when the ingredient was added: editing or deleting the library food later does not
+ * change the meal.
+ */
+export const savedMealItemSchema = z.object({
+  ...entryFields,
+  /** The library food it was taken from; null when typed in by hand or once that food is deleted. */
+  foodId: z.uuid().nullable(),
+})
+export type SavedMealItem = z.infer<typeof savedMealItemSchema>
+
+export const savedMealInputSchema = z.object({
+  name: savedMealName,
+  items: z
+    .array(savedMealItemSchema)
+    .min(1, 'Add at least one ingredient')
+    .max(MAX_SAVED_MEAL_ITEMS, `A meal can have up to ${MAX_SAVED_MEAL_ITEMS} ingredients`),
+})
+export type SavedMealInput = z.infer<typeof savedMealInputSchema>
+
+export const savedMealSchema = z.object({
+  id: z.uuid(),
+  name: savedMealName,
+  items: z.array(savedMealItemSchema),
+  lastUsedAt: z.iso.datetime().nullable(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+})
+export type SavedMeal = z.infer<typeof savedMealSchema>
+
+export const savedMealsResponseSchema = z.object({ meals: z.array(savedMealSchema) })
+export type SavedMealsResponse = z.infer<typeof savedMealsResponseSchema>
+export const savedMealResponseSchema = z.object({ meal: savedMealSchema })
+export type SavedMealResponse = z.infer<typeof savedMealResponseSchema>
