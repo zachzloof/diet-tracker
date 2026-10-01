@@ -167,11 +167,11 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 **In scope.**
 - Saved meals: a name and 1 to 20 ingredients for one portion. An ingredient is a food from My foods with an amount, or one typed in by hand (saved to My foods by default).
-- A Meals page (You > Meals) to list, create, edit and delete them, and a meal editor screen.
+- A Meals tab (the bar becomes Today, Meals, Log, Week, You) to list, search, create, edit and delete them, and a meal editor screen.
 - A Meals tab in the Log food sheet: pick a meal, choose portions, optionally change or leave out an ingredient for that time, pick the meal of the day and the day, confirm. No typing, no AI call.
 - Pure portion math in `packages/shared` (`scalePortion`, `savedMealEntries`, `savedMealTotals`) with worked examples; `saved_meals` and `saved_meal_items` tables; `/api/v1/meals`; meals in the export, the account deletion cascade, the offline mirror and the seed.
 
-**Out of scope.** Building a meal by describing it to the AI; turning a meal already in the day log into a saved meal; grouping a logged meal's entries under one header; sharing meals between people; search within Meals.
+**Out of scope.** Building a meal by describing it to the AI; turning a meal already in the day log into a saved meal; grouping a logged meal's entries under one header; sharing meals between people.
 
 **Done when.**
 - [x] Build a meal from saved foods and a typed ingredient; the Meals page shows it with the right total. *Walked in a headless phone viewport at 390x844 dark, 360x780 light and 430x932 dark: "Yoghurt bowl" from 50 g Rolled oats (190 kcal), one Banana (105) and 15 g of typed-in Honey (45.6) shows 341 kcal and 3 ingredients in the editor and on the Meals page; the honey was saved to My foods. An empty name and an empty ingredient list are refused inline.*
@@ -183,9 +183,11 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 - [x] Export includes meals; delete account removes them. *`account.test.ts`: `savedMeals` in the JSON export (schema 2) and both tables empty after deletion.*
 - [x] Typecheck, lint and tests green; the migration runs from a fresh database and from the previous state. *288 tests (146 shared, 31 web, 111 API) on the head of `main`, in a clean checkout against its own Postgres. Migration 0006 applied to a fresh database and to a seeded database at 0005; a second run applied nothing.*
 
-**Deferrals.** No real-phone check (headless only, 135 checks across the three widths plus the offline, empty and error states). No search in Meals: the list sorts by last logged. An ingredient cannot be renamed once added. Correcting a food does not update meals that already use it (D28). The light-mode macro letters on the ingredient rows share the known contrast issue from slice 4.
+**Follow-ups shipped (2026-10-01), on the owner's review.** Meals moved from a row under You to its own tab, and search by name or ingredient was added to the Meals tab and the Log food sheet. Walked at 390 dark, 360 light and 430 dark (21 checks each: five equal tabs with the + centred, the tab lit on the list and the editor, no Back on the list, search by name, by ingredient, no match and clear, the same in the sheet), with the 40-check meals walk rerun; 35 web tests.
 
-**Decisions it depends on.** D5, D15, D21. Surfaced D28 (ingredients are snapshots) and D29 (one log entry per ingredient), both `proposed`.
+**Deferrals.** No real-phone check (headless only, 135 checks across the three widths plus the offline, empty and error states). An ingredient cannot be renamed once added. Correcting a food does not update meals that already use it (D28). The light-mode macro letters on the ingredient rows share the known contrast issue from slice 4.
+
+**Decisions it depends on.** D5, D15, D21. Surfaced D28 (ingredients are snapshots) and D29 (one log entry per ingredient), both accepted by the owner on 2026-10-01.
 
 ---
 

@@ -10,7 +10,7 @@ It has to look like something people would pay for, and it has to be usable one-
 
 ## App shell
 - `100dvh` layout, content scrolls, header and bottom bar fixed. Padding uses `env(safe-area-inset-*)` so the iPhone home indicator and notch never cover anything. `viewport-fit=cover` in the meta tag.
-- Bottom tab bar, four tabs: **Today**, **Log**, **Week**, **You**. The Log tab is a raised circular "+" that opens the quick-add sheet from anywhere; that is the app's primary action and it must be reachable by a thumb. The sheet has four ways in (Describe, Meals, My foods, Manual), each with a one-line description under the title. Libraries a person manages (Meals, My foods) are pushed screens under You, not tabs.
+- Bottom tab bar, five slots: **Today**, **Meals**, **Log**, **Week**, **You**. Log, in the centre, is a raised circular "+" that opens the quick-add sheet from anywhere; that is the app's primary action and it must be reachable by a thumb. The sheet has four ways in (Describe, Meals, My foods, Manual), each with a one-line description under the title. A tab stays lit on the pushed screens that belong to it (the meal editor under Meals). Five is the ceiling: anything else a person manages (My foods, Progress, Settings) is a pushed screen under You.
 - Screens are single-column, max width 480 px centred on larger screens so desktop is just a wide phone.
 - Modal actions come up as bottom sheets (Reka UI Dialog styled as a sheet), never centred modals. Sheets have a drag handle, a visible close, and never trap focus without an escape.
 - Page transitions: none between tabs; a slide-in for pushed detail screens.

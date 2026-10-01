@@ -10,7 +10,6 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 | Contact email on the legal pages             | `apps/web/src/features/legal/legal.ts` | `LEGAL_CONTACT_EMAIL` is `null`; the privacy policy and terms say "contact the person who gave you the link". Both stores need a support contact. One constant to fill.                                                                                                              |
 | Email provider and "forgot my password"      | DECISIONS.md open questions | Change password exists; a reset flow does not, and nothing in the repo resets one (a short admin script against the database is the stopgap). Resend's free tier is the obvious pick. Decide before the app goes beyond friends.                                                        |
 | Custom domain vs Railway subdomain           | DECISIONS.md open questions | The Railway subdomain is fine for the friends group. A custom domain changes `APP_ORIGIN` and nothing else.                                                                                                                                                                             |
-| Meals: snapshots, and one entry per ingredient | DECISIONS.md D28, D29 | Slice 6 built both on the recommended option. D28: a meal's ingredients keep the numbers they had when added, so correcting a food does not update its meals. D29: a logged meal lands as its ingredients, not one line. Use Meals for a week, then confirm or redirect. |
 
 ## Deferred from slice 5
 

@@ -399,7 +399,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** A. If correcting a food and having to fix its meals by hand turns out to be a real annoyance, add a "refresh from My foods" button to the meal editor rather than moving to B.
 
-**Status.** `proposed` (2026-10-01): A is built; the owner confirms or redirects. Schema: `saved_meals` and `saved_meal_items` (migration 0006). Switching to B later would be a new migration and a rewrite of the meal routes; C would be additive.
+**Status.** `accepted` (2026-10-01): A, confirmed by the owner, with the "refresh from My foods" button as the follow-up if hand-fixing meals becomes a nuisance. Schema: `saved_meals` and `saved_meal_items` (migration 0006). Switching to B later would be a new migration and a rewrite of the meal routes; C would be additive.
 
 ---
 
@@ -414,7 +414,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** A now; C if the day log feels long after a week of use. The request already carries `savedMealId` (it marks the meal as used), so C would not change the client's call.
 
-**Status.** `proposed` (2026-10-01): A is built; the owner confirms or redirects.
+**Status.** `accepted` (2026-10-01): A now, C if the day log feels long after a week of use; confirmed by the owner.
 
 ---
 
@@ -478,7 +478,8 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 - The energy ring's "kcal left" and "kcal over" follow the arithmetic (eaten against target), while the red ring and the chip follow the status, which stays "close" up to 120% of energy. After slice 5, 2026-09-26.
 - The panels behind Today's food-group rows and nutrient tiles list the viewed day's entries (queued offline ones included, so they add up to the tile) by amount, top five with the rest folded into one line, each with its share of the day's total rather than of the target. Food ideas come from the same filtered lists as the weekly gaps and appear for a minimum that is short or close and a limit that is close or over. One panel per card is open at a time. After slice 5, 2026-09-26.
 - "Meal" in code already means breakfast, lunch, dinner or snack, so the preset is a `SavedMeal` (`saved_meals`, `/api/v1/meals`); the screens call it a meal. Slice 6.
-- Meals lives under You (next to My foods) and as the second tab of the Log food sheet, not as a fifth tab in the bar. The tab bar stays at four so the + keeps its place under the thumb. Slice 6.
+- Meals is a tab of its own (the owner's choice, 2026-10-01, replacing the first build's row under You): the bar is Today, Meals, Log, Week, You, which puts the + in the centre. The tab stays lit on the meal editor. Meals is also the second way in on the Log food sheet. My foods stays under You. Slice 6.
+- Meals search runs on the phone over the list already loaded (at most 100 meals): every word typed must appear in the meal's name or in one of its ingredients, case ignored, order kept. The same box is on the Meals tab and in the Log food sheet. Slice 6.
 - A saved meal holds 1 to 20 ingredients (the most one log request carries) and a person can save up to 100 meals; the hundred-and-first is refused with a message that says to delete one. Slice 6.
 - Logging a meal goes through the ordinary `POST /log/entries` with the ingredients already scaled by the client (D15) and an optional `savedMealId` that only marks the meal as used; somebody else's id, or a deleted meal's, is ignored rather than rejected. Because it is the ordinary route, a meal logged offline is queued like any other entry (D21). Slice 6.
 - Portions of a meal: any number above 0 up to 20, stepped by 0.5. Changing or removing an ingredient on the logging card applies to that one time; the saved meal is changed only in its editor, which replaces the whole ingredient list on save. Slice 6.
