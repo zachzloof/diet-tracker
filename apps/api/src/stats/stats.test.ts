@@ -282,7 +282,11 @@ describe('GET /api/v1/stats/month', () => {
     )
     expect(body.days.map((d) => d.day)).toEqual(seeded)
     const byDay = new Map(body.days.map((d) => [d.day, d]))
-    expect(byDay.get(addDays(today(), -1))).toMatchObject({ logged: true, dayMet: true })
+    // On the first of a month yesterday belongs to the month before and is not listed.
+    const yesterday = addDays(today(), -1)
+    if (yesterday.startsWith(body.month)) {
+      expect(byDay.get(yesterday)).toMatchObject({ logged: true, dayMet: true })
+    }
     expect(byDay.get(today())).toMatchObject({ logged: false, dayMet: false })
 
     const explicit = await send('GET', `/api/v1/stats/month?month=${body.month}`)
