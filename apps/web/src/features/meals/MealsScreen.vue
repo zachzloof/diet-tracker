@@ -6,7 +6,7 @@ import {
   type Meal,
   type SavedMeal,
 } from '@diet-tracker/shared'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
@@ -22,18 +22,23 @@ import { ApiError } from '@/lib/api'
 import { formatInstant, formatKcal } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
 import MealLogReview from './MealLogReview.vue'
-import { ingredientCount } from './meal-items'
+import MealSearch from './MealSearch.vue'
+import { filterMeals, ingredientCount } from './meal-items'
 import { useMeals } from './useMeals'
 
 /**
  * Meals: the person's regular meals, each a set of ingredients that is logged in one go.
- * Tap one to log it (or to get to its editor); the plus makes a new one.
+ * A tab of its own. Search by name or ingredient, tap a meal to log it (or to get to its
+ * editor); the plus makes a new one.
  */
 const ui = useUiStore()
 const router = useRouter()
 const { today, suggestion } = useLocalDay()
 const meals = useMeals()
 const createEntries = useCreateEntries()
+
+const q = ref('')
+const shown = computed(() => filterMeals(meals.meals.value, q.value))
 
 // The sheet keeps showing the meal while it slides away, so `selected` outlives `sheetOpen`.
 const selected = ref<SavedMeal | null>(null)
@@ -87,7 +92,7 @@ function edit(meal: SavedMeal): void {
 </script>
 
 <template>
-  <AppShell title="Meals" :back="{ name: 'you' }">
+  <AppShell title="Meals">
     <template #header-right>
       <IconButton label="New meal" icon="plus" @click="router.push({ name: 'meal-new' })" />
     </template>
@@ -129,9 +134,15 @@ function edit(meal: SavedMeal): void {
       </Card>
 
       <template v-else>
-        <Card :padded="false">
+        <MealSearch v-model="q" />
+        <Card v-if="shown.length === 0">
+          <p class="text-sm text-fg-muted">
+            No meal or ingredient matches “{{ q.trim() }}”. Try another word.
+          </p>
+        </Card>
+        <Card v-else :padded="false">
           <ul class="divide-y divide-border" aria-label="Meals">
-            <li v-for="meal in meals.meals.value" :key="meal.id">
+            <li v-for="meal in shown" :key="meal.id">
               <button
                 type="button"
                 class="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-surface-2 active:bg-border/40"

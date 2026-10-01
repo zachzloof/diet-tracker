@@ -2,6 +2,7 @@ import {
   roundFoodGroupServes,
   roundNutrientVector,
   scalePortion,
+  type SavedMeal,
   type SavedMealItem,
 } from '@diet-tracker/shared'
 import { snapshotItem, type EditableItem } from '@/features/log/item-edit'
@@ -61,6 +62,20 @@ export function scaleDraftItems(items: readonly MealDraftItem[], ratio: number):
     ...snapshotItem(scalePortion(item, ratio)),
     base: snapshotItem(scalePortion(item.base, ratio)),
   }))
+}
+
+/**
+ * The meals that match a search: every word typed must appear in the meal's name or in one
+ * of its ingredients, so "oats" finds the porridge and "chicken rice" finds the bowl. The
+ * order (most recently logged first) is kept. An empty search matches everything.
+ */
+export function filterMeals(meals: readonly SavedMeal[], query: string): SavedMeal[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return [...meals]
+  return meals.filter((meal) => {
+    const text = [meal.name, ...meal.items.map((item) => item.name)].join(' ').toLowerCase()
+    return words.every((word) => text.includes(word))
+  })
 }
 
 /** "3 ingredients" for the lists. */

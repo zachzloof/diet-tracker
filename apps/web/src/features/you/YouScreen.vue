@@ -53,12 +53,6 @@ const NAV = computed<NavItem[]>(() => [
     sub: 'Weight trend and the fortnightly plan check',
     icon: 'trending-up',
   },
-  {
-    name: 'meals',
-    label: 'Meals',
-    sub: 'Your regular meals, ready to log in one go',
-    icon: 'utensils',
-  },
   { name: 'foods', label: 'My foods', sub: 'Saved foods for one-tap logging', icon: 'book' },
   {
     name: 'settings',
@@ -95,7 +89,7 @@ const NAV = computed<NavItem[]>(() => [
       </Card>
 
       <Card :padded="false">
-        <nav class="divide-y divide-border" aria-label="Profile, targets, meals and settings">
+        <nav class="divide-y divide-border" aria-label="Profile, targets and settings">
           <RouterLink
             v-for="item in NAV"
             :key="item.name"

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { savedMealTotals, type SavedMeal } from '@diet-tracker/shared'
+import { computed, ref } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Icon from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { formatKcal } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
-import { ingredientCount } from './meal-items'
+import MealSearch from './MealSearch.vue'
+import { filterMeals, ingredientCount } from './meal-items'
 import { useMeals } from './useMeals'
 
 /** Pick a saved meal to log. The list is the person's own, most recently logged first. */
@@ -14,6 +16,9 @@ const emit = defineEmits<{ pick: [meal: SavedMeal]; create: []; manage: [] }>()
 
 const ui = useUiStore()
 const meals = useMeals()
+
+const q = ref('')
+const shown = computed(() => filterMeals(meals.meals.value, q.value))
 </script>
 
 <template>
@@ -46,8 +51,16 @@ const meals = useMeals()
     </EmptyState>
 
     <template v-else>
-      <ul class="divide-y divide-border rounded-card border border-border" aria-label="Meals">
-        <li v-for="meal in meals.meals.value" :key="meal.id">
+      <MealSearch v-model="q" />
+      <p v-if="shown.length === 0" class="text-sm text-fg-muted">
+        No meal or ingredient matches “{{ q.trim() }}”. Try another word.
+      </p>
+      <ul
+        v-else
+        class="divide-y divide-border rounded-card border border-border"
+        aria-label="Meals"
+      >
+        <li v-for="meal in shown" :key="meal.id">
           <button
             type="button"
             class="flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-surface-2 active:bg-border/40"

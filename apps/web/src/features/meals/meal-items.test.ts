@@ -2,11 +2,18 @@ import {
   emptyFoodGroupServes,
   emptyNutrientVector,
   savedMealEntries,
+  type SavedMeal,
   type SavedMealItem,
 } from '@diet-tracker/shared'
 import { describe, expect, it } from 'vitest'
 import { applyItemEdit } from '@/features/log/item-edit'
-import { fromDraftItem, ingredientCount, scaleDraftItems, toDraftItem } from './meal-items'
+import {
+  filterMeals,
+  fromDraftItem,
+  ingredientCount,
+  scaleDraftItems,
+  toDraftItem,
+} from './meal-items'
 
 const oats: SavedMealItem = {
   name: 'Rolled oats',
@@ -86,6 +93,40 @@ describe('scaleDraftItems', () => {
     const entries = savedMealEntries(items)
     expect(entries.map((e) => e.source)).toEqual(['library', 'manual'])
     expect(entries.reduce((sum, e) => sum + e.nutrients.energy_kcal, 0)).toBe(622.5)
+  })
+})
+
+describe('filterMeals', () => {
+  const meal = (id: number, name: string, items: SavedMealItem[]): SavedMeal => ({
+    id: `0199a3f0-0000-7000-8000-00000000000${id}`,
+    name,
+    items,
+    lastUsedAt: null,
+    createdAt: '2026-10-01T07:00:00.000Z',
+    updatedAt: '2026-10-01T07:00:00.000Z',
+  })
+  const porridge = meal(1, 'Banana porridge', [oats])
+  const breakfast = meal(2, 'Big breakfast', [eggs, oats])
+  const omelette = meal(3, 'Omelette', [eggs])
+  const all = [porridge, breakfast, omelette]
+
+  it('returns everything, in order, for an empty or blank search', () => {
+    expect(filterMeals(all, '')).toEqual(all)
+    expect(filterMeals(all, '   ')).toEqual(all)
+  })
+
+  it('matches the name, ignoring case', () => {
+    expect(filterMeals(all, 'PORR')).toEqual([porridge])
+  })
+
+  it('matches an ingredient, keeping the list order', () => {
+    expect(filterMeals(all, 'oats')).toEqual([porridge, breakfast])
+    expect(filterMeals(all, 'egg')).toEqual([breakfast, omelette])
+  })
+
+  it('needs every word, across the name and the ingredients', () => {
+    expect(filterMeals(all, 'big oats')).toEqual([breakfast])
+    expect(filterMeals(all, 'banana eggs')).toEqual([])
   })
 })
 
