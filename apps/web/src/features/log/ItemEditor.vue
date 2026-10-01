@@ -58,7 +58,7 @@ function setNutrient(key: NutrientKey, value: number | null): void {
 
 <template>
   <div class="space-y-3">
-    <div class="grid gap-3" :class="byWeight ? 'grid-cols-1' : 'grid-cols-2'">
+    <div class="grid items-end gap-3" :class="byWeight ? 'grid-cols-1' : 'grid-cols-2'">
       <NumberField
         v-if="!byWeight"
         :model-value="shown(item.quantity, 2)"
