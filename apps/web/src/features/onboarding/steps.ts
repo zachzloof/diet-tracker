@@ -61,8 +61,8 @@ export const STEPS: StepDef[] = [
     subtitle:
       'About two minutes. Every answer feeds the numbers, and you can change any of them later.',
     component: UnitsStep,
-    ready: () => true,
-    fields: ['units'],
+    ready: (d) => d.healthConsent,
+    fields: ['units', 'healthConsent'],
   },
   {
     id: 'sex',

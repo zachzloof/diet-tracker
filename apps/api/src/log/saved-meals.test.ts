@@ -50,6 +50,7 @@ const finn: ProfileInput = {
   timezone: 'Europe/London',
   units: 'metric',
   flags: NO_FLAGS,
+  healthConsent: true,
 }
 
 const oats: FoodInput = {

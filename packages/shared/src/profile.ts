@@ -137,6 +137,12 @@ export const profileInputSchema = z
     timezone: z.string().refine(isValidTimeZone, 'Choose a valid time zone'),
     units: unitSystemSchema,
     flags: safetyFlagsSchema,
+    /**
+     * Explicit consent to store health data (body measurements, intake, the health answers).
+     * Required to create a profile; the server records when it was given. Later edits may
+     * leave it out.
+     */
+    healthConsent: z.boolean().optional(),
   })
   .superRefine((value, ctx) => {
     const allowed = PACES_BY_GOAL[value.goal]
@@ -174,6 +180,8 @@ export type ProfileInput = z.infer<typeof profileInputSchema>
 /** A saved profile as the API returns it. */
 export const profileSchema = z.object({
   ...profileInputSchema.shape,
+  /** When the person agreed to their health data being stored; null for older accounts. */
+  healthConsentAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })

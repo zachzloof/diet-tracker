@@ -33,6 +33,7 @@ export const SEED_USERS: { email: string; password: string; profile: ProfileInpu
       timezone: 'Europe/London',
       units: 'metric',
       flags: NO_FLAGS,
+      healthConsent: true,
     },
   },
   {
@@ -56,6 +57,7 @@ export const SEED_USERS: { email: string; password: string; profile: ProfileInpu
       timezone: 'Europe/London',
       units: 'metric',
       flags: NO_FLAGS,
+      healthConsent: true,
     },
   },
 ]

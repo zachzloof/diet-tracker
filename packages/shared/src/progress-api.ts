@@ -14,7 +14,7 @@ export const weightEntrySchema = z.object({
 })
 export type WeightEntry = z.infer<typeof weightEntrySchema>
 
-export const WEIGHT_HISTORY_DAYS = { default: 90, min: 7, max: 730 } as const
+export const WEIGHT_HISTORY_DAYS = { default: 90, min: 7, max: 183 } as const
 
 export const weightsQuerySchema = z.object({
   /** How many days back to return, ending today. */

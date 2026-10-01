@@ -51,6 +51,8 @@ export const profiles = pgTable('profiles', {
   flags: jsonb('flags').$type<SafetyFlags>().notNull(),
   /** "Not now" on a recalibration proposal hides it until this local day (slice 5). */
   recalibrationSnoozedUntil: day('recalibration_snoozed_until'),
+  /** When the person gave explicit consent to store health data; null for accounts from before the step. */
+  healthConsentAt: timestamptz('health_consent_at'),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
   updatedAt: timestamptz('updated_at').notNull().defaultNow(),
 })

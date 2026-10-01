@@ -17,6 +17,7 @@ import Chip, { type ChipTone } from '@/components/ui/Chip.vue'
 import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Input from '@/components/ui/Input.vue'
+import { LEGAL_CONTACT_EMAIL } from '@/features/legal/legal'
 import { formatGrams, formatKcal, formatNumber, formatQuantity } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
 import ItemEditor from './ItemEditor.vue'
@@ -37,6 +38,25 @@ const props = defineProps<{
   saving: boolean
   error: string | null
 }>()
+
+/**
+ * "Report this estimate" opens an email to the support address with what was typed and what
+ * came back, so a wrong or inappropriate answer can be looked at. Hidden until
+ * `LEGAL_CONTACT_EMAIL` is set.
+ */
+const reportHref = computed(() => {
+  if (!LEGAL_CONTACT_EMAIL) return null
+  const lines = [
+    `I typed: ${props.text}`,
+    '',
+    'The estimate:',
+    ...props.result.estimate.items.map((item) => `- ${item.name}, ${item.grams} g`),
+    '',
+    'What is wrong with it:',
+    '',
+  ]
+  return `mailto:${LEGAL_CONTACT_EMAIL}?subject=${encodeURIComponent('Minori: report an estimate')}&body=${encodeURIComponent(lines.join('\n'))}`
+})
 
 const emit = defineEmits<{
   confirm: [payload: { day: string; meal: Meal; entries: LogEntryInput[] }]
@@ -321,6 +341,7 @@ function confirm(): void {
       <template v-if="result.callsRemaining < 10">
         {{ result.callsRemaining }} estimates left today.
       </template>
+      <a v-if="reportHref" :href="reportHref" class="font-semibold text-fg">Report this estimate</a>
     </p>
   </div>
 </template>

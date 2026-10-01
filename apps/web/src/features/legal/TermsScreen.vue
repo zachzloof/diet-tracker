@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import LegalLayout from './LegalLayout.vue'
-import { LEGAL_CONTACT_EMAIL, LEGAL_UPDATED } from './legal'
+import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_OPERATOR, LEGAL_UPDATED } from './legal'
 </script>
 
 <template>
   <LegalLayout title="Terms of use" :updated="LEGAL_UPDATED">
     <p>
       By creating an account you agree to these terms. They are short because the service is simple:
-      a free food and weight diary with computed targets and AI estimates.
+      a free food and weight diary with computed targets and AI estimates. The agreement is between
+      you and {{ LEGAL_OPERATOR ?? `the independent developer who runs ${APP_NAME}` }}.
     </p>
 
     <h2>Who can use it</h2>
@@ -53,7 +54,17 @@ import { LEGAL_CONTACT_EMAIL, LEGAL_UPDATED } from './legal'
     <h2>Liability</h2>
     <p>
       To the extent the law allows, the people who run this service are not liable for any loss
-      arising from its use, including from acting on a target, an estimate or a review.
+      arising from its use, including from acting on a target, an estimate or a review. Nothing in
+      these terms limits liability for death or personal injury caused by negligence, for fraud, or
+      for anything else the law does not allow to be limited, and nothing here takes away rights you
+      have as a consumer.
+    </p>
+
+    <h2>Law</h2>
+    <p>
+      These terms are governed by the law of England and Wales. If you live elsewhere in the United
+      Kingdom or in another country, you keep the protection of the mandatory consumer laws of the
+      place you live and can bring a claim in its courts.
     </p>
 
     <h2>Privacy</h2>

@@ -4,5 +4,11 @@
  * the person who shared the link.
  */
 export const LEGAL_CONTACT_EMAIL: string | null = null
-export const LEGAL_UPDATED = '30 September 2026'
+export const LEGAL_UPDATED = '1 October 2026'
 export const APP_NAME = 'Minori'
+
+/**
+ * Who runs the service: the data controller and the party to the terms. Empty until the
+ * owner decides between their own name and a company (docs/TODO-BEFORE-LAUNCH.md).
+ */
+export const LEGAL_OPERATOR: string | null = null

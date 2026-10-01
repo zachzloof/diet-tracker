@@ -35,6 +35,8 @@ export interface OnboardingDraft {
   allergies: string[]
   dislikes: string[]
   flags: SafetyFlags
+  /** Ticked on the first step: explicit consent to store health data. */
+  healthConsent: boolean
 }
 
 export function emptyDraft(): OnboardingDraft {
@@ -56,6 +58,7 @@ export function emptyDraft(): OnboardingDraft {
     allergies: [],
     dislikes: [],
     flags: { ...NO_FLAGS },
+    healthConsent: false,
   }
 }
 
@@ -121,6 +124,7 @@ export function draftToInput(draft: OnboardingDraft): unknown {
     timezone: detectTimeZone(),
     units: draft.units,
     flags: draft.flags,
+    healthConsent: draft.healthConsent,
   }
   return input
 }

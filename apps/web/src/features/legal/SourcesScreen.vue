@@ -92,5 +92,15 @@ const SOURCES: { topic: string; detail: string; cite: string; href: string | nul
       When you describe a meal, an AI model estimates its nutrients and shows its assumptions and
       how confident it is. Estimates can be wrong; you can edit any number before or after logging.
     </p>
+
+    <h2>If food or weight is taking over</h2>
+    <p>
+      Counting is a tool, not a rule. If tracking makes you anxious, or eating or your weight is
+      taking over your thoughts, stop tracking and talk to your doctor. An eating disorder charity
+      can also help: in the UK, Beat at
+      <a href="https://www.beateatingdisorders.org.uk" target="_blank" rel="noopener noreferrer"
+        >beateatingdisorders.org.uk</a
+      >.
+    </p>
   </LegalLayout>
 </template>

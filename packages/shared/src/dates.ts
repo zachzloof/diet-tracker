@@ -74,6 +74,12 @@ export function startOfLocalDay(day: string, timeZone: string): Date {
 }
 
 /** `day` shifted by `days` calendar days (negative for earlier). */
+/**
+ * How long dated history is kept: the food log, weigh-ins, weekly reviews, AI usage rows
+ * and superseded targets older than this are deleted automatically (about six months).
+ */
+export const RETENTION_DAYS = 183
+
 export function addDays(day: string, days: number): string {
   if (!DAY_RE.test(day)) throw new Error('addDays expects YYYY-MM-DD')
   const [y, m, d] = day.split('-').map(Number) as [number, number, number]

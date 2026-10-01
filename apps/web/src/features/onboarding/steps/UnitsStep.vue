@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { UNIT_SYSTEMS, UNIT_SYSTEM_LABELS } from '@diet-tracker/shared'
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import Icon from '@/components/ui/Icon.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import { injectDraft } from '../useOnboardingDraft'
@@ -40,5 +41,20 @@ const OPTIONS = UNIT_SYSTEMS.map((value) => ({ value, label: UNIT_SYSTEM_LABELS[
       This app is not medical advice. Targets are general guidance for healthy adults. If you have a
       medical condition, talk to a doctor or dietitian before changing what you eat.
     </p>
+    <label class="flex min-h-11 cursor-pointer items-start gap-3">
+      <input
+        v-model="draft.healthConsent"
+        type="checkbox"
+        class="mt-0.5 size-6 shrink-0 accent-accent"
+      />
+      <span class="text-sm text-fg">
+        I agree to Minori storing the health information I enter (my body measurements, what I eat,
+        my weight and my answers to the health questions) to work out and track my targets. I can
+        export or delete it at any time in Settings.
+        <RouterLink :to="{ name: 'privacy' }" class="font-semibold text-accent"
+          >Privacy policy</RouterLink
+        >
+      </span>
+    </label>
   </div>
 </template>

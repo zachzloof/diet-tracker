@@ -8,6 +8,14 @@ All user-visible changes, grouped by slice. Newest first.
 - The "Log food" sheet now fills the screen up to just under the status bar and keeps that height, instead of growing and shrinking as you switch between Describe, My foods and Manual or as an estimate loads. The text box sits near the top, so the keyboard no longer covers what you are typing, and the sheet's content stays scrollable above the keyboard.
 - Every sheet has a new entrance and a real exit: it rises with a soft landing while the screen behind dims and blurs slightly, its content settles a beat later, and it drops away on close instead of vanishing.
 
+### Privacy, consent and conduct (2026-10-01)
+- Setting up a profile now starts with a tick box: you agree to Minori storing the health information you enter. You cannot continue without it, and the app records when you agreed.
+- History older than six months is deleted automatically: food log, weigh-ins, weekly reviews and AI usage records. Your account, profile, current targets and saved foods and meals stay. Progress now offers 4 weeks, 3 months or 6 months. Export from Settings if you want to keep more.
+- The privacy policy now says who is responsible, why the app is allowed to store your data, how long it is kept, that the hosting and AI companies are in the United States, and how to complain to the ICO. The terms say whose law applies and that your consumer rights are untouched.
+- If you told the app about a history of disordered eating, the health step, the note on your targets and "Where the numbers come from" link to the eating disorder charity Beat.
+- "Report this estimate" under an AI estimate emails the support address with what you typed and what came back (it appears once a support address is set).
+- API: `PUT /api/v1/profile` needs `healthConsent: true` to create a profile and returns `healthConsentAt`. Migration 0007 adds `profiles.health_consent_at`. `GET /api/v1/weight` accepts at most 183 days.
+
 ### App Store preparation (2026-09-30)
 - AI features now ask first. The first time you use "Describe", open your plan's explanation or reach the weekly review, a card says what is sent to OpenAI (what you type, a profile summary, your numbers; never your email) and asks you to allow it. One yes covers all three, and Settings has an "AI features" switch to turn it off again. Until you allow it nothing is sent, and My foods and manual entry work as before.
 - "Where the numbers come from" in Settings lists the published source behind every target: the energy equations, protein range, fibre, sugar, saturated fat and sodium limits, vitamin and mineral intakes and food-group serves, with links.

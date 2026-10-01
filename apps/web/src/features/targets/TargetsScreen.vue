@@ -223,7 +223,15 @@ function applyOverride(value: number | null, confirm: boolean): void {
         </h2>
         <p v-if="meta.professionalGuidance" class="text-sm text-fg">
           Your targets are set to maintenance for safety. Please work with a doctor or dietitian
-          before changing your intake.
+          before changing your intake. If food or weight is taking over, an eating disorder charity
+          can help: in the UK, Beat at
+          <a
+            href="https://www.beateatingdisorders.org.uk"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-semibold underline"
+            >beateatingdisorders.org.uk</a
+          >.
         </p>
         <ul class="space-y-1">
           <li v-for="note in meta.notes" :key="note" class="text-sm text-fg-muted">{{ note }}</li>

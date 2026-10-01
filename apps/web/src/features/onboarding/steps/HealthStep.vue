@@ -23,6 +23,16 @@ const anyFlag = computed(
     <p v-if="anyFlag" class="rounded-card border border-close/40 bg-close/10 p-4 text-sm text-fg">
       Thanks for telling us. Your targets will be set to maintenance with no deficit, and the app
       will suggest working with a doctor or dietitian on anything beyond that.
+      <template v-if="draft.flags.edHistory">
+        If food or weight is taking over, an eating disorder charity can help: in the UK, Beat at
+        <a
+          href="https://www.beateatingdisorders.org.uk"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-semibold underline"
+          >beateatingdisorders.org.uk</a
+        >.
+      </template>
     </p>
     <p v-else class="px-1 text-sm text-fg-muted">
       If any of these apply, the app never sets a calorie deficit.

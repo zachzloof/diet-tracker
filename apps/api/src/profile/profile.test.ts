@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../app.js'
 import { SESSION_COOKIE } from '../auth/session-service.js'
 import { db } from '../db/client.js'
-import { targetVersions, weightEntries } from '../db/schema/index.js'
+import { profiles, targetVersions, weightEntries } from '../db/schema/index.js'
 import { resetRateLimits } from '../middleware/rate-limit.js'
 
 const app = createApp()
@@ -38,6 +38,7 @@ const finn: ProfileInput = {
   timezone: 'Europe/London',
   units: 'metric',
   flags: NO_FLAGS,
+  healthConsent: true,
 }
 
 let cookie = ''
@@ -116,6 +117,25 @@ describe('profile', () => {
     const weights = await db.select().from(weightEntries)
     expect(weights).toHaveLength(1)
     expect(weights[0]?.weightKg).toBe(75)
+  })
+
+  it('refuses a first profile without consent to store health data, then records when it was given', async () => {
+    const refused = await send('PUT', '/api/v1/profile', { ...finn, healthConsent: false })
+    expect(refused.status).toBe(400)
+    expect((await errorBody(refused)).details).toMatchObject({
+      fieldErrors: { healthConsent: [expect.stringMatching(/health information/)] },
+    })
+    expect(await db.select().from(profiles)).toHaveLength(0)
+
+    expect((await send('PUT', '/api/v1/profile', finn)).status).toBe(200)
+    const [row] = await db.select().from(profiles)
+    expect(row?.healthConsentAt).toBeInstanceOf(Date)
+
+    // A later edit need not repeat it, and never clears it.
+    const { healthConsent: _omitted, ...edit } = finn
+    expect((await send('PUT', '/api/v1/profile', { ...edit, weightKg: 76 })).status).toBe(200)
+    const [after] = await db.select().from(profiles)
+    expect(after?.healthConsentAt?.getTime()).toBe(row?.healthConsentAt?.getTime())
   })
 
   it('rejects an under-18 date of birth and a pace that does not fit the goal', async () => {

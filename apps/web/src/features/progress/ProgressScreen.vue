@@ -32,7 +32,7 @@ const profile = useProfile()
 const RANGES = [
   { value: '28', label: '4 weeks' },
   { value: '90', label: '3 months' },
-  { value: '365', label: '1 year' },
+  { value: '183', label: '6 months' },
 ]
 const range = ref('28')
 const days = computed(() => Number(range.value))

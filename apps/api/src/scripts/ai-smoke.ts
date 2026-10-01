@@ -38,6 +38,7 @@ const seed = SEED_USERS[0]
 if (!seed) throw new Error('no seed users')
 const profile: Profile = {
   ...seed.profile,
+  healthConsentAt: null,
   createdAt: '2026-09-26T00:00:00.000Z',
   updatedAt: '2026-09-26T00:00:00.000Z',
 }

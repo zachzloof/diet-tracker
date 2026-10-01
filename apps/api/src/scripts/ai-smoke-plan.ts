@@ -19,6 +19,7 @@ const today = '2026-09-25'
 for (const seed of SEED_USERS) {
   const profile: Profile = {
     ...seed.profile,
+    healthConsentAt: null,
     createdAt: `${today}T00:00:00.000Z`,
     updatedAt: `${today}T00:00:00.000Z`,
   }

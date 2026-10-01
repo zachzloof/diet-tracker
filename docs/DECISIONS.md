@@ -359,6 +359,35 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 ---
 
+## D26. Explicit consent to store health data, recorded on the profile (adopted, please confirm)
+
+**Context.** Body measurements, intake, weight and the pregnancy, breastfeeding and eating-disorder answers are special category data under UK GDPR Article 9; the lawful route for an app like this is explicit consent, and it has to be provable.
+
+**Options.**
+- **A. A checkbox on the first onboarding step, enforced and timestamped by the API.** `profileInputSchema.healthConsent` must be true to create a profile; `profiles.health_consent_at` (migration 0007, nullable) records when. Later edits need not repeat it. Withdrawing is deleting the account. Built.
+- **B. Client-side only.** No schema change, but nothing to show a regulator.
+- **C. A separate consents table with versions of the wording.** Right for a larger product; more than this needs today.
+
+**Recommendation.** A.
+
+**Status.** `accepted` (2026-10-01): A, on the owner's instruction to add the consent step. Profiles created before the migration have a null timestamp.
+
+---
+
+## D27. Dated history is deleted after six months (owner's decision)
+
+**Context.** UK GDPR wants a stated retention period. The owner chose six months and asked for it to be enforced.
+
+**What is deleted** (`purgeExpiredData`, `apps/api/src/account/retention.ts`, run at boot and every 24 hours): `log_entries`, `daily_summaries` and `weight_entries` by `day`, `weekly_reviews` by `week_end`, `ai_calls` by `created_at`, all older than `RETENTION_DAYS` (183), and any target version that had already been replaced by the cutoff, so every kept day is still scored against the targets it had.
+
+**What is kept** until the person deletes it: the account, the profile, the current targets, saved foods and saved meals. Sessions already expire after 30 days.
+
+**Consequences.** History and Progress show at most six months (the Progress range "1 year" became "6 months", and the weigh-in API caps `days` at 183). Deletion is permanent; the export in Settings is how someone keeps older data. Railway backups, if enabled, hold deleted rows until they rotate.
+
+**Status.** `accepted` (2026-10-01).
+
+---
+
 ## Smaller defaults taken without asking
 
 - Metric by default (kg, cm, kcal); imperial toggle in Settings. kJ display can come later.

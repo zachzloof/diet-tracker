@@ -43,6 +43,7 @@ export function toWireProfile(row: ProfileRow): Profile {
     timezone: row.timezone,
     units: row.units,
     flags: row.flags,
+    healthConsentAt: row.healthConsentAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   })
@@ -114,6 +115,16 @@ export async function saveProfile(
     const existing = (
       await tx.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
     )[0]
+    // Health data needs explicit consent before the first byte is stored (UK GDPR Art. 9).
+    if (!existing && input.healthConsent !== true) {
+      throw errors.validation({
+        fieldErrors: {
+          healthConsent: ['Agree to your health information being stored to continue'],
+        },
+        formErrors: [],
+      })
+    }
+    const healthConsentAt = existing?.healthConsentAt ?? (input.healthConsent === true ? now : null)
 
     const values = {
       sex: input.sex,
@@ -133,6 +144,7 @@ export async function saveProfile(
       timezone: input.timezone,
       units: input.units,
       flags: input.flags,
+      healthConsentAt,
       updatedAt: now,
     }
     const saved = (
