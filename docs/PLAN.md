@@ -1,6 +1,6 @@
 # Development plan
 
-The app is built in five slices. Each slice is one working session, produces something the owner can open on their phone, and ends with a commit on `main`. Slices are started only when the owner asks ("do slice 2"). The `slice` skill carries the working loop. All five slices are done (2026-09-26); what remains is real-phone use, the open decisions in `docs/DECISIONS.md`, and the ideas at the bottom.
+The app was planned as five slices. Each slice is one working session, produces something the owner can open on their phone, and ends with a commit on `main`. Slices are started only when the owner asks ("do slice 2"). The `slice` skill carries the working loop. All five were done by 2026-09-26; slice 6 (Meals) was added on the owner's request on 2026-10-01. What remains is real-phone use, the open decisions in `docs/DECISIONS.md`, and the ideas at the bottom.
 
 Two personas run through every slice as seed data, golden tests and manual checks:
 - **Finn**: male, 28, 178 cm, 75 kg, fighter, trains 6x/week, wants a lean gain of 0.25 kg/week.
@@ -159,12 +159,42 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ---
 
-## Ideas after slice 5 (not planned)
+## Slice 6 - Meals
+
+**Status:** done with deferrals (2026-10-01)
+
+**Goal.** A meal someone eats every day is logged in a few taps, not rebuilt ingredient by ingredient each time.
+
+**In scope.**
+- Saved meals: a name and 1 to 20 ingredients for one portion. An ingredient is a food from My foods with an amount, or one typed in by hand (saved to My foods by default).
+- A Meals page (You > Meals) to list, create, edit and delete them, and a meal editor screen.
+- A Meals tab in the Log food sheet: pick a meal, choose portions, optionally change or leave out an ingredient for that time, pick the meal of the day and the day, confirm. No typing, no AI call.
+- Pure portion math in `packages/shared` (`scalePortion`, `savedMealEntries`, `savedMealTotals`) with worked examples; `saved_meals` and `saved_meal_items` tables; `/api/v1/meals`; meals in the export, the account deletion cascade, the offline mirror and the seed.
+
+**Out of scope.** Building a meal by describing it to the AI; turning a meal already in the day log into a saved meal; grouping a logged meal's entries under one header; sharing meals between people; search within Meals.
+
+**Done when.**
+- [x] Build a meal from saved foods and a typed ingredient; the Meals page shows it with the right total. *Walked in a headless phone viewport at 390x844 dark, 360x780 light and 430x932 dark: "Yoghurt bowl" from 50 g Rolled oats (190 kcal), one Banana (105) and 15 g of typed-in Honey (45.6) shows 341 kcal and 3 ingredients in the editor and on the Meals page; the honey was saved to My foods. An empty name and an empty ingredient list are refused inline.*
+- [x] Log it from the + sheet with no typing and no AI call; Today rises by exactly the meal's totals. *Four taps (+, Meals, the meal, Add): the day's energy rose by 340.6 kcal and three entries appeared. `saved-meals.test.ts` asserts no `ai_calls` row is written and that the summary equals `savedMealTotals`.*
+- [x] Log half a portion, or with one ingredient left out, without changing the saved meal. *Half a portion with the banana removed added 117.8 kcal ((190 + 45.6) / 2) and the saved meal still had its three ingredients at their saved amounts.*
+- [x] Rename, edit and delete a meal; past log entries keep their numbers. *Renamed, oats to 60 g, honey removed: the list read 333 kcal and 2 ingredients, and the day's entry count and energy were unchanged. The same after deleting the meal.*
+- [x] Deleting a food that a meal uses leaves the meal intact. *Deleted Rolled oats from My foods: the meal kept its total and the ingredient, now marked "Entered by hand". Editing a food's numbers also leaves meals as they were (API test).*
+- [x] Offline: the Meals list still shows and a meal logged offline is queued and sent later. *Production build with the service worker: offline cold start listed the meals from the mirror; logging one queued three entries shown on Today as "waiting for a connection" and already counted; on reconnect "Sent 1 queued entry", three rows on the server and the meal marked as used. Saving a meal offline is disabled and labelled.*
+- [x] Export includes meals; delete account removes them. *`account.test.ts`: `savedMeals` in the JSON export (schema 2) and both tables empty after deletion.*
+- [x] Typecheck, lint and tests green; the migration runs from a fresh database and from the previous state. *288 tests (146 shared, 31 web, 111 API) on the head of `main`, in a clean checkout against its own Postgres. Migration 0006 applied to a fresh database and to a seeded database at 0005; a second run applied nothing.*
+
+**Deferrals.** No real-phone check (headless only, 135 checks across the three widths plus the offline, empty and error states). No search in Meals: the list sorts by last logged. An ingredient cannot be renamed once added. Correcting a food does not update meals that already use it (D28). The light-mode macro letters on the ingredient rows share the known contrast issue from slice 4.
+
+**Decisions it depends on.** D5, D15, D21. Surfaced D28 (ingredients are snapshots) and D29 (one log entry per ingredient), both `proposed`.
+
+---
+
+## Ideas after slice 6 (not planned)
 
 - Coach chat: a conversational agent with tools to log food, answer "how am I doing", and propose target changes.
 - Photo-of-meal estimation via the vision model.
 - Barcode scanning with Open Food Facts lookup.
 - USDA FoodData Central as a second resolver for whole foods (D5 option B).
-- Recipes: build a meal from foods and log it as one item.
+- Meals, next steps: "Save as a meal" on a meal group in the day log (log it once by describing it, keep it forever); build a meal by describing it; show a logged meal's ingredients under one collapsible header (D29 option C); a "refresh from My foods" button in the meal editor (D28).
 - Sharing a week summary with a friend or coach.
 - Apple Health / Google Fit weight sync via Capacitor.

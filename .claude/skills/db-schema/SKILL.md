@@ -26,6 +26,8 @@ description: Drizzle ORM + Postgres conventions for diet-tracker - table and col
 | log_entries | 3 | user_id, day, logged_at, meal, name, quantity, unit, grams, nutrients jsonb, food_groups jsonb, source ('ai', 'manual', 'library'), food_id? (set null on food delete), ai_call_id? (set null), assumptions text[], confidence?, created_at, updated_at. Index (user_id, day) |
 | daily_summaries | 3 | user_id, day, totals jsonb, food_groups jsonb, entry_count, updated_at; unique (user_id, day). Rewritten by `recomputeSummary` inside the same transaction as any log write; a zero-entry row is kept |
 | weekly_reviews | 4 | user_id, iso_week (`YYYY-Www`), week_end (date), review jsonb (StoredWeeklyReview), created_at, updated_at; unique (user_id, iso_week). Upserted by the weekly review flow (D17) |
+| saved_meals | 6 | user_id, name, last_used_at?, created_at, updated_at. Index (user_id, last_used_at). A named set of ingredients logged in one go; "meal" alone means breakfast, lunch, dinner or snack, so the preset is always `saved_meal` in code |
+| saved_meal_items | 6 | user_id, meal_id (cascade), position (order from 0), name, quantity, unit, grams, nutrients jsonb, food_groups jsonb, food_id? (set null on food delete). Index (meal_id, position). One ingredient for one portion of the meal, a snapshot like a log entry (D28). An update replaces every row of the meal in one transaction. Logging writes ordinary `log_entries` (D29) and sets `saved_meals.last_used_at` |
 
 Water quick-adds are `log_entries` rows (name "Water", unit "ml", only `water_ml` set; decision D18), not a table of their own; `recomputeSummary` leaves them out of `entry_count`.
 

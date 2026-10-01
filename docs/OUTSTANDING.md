@@ -10,6 +10,7 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 | Contact email on the legal pages             | `apps/web/src/features/legal/legal.ts` | `LEGAL_CONTACT_EMAIL` is `null`; the privacy policy and terms say "contact the person who gave you the link". Both stores need a support contact. One constant to fill.                                                                                                              |
 | Email provider and "forgot my password"      | DECISIONS.md open questions | Change password exists; a reset flow does not, and nothing in the repo resets one (a short admin script against the database is the stopgap). Resend's free tier is the obvious pick. Decide before the app goes beyond friends.                                                        |
 | Custom domain vs Railway subdomain           | DECISIONS.md open questions | The Railway subdomain is fine for the friends group. A custom domain changes `APP_ORIGIN` and nothing else.                                                                                                                                                                             |
+| Meals: snapshots, and one entry per ingredient | DECISIONS.md D28, D29 | Slice 6 built both on the recommended option. D28: a meal's ingredients keep the numbers they had when added, so correcting a food does not update its meals. D29: a logged meal lands as its ingredients, not one line. Use Meals for a week, then confirm or redirect. |
 
 ## Deferred from slice 5
 
@@ -22,6 +23,12 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 ## Noticed after slice 5, not fixed yet
 
 - **Contrast in the entry sheet** (axe-core, 2026-09-26). In dark mode the Delete button's red text is 4.05:1 on its tinted background, under the 4.5:1 AA line; lightening the dark `--danger` token slightly (for example `#f0595e`, about 4.8:1) would fix it everywhere the destructive button appears. In light mode the P, C and F letters in the sheet's summary strip use the macro colours on a pale surface (1.5 to 2.3:1), the same known issue as the light-mode macro colours in the slice 4 deferrals. Both predate the fixes after slice 5; the slice 5 Lighthouse runs did not open this sheet.
+
+## Noticed during slice 6 (2026-10-01), not fixed
+
+- **A hard reload within about a second of a change can show the old list for up to a minute.** The offline mirror (D21) writes to the phone's storage at most once a second, and a restored list counts as fresh for 60 seconds. Seen once in the slice 6 walk: a meal saved, the page reloaded straight away, and the Meals tab listed the meals without it. It affects every mirrored list (foods, day logs, meals), not only meals, and only when the app is closed or reloaded immediately after a change. A likely fix is to mark everything stale after the mirror is restored so it refetches in the background; not done because it changes when every screen fetches.
+- **The offline banner covers the top half of the header.** It is 32 px tall and fixed over the 56 px header, so header buttons (the day arrows on Today, "New meal" on Meals, back) are half covered while offline. Predates slice 6.
+- **A serving name is used as the unit of an entry.** A food saved as "1 medium (120 g)" logs as quantity 1, unit "1 medium". Slice 6 changed how that is shown ("1 × 1 medium"), not what is stored. Storing "medium" as the unit would be cleaner and is a change to how My foods logs.
 
 ## Worth watching during the week
 

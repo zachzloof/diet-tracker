@@ -388,6 +388,36 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 ---
 
+## D28. A saved meal's ingredients are snapshots, with a link back to the food
+
+**Context.** Slice 6 lets a person build a meal from My foods. Each ingredient is "50 g of Rolled oats". Something has to decide what happens to the meal when that food is later edited or deleted.
+
+**Options.**
+- **A. Snapshot with a link.** Built. An ingredient stores its own name, amount and full nutrient vector as they were when it was added, plus `food_id`. Editing the food later does not change the meal; deleting the food clears the link and keeps the ingredient. This is the same rule the log already follows ("snapshot at log time"), so a meal's total never moves unless the person moves it, and a meal can never be broken by a clean-up of My foods. The cost: correcting a food's label does not reach meals that already use it; the ingredient has to be removed and added again, or its number fixed in the meal editor.
+- **B. Live reference.** An ingredient stores only `food_id` and grams; the numbers are read from the food each time. A corrected label flows everywhere at once. But a deleted food leaves a hole in the meal (or blocks the delete), typed-in ingredients need a second shape anyway, and the server would have to compute portions, which D15 gave to the client.
+- **C. Snapshot, refreshed from the food when the food is newer.** The best of both on paper; two sources of truth and a "which number wins" question in practice.
+
+**Recommendation.** A. If correcting a food and having to fix its meals by hand turns out to be a real annoyance, add a "refresh from My foods" button to the meal editor rather than moving to B.
+
+**Status.** `proposed` (2026-10-01): A is built; the owner confirms or redirects. Schema: `saved_meals` and `saved_meal_items` (migration 0006). Switching to B later would be a new migration and a rewrite of the meal routes; C would be additive.
+
+---
+
+## D29. Logging a saved meal writes one entry per ingredient
+
+**Context.** PLAN's idea list said "build a meal from foods and log it as one item". When a saved meal is dropped into the log, it can land as its ingredients or as one line.
+
+**Options.**
+- **A. One entry per ingredient.** Built. "Overnight oats" lands as Rolled oats, Skim milk and Banana under the chosen meal of the day, exactly what typing them one by one would have produced. Each stays editable and removable afterwards, the "which foods gave me this nutrient" panels on Today keep their detail, linked foods count as used, and `log_entries` needed no new column. The cost is a longer day log: three six-ingredient meals are eighteen rows.
+- **B. One combined entry named after the meal.** A compact day log and "ate half" is one edit. But the ingredients are gone once logged, so leaving one out afterwards means editing numbers by hand, and the source panels can only say "Overnight oats".
+- **C. Ingredients, grouped under a collapsible meal header.** A's detail with B's tidiness. Needs a nullable `saved_meal_id` (or a group id) on `log_entries` and day-log work; additive on top of A.
+
+**Recommendation.** A now; C if the day log feels long after a week of use. The request already carries `savedMealId` (it marks the meal as used), so C would not change the client's call.
+
+**Status.** `proposed` (2026-10-01): A is built; the owner confirms or redirects.
+
+---
+
 ## Smaller defaults taken without asking
 
 - Metric by default (kg, cm, kcal); imperial toggle in Settings. kJ display can come later.
@@ -447,6 +477,17 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 - An entry that was not saved to My foods when it was logged (D14 saves only confident items) can be saved later from its entry sheet: a "Save to My foods" switch that "Save changes" applies, through `saveToLibrary: true` on the entry update. The food is the entry as it stands after the edit, per serving like a save at log time, created once; a later save of a linked entry does nothing. Log entries keep no brand, so a food saved this way has none; named products carry it in the name ("ASDA 10 Mozzarella Sticks"), which the library search matches. After slice 5, 2026-09-26.
 - The energy ring's "kcal left" and "kcal over" follow the arithmetic (eaten against target), while the red ring and the chip follow the status, which stays "close" up to 120% of energy. After slice 5, 2026-09-26.
 - The panels behind Today's food-group rows and nutrient tiles list the viewed day's entries (queued offline ones included, so they add up to the tile) by amount, top five with the rest folded into one line, each with its share of the day's total rather than of the target. Food ideas come from the same filtered lists as the weekly gaps and appear for a minimum that is short or close and a limit that is close or over. One panel per card is open at a time. After slice 5, 2026-09-26.
+- "Meal" in code already means breakfast, lunch, dinner or snack, so the preset is a `SavedMeal` (`saved_meals`, `/api/v1/meals`); the screens call it a meal. Slice 6.
+- Meals lives under You (next to My foods) and as the second tab of the Log food sheet, not as a fifth tab in the bar. The tab bar stays at four so the + keeps its place under the thumb. Slice 6.
+- A saved meal holds 1 to 20 ingredients (the most one log request carries) and a person can save up to 100 meals; the hundred-and-first is refused with a message that says to delete one. Slice 6.
+- Logging a meal goes through the ordinary `POST /log/entries` with the ingredients already scaled by the client (D15) and an optional `savedMealId` that only marks the meal as used; somebody else's id, or a deleted meal's, is ignored rather than rejected. Because it is the ordinary route, a meal logged offline is queued like any other entry (D21). Slice 6.
+- Portions of a meal: any number above 0 up to 20, stepped by 0.5. Changing or removing an ingredient on the logging card applies to that one time; the saved meal is changed only in its editor, which replaces the whole ingredient list on save. Slice 6.
+- A food id on an ingredient that the person does not own (a food deleted elsewhere, or somebody else's) is stored without the link and keeps its numbers. Slice 6.
+- A typed-in ingredient is saved to My foods by default (a switch on the form), so it can be reused in other meals. An ingredient's name cannot be changed after it is added; remove it and add it again. Slice 6.
+- Creating, editing and deleting a meal need a connection (the buttons say "Offline"); the meals list is in the offline mirror and logging a meal works offline. Slice 6.
+- The account export lists saved meals (`savedMeals`, export schema 2). Slice 6.
+- A serving name that carries its own count ("1 scoop", "1 medium") is shown as "2 × 1 scoop" wherever a logged quantity appears, and in the item editor a unit longer than five characters goes in the field's label instead of inside the field. Display only; nothing stored changed. Slice 6.
+- The Log food sheet's one-line description follows the chosen tab and disappears once something is picked. Slice 6.
 
 ## Open questions for later slices (not blocking)
 

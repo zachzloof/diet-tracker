@@ -4,6 +4,15 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Slice 6 - Meals (2026-10-01)
+- Meals: save the meals you eat often, ingredients and all, and log them in one go instead of entering each ingredient every time. Find them under You > Meals, and as the new Meals tab when you tap the + to log.
+- Building a meal: give it a name and add what goes into one portion. Each ingredient is either a food from My foods with an amount (servings or grams, with the numbers shown before you add it) or one typed in by hand from its label. A typed ingredient is saved to My foods by default so you can reuse it. The sheet stays open between ingredients and the editor shows the meal's running total.
+- Logging a meal: tap +, Meals, the meal, then "Add to breakfast" (or whichever meal and day). Nothing to type and no AI call, so it works when the estimator is down or you are offline. Choose how many portions (half, one and a half, two), and tap any ingredient to change its amount or leave it out for that one time; the saved meal stays as it is. Each ingredient lands in your day as its own entry, so you can still edit or remove one afterwards.
+- Changing things later: edit a meal's name, amounts or ingredients, or delete it, from You > Meals. Past entries keep their numbers. Editing or deleting a food in My foods does not change the meals that use it.
+- Meals you log most recently sit at the top of the list. Your meals are in the data export and are removed with your account.
+- A food logged by the serving now reads "2 × 1 scoop" instead of "2 1 scoop", and its quantity field in the edit sheet no longer squeezes the number out of view. Each tab of the Log food sheet now has its own one-line description.
+- API: `GET/POST /api/v1/meals`, `PATCH/DELETE /api/v1/meals/:id`; `POST /api/v1/log/entries` accepts `savedMealId`. New tables `saved_meals` and `saved_meal_items` (migration 0006). The seed gives Finn "Protein oats" and Tess "Banana porridge". Shared: `savedMealEntries`, `savedMealTotals`, `scalePortion` and the saved meal schemas.
+
 ### Log food sheet (2026-10-01)
 - The "Log food" sheet now fills the screen up to just under the status bar and keeps that height, instead of growing and shrinking as you switch between Describe, My foods and Manual or as an estimate loads. The text box sits near the top, so the keyboard no longer covers what you are typing, and the sheet's content stays scrollable above the keyboard.
 - Every sheet has a new entrance and a real exit: it rises with a soft landing while the screen behind dims and blurs slightly, its content settles a beat later, and it drops away on close instead of vanishing.
