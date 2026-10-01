@@ -237,6 +237,7 @@ watch(open, (isOpen) => {
   <Sheet
     v-model:open="open"
     title="Log food"
+    size="tall"
     :description="result ? undefined : 'Type what you ate and the app estimates the nutrients.'"
   >
     <div class="space-y-4">

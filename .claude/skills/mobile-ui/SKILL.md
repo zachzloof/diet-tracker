@@ -41,7 +41,7 @@ Loading = skeletons in the layout's shape, never a spinner in the middle. Empty 
 - Never require a field whose label needs explaining; add helper text or drop the field.
 
 ## Motion
-150 to 250 ms, ease-out. Rings and bars animate from 0 to value on first paint of a screen and from old to new value on updates. Sheets slide 250 ms. Respect `prefers-reduced-motion` by switching to instant. No bounce, no confetti except one tasteful moment when a day is met for the first time.
+150 to 250 ms, ease-out. Rings and bars animate from 0 to value on first paint of a screen and from old to new value on updates. Sheets are the one exception to the range: they rise in 420 ms on a soft-landing curve with their content settling a beat later, and drop out in 240 ms (`animate-sheet-in`, `animate-sheet-out`, `animate-sheet-body` in `main.css`). A sheet whose content changes height as you use it (quick add) takes `size="tall"` so it holds one height just under the status bar; `Sheet` pads itself above the on-screen keyboard. Respect `prefers-reduced-motion` by switching to instant. No bounce, no confetti except one tasteful moment when a day is met for the first time.
 
 ## Charts
 Rings and bars are small hand-written SVG components with tokens for colour; no chart library for those. Line charts (weight trend in slice 5) use a tiny custom SVG too unless it gets painful, then `unovis` or `chart.js` via a decision. Before drawing any chart, load the `dataviz` skill for form and colour rules, then map its palette onto the tokens above rather than introducing new colours.

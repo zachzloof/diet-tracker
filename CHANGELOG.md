@@ -4,6 +4,10 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Log food sheet (2026-10-01)
+- The "Log food" sheet now fills the screen up to just under the status bar and keeps that height, instead of growing and shrinking as you switch between Describe, My foods and Manual or as an estimate loads. The text box sits near the top, so the keyboard no longer covers what you are typing, and the sheet's content stays scrollable above the keyboard.
+- Every sheet has a new entrance and a real exit: it rises with a soft landing while the screen behind dims and blurs slightly, its content settles a beat later, and it drops away on close instead of vanishing.
+
 ### App Store preparation (2026-09-30)
 - AI features now ask first. The first time you use "Describe", open your plan's explanation or reach the weekly review, a card says what is sent to OpenAI (what you type, a profile summary, your numbers; never your email) and asks you to allow it. One yes covers all three, and Settings has an "AI features" switch to turn it off again. Until you allow it nothing is sent, and My foods and manual entry work as before.
 - "Where the numbers come from" in Settings lists the published source behind every target: the energy equations, protein range, fibre, sugar, saturated fat and sodium limits, vitamin and mineral intakes and food-group serves, with links.
