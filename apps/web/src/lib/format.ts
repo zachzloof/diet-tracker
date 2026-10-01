@@ -63,12 +63,16 @@ export function formatInstant(iso: string): string {
   })
 }
 
-/** "4 eggs", "1.5 cups", "50 g": whole numbers stay whole, fractions get one or two decimals. */
+/**
+ * "4 eggs", "1.5 cups", "50 g": whole numbers stay whole, fractions get one or two decimals.
+ * A library food's serving name carries its own count ("1 scoop", "1 medium"), so that reads
+ * "2 × 1 scoop" rather than "2 1 scoop".
+ */
 export function formatQuantity(quantity: number, unit: string): string {
   const q = Number.isInteger(quantity)
     ? String(quantity)
     : quantity.toFixed(quantity < 1 ? 2 : 1).replace(/\.?0+$/, '')
-  return unit === 'g' || unit === 'ml' ? `${q} ${unit}` : `${q} ${unit}`
+  return /^\d/.test(unit) ? `${q} × ${unit}` : `${q} ${unit}`
 }
 
 export function formatKcal(kcal: number): string {

@@ -22,6 +22,16 @@ const moreOpen = ref(false)
 /** "150 g" has no separate quantity to show; anything else gets both fields. */
 const byWeight = computed(() => props.unit === 'g')
 
+/**
+ * A long unit ("1 medium", "tablespoon") would squeeze the number out of its half-width
+ * field, so it goes in the label instead.
+ */
+const unitInLabel = computed(() => props.unit.length > 5)
+const quantityLabel = computed(() => {
+  if (!unitInLabel.value) return 'Quantity'
+  return /^\d/.test(props.unit) ? `Quantity (× ${props.unit})` : `Quantity (${props.unit})`
+})
+
 /** Fields show a rounded number; the item keeps full precision. */
 const shown = (value: number, decimals: number) => {
   const factor = 10 ** decimals
@@ -52,8 +62,8 @@ function setNutrient(key: NutrientKey, value: number | null): void {
       <NumberField
         v-if="!byWeight"
         :model-value="shown(item.quantity, 2)"
-        label="Quantity"
-        :unit="unit"
+        :label="quantityLabel"
+        :unit="unitInLabel ? undefined : unit"
         :min="0"
         :step="unit === 'ml' ? 10 : 0.5"
         @update:model-value="setQuantity"
