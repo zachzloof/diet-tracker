@@ -16,6 +16,7 @@ import {
 } from '@diet-tracker/shared'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
+import { MEALS_KEY } from '@/features/meals/keys'
 import { STATS_KEY } from '@/features/stats/useStats'
 import { ApiError } from '@/lib/api'
 import { useQueueStore } from '@/stores/queue'
@@ -139,6 +140,8 @@ export function useCreateEntries() {
       if (result.foodsSaved > 0 || input.entries.some((e) => e.foodId)) {
         await queryClient.invalidateQueries({ queryKey: FOODS_KEY })
       }
+      // The meal that was just logged moves to the top of the list.
+      if (input.savedMealId) await queryClient.invalidateQueries({ queryKey: MEALS_KEY })
     },
   })
 }
@@ -220,8 +223,9 @@ export function useDeleteFood() {
     mutationFn: (id: string) => foodsApi.remove(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: FOODS_KEY })
-      // Entries linked to the food keep their snapshot but lose the link.
+      // Entries and saved-meal ingredients linked to the food keep their snapshot but lose the link.
       await queryClient.invalidateQueries({ queryKey: LOG_KEY })
+      await queryClient.invalidateQueries({ queryKey: MEALS_KEY })
     },
   })
 }

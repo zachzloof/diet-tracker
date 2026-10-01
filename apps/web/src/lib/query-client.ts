@@ -27,6 +27,7 @@ const PERSISTED_PREFIXES: readonly (readonly string[])[] = [
   ['stats', 'week'],
   ['stats', 'month'],
   ['foods'],
+  ['meals'],
   ['weight'],
   ['recalibration'],
 ]

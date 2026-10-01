@@ -22,7 +22,7 @@ import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_UPDATED } from './legal'
       </li>
       <li>Your daily targets and their history.</li>
       <li>Everything you log: meals, foods, water, weigh-ins and notes.</li>
-      <li>Your saved foods and the AI's weekly reviews.</li>
+      <li>Your saved foods and meals, and the AI's weekly reviews.</li>
       <li>
         For each AI request: which model answered, how many tokens it used, how long it took and
         whether it worked. Not the text.

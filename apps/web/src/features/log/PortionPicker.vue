@@ -17,16 +17,32 @@ import { useUiStore } from '@/stores/ui'
 import { basisLabel } from './food-form'
 import MealDayPicker from './MealDayPicker.vue'
 
-/** How much of a library food was eaten. Servings for per-serving foods, grams otherwise. */
-const props = defineProps<{
-  food: Food
-  today: string
-  previousDay: string | null
-  initialDay: string
-  initialMeal: Meal
-  saving: boolean
-  error: string | null
-}>()
+/**
+ * How much of a library food was eaten. Servings for per-serving foods, grams otherwise.
+ * With `ingredient` it picks how much goes into a saved meal instead: there is no meal or
+ * day to choose, so those props are not needed and the payload's day and meal mean nothing.
+ */
+const props = withDefaults(
+  defineProps<{
+    food: Food
+    today?: string
+    previousDay?: string | null
+    initialDay?: string
+    initialMeal?: Meal
+    saving?: boolean
+    error?: string | null
+    ingredient?: boolean
+  }>(),
+  {
+    today: '',
+    previousDay: null,
+    initialDay: '',
+    initialMeal: 'snack',
+    saving: false,
+    error: null,
+    ingredient: false,
+  },
+)
 
 const emit = defineEmits<{
   confirm: [payload: { day: string; meal: Meal; entry: LogEntryInput }]
@@ -133,6 +149,7 @@ function confirm(): void {
     </div>
 
     <MealDayPicker
+      v-if="!ingredient"
       v-model:meal="meal"
       v-model:day="day"
       :today="today"
@@ -141,7 +158,10 @@ function confirm(): void {
 
     <p v-if="error" class="text-sm text-over" role="alert">{{ error }}</p>
     <Button block :loading="saving" :disabled="!amount || amount <= 0" @click="confirm">
-      {{ ui.online ? `Add to ${meal}` : `Add to ${meal} (offline)` }}
+      <template v-if="ingredient">Add to meal</template>
+      <template v-else>
+        {{ ui.online ? `Add to ${meal}` : `Add to ${meal} (offline)` }}
+      </template>
     </Button>
   </div>
 </template>

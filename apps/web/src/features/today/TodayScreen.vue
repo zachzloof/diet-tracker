@@ -197,7 +197,7 @@ function retry(): void {
         <EmptyState
           icon="sparkles"
           :title="isToday ? 'Nothing logged yet' : 'Nothing logged this day'"
-          description="Type what you ate and the estimator does the numbers, or pick from My foods."
+          description="Type what you ate and the estimator does the numbers, or pick a saved meal or food."
         >
           <Button @click="ui.openQuickAdd(isToday ? null : viewedDay)">
             <Icon name="plus" :size="20" /> Log food

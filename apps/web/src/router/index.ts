@@ -61,6 +61,21 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/log/FoodsScreen.vue'),
   },
   {
+    path: '/meals',
+    name: 'meals',
+    component: () => import('@/features/meals/MealsScreen.vue'),
+  },
+  {
+    path: '/meals/new',
+    name: 'meal-new',
+    component: () => import('@/features/meals/MealEditorScreen.vue'),
+  },
+  {
+    path: '/meals/:id',
+    name: 'meal-edit',
+    component: () => import('@/features/meals/MealEditorScreen.vue'),
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('@/features/profile/ProfileScreen.vue'),

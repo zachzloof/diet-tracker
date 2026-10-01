@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { ME_KEY } from '@/features/auth/useSession'
 import { logApi } from '@/features/log/api'
 import { FOODS_KEY, dayKey } from '@/features/log/keys'
+import { MEALS_KEY } from '@/features/meals/keys'
 import { STATS_KEY } from '@/features/stats/useStats'
 import { ApiError } from '@/lib/api'
 import { queryClient } from '@/lib/query-client'
@@ -179,6 +180,7 @@ export const useQueueStore = defineStore('queue', () => {
         ...[...touched].map((day) => queryClient.invalidateQueries({ queryKey: dayKey(day) })),
         queryClient.invalidateQueries({ queryKey: STATS_KEY }),
         queryClient.invalidateQueries({ queryKey: FOODS_KEY }),
+        queryClient.invalidateQueries({ queryKey: MEALS_KEY }),
       ])
       if (sent > 0) ui.toast(`Sent ${sent} queued ${sent === 1 ? 'entry' : 'entries'}`, 'success')
     }

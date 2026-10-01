@@ -4,11 +4,15 @@ import {
   emptyFoodGroupServes,
   emptyNutrientVector,
   foodInputSchema,
+  portionOf,
+  roundFoodGroupServes,
+  roundNutrientVector,
   toValidationDetails,
   type Food,
   type FoodBasis,
   type FoodGroupKey,
   type FoodInput,
+  type LogEntryInput,
   type NutrientKey,
 } from '@diet-tracker/shared'
 
@@ -79,6 +83,27 @@ export function parseFoodForm(form: FoodFormState): FoodFormResult {
   })
   if (result.success) return { ok: true, data: result.data }
   return { ok: false, fieldErrors: toValidationDetails(result.error).fieldErrors }
+}
+
+/**
+ * A food entered by hand and how much of it was eaten (servings for a per-serving food,
+ * grams otherwise) as the fields a logged item or a saved meal's ingredient needs.
+ */
+export function manualPortion(
+  food: FoodInput,
+  amount: number,
+): Pick<LogEntryInput, 'name' | 'quantity' | 'unit' | 'grams' | 'nutrients' | 'foodGroups'> {
+  const perServing = food.basis === 'per_serving'
+  const grams = perServing ? amount * (food.servingGrams ?? 0) : amount
+  const portion = portionOf(food, grams)
+  return {
+    name: food.name,
+    quantity: amount,
+    unit: perServing ? (food.servingLabel ?? 'serving').slice(0, 30) : 'g',
+    grams,
+    nutrients: roundNutrientVector(portion.nutrients),
+    foodGroups: roundFoodGroupServes(portion.foodGroups),
+  }
 }
 
 /** "per 100 g" or "1 scoop (35 g)": how the library shows what the numbers refer to. */

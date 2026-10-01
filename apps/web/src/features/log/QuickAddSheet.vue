@@ -3,14 +3,14 @@ import {
   MAX_ESTIMATE_CHARS,
   MEAL_LABELS,
   portionOf,
-  roundFoodGroupServes,
-  roundNutrientVector,
   type EstimateResponse,
   type Food,
   type LogEntryInput,
   type Meal,
+  type SavedMeal,
 } from '@diet-tracker/shared'
 import { computed, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from '@/components/ui/Button.vue'
 import Icon from '@/components/ui/Icon.vue'
 import NumberField from '@/components/ui/NumberField.vue'
@@ -20,6 +20,8 @@ import Skeleton from '@/components/ui/Skeleton.vue'
 import Textarea from '@/components/ui/Textarea.vue'
 import Toggle from '@/components/ui/Toggle.vue'
 import AiConsent from '@/features/ai/AiConsent.vue'
+import MealLogReview from '@/features/meals/MealLogReview.vue'
+import MealPicker from '@/features/meals/MealPicker.vue'
 import { ApiError } from '@/lib/api'
 import { formatKcal } from '@/lib/format'
 import { useAiConsentStore } from '@/stores/ai-consent'
@@ -29,16 +31,17 @@ import FoodPicker from './FoodPicker.vue'
 import ManualFoodForm from './ManualFoodForm.vue'
 import MealDayPicker from './MealDayPicker.vue'
 import PortionPicker from './PortionPicker.vue'
-import { emptyFoodForm, parseFoodForm } from './food-form'
+import { emptyFoodForm, manualPortion, parseFoodForm } from './food-form'
 import { useCreateEntries, useCreateFood, useEstimate } from './useLog'
 import { useLocalDay } from './useLocalDay'
 
 /**
- * The app's primary action. Three ways in: describe it (AI estimate, then review), pick
- * from My foods (no AI call), or enter a food by hand. Opened from the tab bar or any
- * screen through the UI store.
+ * The app's primary action. Four ways in: describe it (AI estimate, then review), drop in
+ * a saved meal or pick from My foods (no AI call), or enter a food by hand. Opened from the
+ * tab bar or any screen through the UI store.
  */
 const ui = useUiStore()
+const router = useRouter()
 const consent = useAiConsentStore()
 const { today, suggestion } = useLocalDay()
 const estimate = useEstimate()
@@ -52,19 +55,29 @@ const open = computed({
   },
 })
 
-type Mode = 'describe' | 'foods' | 'manual'
+type Mode = 'describe' | 'meals' | 'foods' | 'manual'
 const mode = ref<Mode>('describe')
 const MODES: { value: Mode; label: string }[] = [
   { value: 'describe', label: 'Describe' },
+  { value: 'meals', label: 'Meals' },
   { value: 'foods', label: 'My foods' },
   { value: 'manual', label: 'Manual' },
 ]
 const modeValue = computed({
   get: () => mode.value,
   set: (value: string) => {
-    if (value === 'describe' || value === 'foods' || value === 'manual') mode.value = value
+    const next = MODES.find((option) => option.value === value)
+    if (next) mode.value = next.value
   },
 })
+
+/** One line under the title saying what the chosen way in does; gone once something is picked. */
+const DESCRIPTIONS: Record<Mode, string> = {
+  describe: 'Type what you ate and the app estimates the nutrients.',
+  meals: 'Drop in a meal you saved, ingredients and all. Nothing to type.',
+  foods: 'Pick a saved food and say how much you had.',
+  manual: 'Enter a food from the numbers on its label.',
+}
 
 /** The day to log to: the one the person was looking at, else their local today. */
 const defaultDay = computed(() => ui.quickAdd.day ?? suggestion.value.day)
@@ -117,6 +130,15 @@ function addManuallyFromText(): void {
   mode.value = 'manual'
 }
 
+// --- Meals --------------------------------------------------------------------------------
+const pickedMeal = ref<SavedMeal | null>(null)
+
+/** Creating and editing meals happens on the Meals screens, not inside this sheet. */
+function goToMeals(name: 'meals' | 'meal-new'): void {
+  ui.closeQuickAdd()
+  void router.push({ name })
+}
+
 // --- My foods -----------------------------------------------------------------------------
 const picked = ref<Food | null>(null)
 
@@ -151,9 +173,6 @@ async function submitManual(): Promise<void> {
     return
   }
   const food = parsed.data
-  const perServing = food.basis === 'per_serving'
-  const grams = perServing ? manualAmount.value * (food.servingGrams ?? 0) : manualAmount.value
-  const portion = portionOf(food, grams)
   let foodId: string | null = null
   try {
     // Saving to the library needs the server; offline the entry is queued on its own.
@@ -163,12 +182,7 @@ async function submitManual(): Promise<void> {
     return
   }
   const entry: LogEntryInput = {
-    name: food.name,
-    quantity: manualAmount.value,
-    unit: perServing ? (food.servingLabel ?? 'serving').slice(0, 30) : 'g',
-    grams,
-    nutrients: roundNutrientVector(portion.nutrients),
-    foodGroups: roundFoodGroupServes(portion.foodGroups),
+    ...manualPortion(food, manualAmount.value),
     source: foodId ? 'library' : 'manual',
     foodId,
     aiCallId: null,
@@ -181,7 +195,12 @@ async function submitManual(): Promise<void> {
 }
 
 // --- Shared confirm -----------------------------------------------------------------------
-function log(payload: { day: string; meal: Meal; entries: LogEntryInput[] }): void {
+function log(payload: {
+  day: string
+  meal: Meal
+  entries: LogEntryInput[]
+  savedMealId?: string
+}): void {
   saveError.value = null
   create.mutate(
     {
@@ -189,6 +208,7 @@ function log(payload: { day: string; meal: Meal; entries: LogEntryInput[] }): vo
       meal: payload.meal,
       loggedAt: new Date().toISOString(),
       entries: payload.entries,
+      ...(payload.savedMealId ? { savedMealId: payload.savedMealId } : {}),
     },
     {
       onSuccess: (response) => {
@@ -217,6 +237,7 @@ function reset(): void {
   create.reset()
   createFood.reset()
   picked.value = null
+  pickedMeal.value = null
   Object.assign(manual, emptyFoodForm())
   manualErrors.value = {}
   manualAmount.value = null
@@ -238,11 +259,11 @@ watch(open, (isOpen) => {
     v-model:open="open"
     title="Log food"
     size="tall"
-    :description="result ? undefined : 'Type what you ate and the app estimates the nutrients.'"
+    :description="result || picked || pickedMeal ? undefined : DESCRIPTIONS[mode]"
   >
     <div class="space-y-4">
       <SegmentedControl
-        v-if="!result && !picked"
+        v-if="!result && !picked && !pickedMeal"
         v-model="modeValue"
         label="How to add"
         :options="MODES"
@@ -317,6 +338,29 @@ watch(open, (isOpen) => {
             {{ ui.online ? 'Estimate' : 'Offline' }}
           </Button>
         </template>
+      </template>
+
+      <!-- Meals -->
+      <template v-else-if="mode === 'meals'">
+        <MealLogReview
+          v-if="pickedMeal"
+          :saved="pickedMeal"
+          :today="today"
+          :previous-day="suggestion.previousDay"
+          :initial-day="defaultDay"
+          :initial-meal="suggestion.meal"
+          :saving="create.isPending.value"
+          :error="saveError"
+          back-label="Meals"
+          @back="pickedMeal = null"
+          @confirm="log"
+        />
+        <MealPicker
+          v-else
+          @pick="pickedMeal = $event"
+          @create="goToMeals('meal-new')"
+          @manage="goToMeals('meals')"
+        />
       </template>
 
       <!-- My foods -->
