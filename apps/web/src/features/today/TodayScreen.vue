@@ -168,7 +168,13 @@ function retry(): void {
         <p class="text-[28px] leading-tight font-bold">
           {{ isToday ? greeting : formatDay(viewedDay) }}
         </p>
-        <DayStatus v-if="score" class="mt-2" :score="score" :is-today="isToday" />
+        <DayStatus
+          v-if="score && targets.version.value"
+          class="mt-2"
+          :score="score"
+          :goal="targets.version.value.effective.meta.goalApplied"
+          :is-today="isToday"
+        />
       </div>
       <InstallHint v-if="isToday" />
 

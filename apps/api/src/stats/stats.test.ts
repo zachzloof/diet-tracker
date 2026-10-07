@@ -122,13 +122,14 @@ describe('GET /api/v1/stats/week', () => {
     const body = weekStatsResponseSchema.parse(
       await (await send('GET', '/api/v1/stats/week')).json(),
     )
-    // Day by day (see the table in seed-weeks.ts): missed, missed, met, met, met, met, unlogged.
+    // Day by day (see the table in seed-weeks.ts): missed, met, met, met, met, met, unlogged.
+    // Finn is gaining, so sodium over on -5 no longer costs him the day (D31).
     expect(
       body.days.map((d) => (d.score.logged ? (d.score.dayMet ? 'met' : 'missed') : 'unlogged')),
-    ).toEqual(['missed', 'missed', 'met', 'met', 'met', 'met', 'unlogged'])
+    ).toEqual(['missed', 'met', 'met', 'met', 'met', 'met', 'unlogged'])
     expect(body.daysLogged).toBe(6)
-    expect(body.daysMet).toBe(4)
-    expect(body.streak).toBe(4)
+    expect(body.daysMet).toBe(5)
+    expect(body.streak).toBe(5)
 
     const [d6, d5, , d3, , d1, d0] = body.days
     // -6: 700 + 1500 + 370 = 2570 kcal (79%, short); protein 45 + 60 + 3 = 108 (72%, short);
@@ -263,7 +264,7 @@ describe('GET /api/v1/stats/week', () => {
     expect(yesterday.score.scores.energy_kcal?.target).toBe(3250)
     expect(now.score.scores.energy_kcal?.target).toBeGreaterThan(3250)
     // The past days did not change their verdicts.
-    expect(body.daysMet).toBe(4)
+    expect(body.daysMet).toBe(5)
   })
 })
 

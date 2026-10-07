@@ -24,17 +24,19 @@ import { createEntries } from '../log/log-service.js'
  * offset 0 is today (one breakfast so far, an unlogged day), -1 is yesterday, and so on.
  *
  * Finn (energy 3250, protein 150, sodium 2300, fibre 45, vegetables 6, water 3250):
+ *   (Finn is gaining, so limits never decide his day, D31.)
  *   -6 F1+F5+F8: 2570 kcal short, protein 108 short, sodium 3680 and alcohol 4 over: missed
- *   -5 F2+F4+F5: 2700 kcal close, protein 150 met, sodium 4200 over: missed
+ *   -5 F2+F4+F5: 2700 kcal close, protein 150 met, sodium 4200 over (shown, not counted): met
  *   -4 F1+F2+F3+F4+W: 2700 kcal close, protein 185 met, nothing over: met
  *   -3 F1+F2+F6+F7: 3100 met, protein 190 met, sodium 2300 exactly (met): met
  *   -2 F1+F2+F3+F7+W: 2950 met, protein 185 met: met
  *   -1 F1+F4+F6+F7: 2600 close (80% exactly), protein 150 met: met
- *   Days met 4 of 6 logged, streak 4. Gaps: vegetables (4 days under 60%, average 2.5),
+ *   Days met 5 of 6 logged, streak 5. Gaps: vegetables (4 days under 60%, average 2.5),
  *   fibre (5 days under 75%, average 25.5 g), fruit (4 days, average 1.33), vitamin D
  *   (6 days, average 4.08 mcg), vitamin A (6 days, average 335 mcg), water (4 days, 52%).
  *
- * Tess (energy 1570, protein 100, added sugar 39, iron 18, fruit 2, water 2250):
+ * Tess (energy 1570, protein 100, added sugar 39, iron 18, fruit 2, water 2250; losing, so
+ * only added sugar can decide her day, D31):
  *   -6 T1+T2+T5+T4: 2000 kcal over, protein 85 close, added sugar 49 over: missed
  *   -5 T1+T2+T3+W: 1500 met, protein 93 met: met
  *   -4 T1+T4+T5+T7: 1750 close, protein 56 short, added sugar 48 over: missed

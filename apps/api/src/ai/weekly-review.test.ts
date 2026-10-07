@@ -15,7 +15,11 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { seedWeekTotals } from '../db/seed-weeks.js'
 import { buildTargetInput } from '../profile/profile-service.js'
-import { WEEKLY_REVIEW_SYSTEM_PROMPT, buildWeeklyReviewUserMessage } from './weekly-review.js'
+import {
+  WEEKLY_REVIEW_SYSTEM_PROMPT,
+  buildWeeklyReviewUserMessage,
+  dayMetSentence,
+} from './weekly-review.js'
 
 const TODAY = '2026-09-26'
 
@@ -72,15 +76,29 @@ describe('weekly-review prompt', () => {
     expect(WEEKLY_REVIEW_SYSTEM_PROMPT).toMatch(/at most 170 words/)
   })
 
+  it('states the goal-specific day-met rule (D31)', () => {
+    const base = buildTargetInput(finn, TODAY)
+    expect(dayMetSentence(computeTargets(base))).toMatch(
+      /gain muscle.*protein is at least 90%.*no limit affects/,
+    )
+    expect(dayMetSentence(computeTargets({ ...base, goal: 'lose', pace: null }))).toMatch(
+      /added sugar is not more than 15% over the limit/,
+    )
+    expect(dayMetSentence(computeTargets({ ...base, goal: 'maintain', pace: null }))).toMatch(
+      /protein is at least 75%.*sodium, saturated fat, added sugar, alcohol are not more than 15% over/,
+    )
+  })
+
   it('lists every day with its numbers and verdict, the averages, the targets and the ranked gaps', () => {
     const stats = statsFromSeed(finn, 'finn@example.com', TODAY)
     const targets = computeTargets(buildTargetInput(finn, TODAY))
     const message = buildWeeklyReviewUserMessage(finn, stats, targets)
     expect(message).toMatch(/Male, age 28, 75 kg, goal: gain muscle/)
+    expect(message).toMatch(/no limit affects whether the day is met for this goal/)
     expect(message).toMatch(/Diet pattern: Omnivore/)
     expect(message).toMatch(/Dislikes: liver/)
     expect(message).toMatch(/WEEK \(Sun 20 Sep to Sat 26 Sep; today is Sat 26 Sep\)/)
-    expect(message).toMatch(/Days logged: 6 of 7\. Days met: 4\. Current streak: 4 days\./)
+    expect(message).toMatch(/Days logged: 6 of 7\. Days met: 5\. Current streak: 5 days\./)
     expect(message).toMatch(
       /- Sun 20 Sep: energy 2570 \/ 3250 kcal, protein 108 \/ 150 g, .*: missed \(energy short, protein short, carbs short, sodium over, water short, alcohol over\)/,
     )

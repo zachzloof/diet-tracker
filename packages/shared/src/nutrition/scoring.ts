@@ -6,6 +6,7 @@ import {
   type NutrientKey,
   type NutrientVector,
 } from './nutrients.js'
+import { type Goal } from '../profile.js'
 import { targetKeySchema, type TargetEntry, type TargetKey, type Targets } from './targets.js'
 
 /**
@@ -21,6 +22,10 @@ import { targetKeySchema, type TargetEntry, type TargetKey, type Targets } from 
  * - minimum: met >= 1.00, close 0.75 to 1.00, else short
  * - limit: met <= 1.00, close 1.00 to 1.15, else over
  * - info: not scored
+ *
+ * `dayMet` depends on the goal the targets were computed for (`dayMetRule`, D31): energy met
+ * or close and protein hit for everyone; which limits can fail the day, and whether close
+ * protein is enough, vary by goal.
  */
 
 export const TARGET_STATUSES = ['met', 'close', 'short', 'over', 'unscored'] as const
@@ -41,7 +46,7 @@ export type TargetScore = z.infer<typeof targetScoreSchema>
 export const dayScoreSchema = z.object({
   /** False for a forgotten day: fewer than 2 entries and under 40% of the energy target. */
   logged: z.boolean(),
-  /** Energy met or close, protein met, no limit over. Always false when unlogged. */
+  /** Energy met or close, protein hit, none of the goal's deciding limits over (`dayMetRule`). Always false when unlogged. */
   dayMet: z.boolean(),
   /** Share of `minimum` targets (fibre, micronutrients, food groups) met or close. */
   completeness: z.number().min(0).max(1),
@@ -55,6 +60,58 @@ export interface DayTotals {
   foodGroups: FoodGroupServes
   /** Food entries logged that day (water quick-adds do not count). */
   entryCount: number
+}
+
+/**
+ * What "day met" asks of a person, by goal (D31). Energy must be met or close for everyone.
+ * Limits not listed are still scored and shown; they just never fail the day.
+ */
+export interface DayMetRule {
+  goal: Goal
+  /** Whether protein at `close` (75 to 90%) satisfies the rule. Otherwise it must be `met`. */
+  proteinCloseOk: boolean
+  /** Limits that fail the day when `over`. */
+  decidingLimits: readonly TargetKey[]
+  /** One short sentence for the UI, e.g. "Energy in band, protein hit." */
+  summary: string
+}
+
+const ALL_LIMITS: readonly TargetKey[] = [
+  'sodium_mg',
+  'saturated_fat_g',
+  'added_sugar_g',
+  'alcohol_std_drinks',
+]
+
+const DAY_MET_RULES: Readonly<Record<Goal, DayMetRule>> = {
+  gain: {
+    goal: 'gain',
+    proteinCloseOk: false,
+    decidingLimits: [],
+    summary: 'Energy in band, protein hit.',
+  },
+  recomp: {
+    goal: 'recomp',
+    proteinCloseOk: false,
+    decidingLimits: [],
+    summary: 'Energy in band, protein hit.',
+  },
+  lose: {
+    goal: 'lose',
+    proteinCloseOk: false,
+    decidingLimits: ['added_sugar_g'],
+    summary: 'Energy in band, protein hit, added sugar under the limit.',
+  },
+  maintain: {
+    goal: 'maintain',
+    proteinCloseOk: true,
+    decidingLimits: ALL_LIMITS,
+    summary: 'Energy in band, protein close or better, no limit over.',
+  },
+}
+
+export function dayMetRule(goal: Goal): DayMetRule {
+  return DAY_MET_RULES[goal]
 }
 
 /** A day with fewer entries than this AND under `UNLOGGED_ENERGY_RATIO` of energy is unlogged. */
@@ -161,9 +218,11 @@ export function evaluateDay(day: DayTotals, targets: Targets): DayScore {
   )
 
   const all = Object.values(scores)
-  const limitOver = all.some((score) => score.kind === 'limit' && score.status === 'over')
+  const rule = dayMetRule(targets.meta.goalApplied)
+  const limitOver = rule.decidingLimits.some((key) => scores[key]?.status === 'over')
   const energyOk = energy?.status === 'met' || energy?.status === 'close'
-  const proteinOk = scores.protein_g?.status === 'met'
+  const protein = scores.protein_g?.status
+  const proteinOk = protein === 'met' || (rule.proteinCloseOk && protein === 'close')
   const dayMet = logged && energyOk && proteinOk && !limitOver
 
   const minimums = all.filter((score) => score.kind === 'minimum')

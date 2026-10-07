@@ -2,6 +2,7 @@ import {
   DIET_PATTERN_LABELS,
   FOOD_GROUPS,
   GOAL_LABELS,
+  dayMetRule,
   MIN_REVIEW_DAYS,
   NUTRIENTS,
   ageOn,
@@ -120,6 +121,19 @@ function dayLine(scored: ScoredDay, today: string): string {
   return `- ${dayLabel(day)}${day === today ? ' (today)' : ''}: ${parts.join(', ')}: ${verdict}`
 }
 
+/** The goal's "day met" rule in words, so the review never cites a limit the rule ignores. */
+export function dayMetSentence(targets: Targets): string {
+  const rule = dayMetRule(targets.meta.goalApplied)
+  const protein = rule.proteinCloseOk
+    ? 'protein is at least 75% of target'
+    : 'protein is at least 90% of target'
+  const limits =
+    rule.decidingLimits.length === 0
+      ? 'no limit affects whether the day is met for this goal'
+      : `${rule.decidingLimits.map((k) => label(k).toLowerCase()).join(', ')} ${rule.decidingLimits.length === 1 ? 'is' : 'are'} not more than 15% over the limit`
+  return `A day is met (for the goal "${GOAL_LABELS[rule.goal].label.toLowerCase()}") when energy is within 20% of target, ${protein} and ${limits}.`
+}
+
 export function buildWeeklyReviewUserMessage(
   profile: Profile,
   stats: WeekStatsResponse,
@@ -142,8 +156,9 @@ export function buildWeeklyReviewUserMessage(
   lines.push(
     `- Days logged: ${stats.daysLogged} of 7. Days met: ${stats.daysMet}. Current streak: ${stats.streak} day${stats.streak === 1 ? '' : 's'}.`,
   )
+  lines.push(`- ${dayMetSentence(targets)}`)
   lines.push(
-    '- A day is met when energy is within 20% of target, protein is at least 90% of target and no limit is exceeded. A day with under two entries and under 40% of energy counts as not logged.',
+    '- A day with under two entries and under 40% of energy counts as not logged. Limits that do not decide the day are still worth a mention when they are over most days.',
   )
   lines.push('')
   lines.push('DAYS (actual / target)')

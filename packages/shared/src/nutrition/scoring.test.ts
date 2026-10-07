@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NO_FLAGS } from '../profile.js'
 import { emptyFoodGroupServes, emptyNutrientVector, type NutrientVector } from './nutrients.js'
-import { evaluateDay, scoreTarget, type DayTotals } from './scoring.js'
+import { dayMetRule, evaluateDay, scoreTarget, type DayTotals } from './scoring.js'
 import { computeTargets, targetFor, type TargetInput, type TargetKey } from './targets.js'
 
 /** Finn from targets.md: energy 3250, protein 150, carbs 460, fat 90, fibre 45, sodium 2300. */
@@ -122,13 +122,73 @@ describe('evaluateDay', () => {
     expect(score.dayMet).toBe(true)
   })
 
-  it('fails the day on a limit even when energy and protein are perfect', () => {
+  it('gain: a limit over is shown but never fails the day (D31)', () => {
     const score = evaluateDay(
-      day({ energy_kcal: 3250, protein_g: 150, sodium_mg: 4200 }, 3),
+      day({ energy_kcal: 3250, protein_g: 150, sodium_mg: 4200, saturated_fat_g: 60 }, 3),
       targets,
     )
     expect(score.scores.sodium_mg?.status).toBe('over')
-    expect(score.dayMet).toBe(false)
+    expect(score.scores.saturated_fat_g?.status).toBe('over')
+    expect(score.dayMet).toBe(true)
+    expect(dayMetRule('gain').decidingLimits).toEqual([])
+    expect(dayMetRule('recomp').decidingLimits).toEqual([])
+  })
+
+  it('recomp: same rule as gain', () => {
+    const recomp = computeTargets({ ...finn, goal: 'recomp', pace: null })
+    expect(recomp.meta.goalApplied).toBe('recomp')
+    const energy = targetFor(recomp, 'energy_kcal')?.value ?? 0
+    const score = evaluateDay(
+      day({ energy_kcal: energy, protein_g: 200, sodium_mg: 4200, alcohol_std_drinks: 3 }),
+      recomp,
+    )
+    expect(score.scores.energy_kcal?.status).toBe('met')
+    expect(score.dayMet).toBe(true)
+  })
+
+  it('lose: only added sugar can fail the day; sodium, saturated fat and alcohol cannot', () => {
+    const lose = computeTargets({ ...finn, goal: 'lose', pace: null })
+    expect(lose.meta.goalApplied).toBe('lose')
+    const energy = targetFor(lose, 'energy_kcal')?.value ?? 0
+    const sugarLimit = targetFor(lose, 'added_sugar_g')?.value ?? 0
+    const base = { energy_kcal: energy, protein_g: 200 }
+    expect(
+      evaluateDay(
+        day({ ...base, sodium_mg: 5000, saturated_fat_g: 80, alcohol_std_drinks: 3 }),
+        lose,
+      ).dayMet,
+    ).toBe(true)
+    const sugary = evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.3 }), lose)
+    expect(sugary.scores.added_sugar_g?.status).toBe('over')
+    expect(sugary.dayMet).toBe(false)
+    // Within the 15% close band is still met.
+    expect(evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.1 }), lose).dayMet).toBe(true)
+  })
+
+  it('maintain: every limit decides the day, and close protein is enough', () => {
+    const maintain = computeTargets({ ...finn, goal: 'maintain', pace: null })
+    const energy = targetFor(maintain, 'energy_kcal')?.value ?? 0
+    const proteinTarget = targetFor(maintain, 'protein_g')?.value ?? 0
+    const closeProtein = evaluateDay(
+      day({ energy_kcal: energy, protein_g: proteinTarget * 0.8 }),
+      maintain,
+    )
+    expect(closeProtein.scores.protein_g?.status).toBe('close')
+    expect(closeProtein.dayMet).toBe(true)
+    expect(
+      evaluateDay(day({ energy_kcal: energy, protein_g: proteinTarget * 0.7 }), maintain).dayMet,
+    ).toBe(false)
+    for (const over of [
+      { sodium_mg: 4200 },
+      { saturated_fat_g: 80 },
+      { added_sugar_g: 150 },
+      { alcohol_std_drinks: 2 },
+    ]) {
+      expect(
+        evaluateDay(day({ energy_kcal: energy, protein_g: proteinTarget, ...over }), maintain)
+          .dayMet,
+      ).toBe(false)
+    }
   })
 
   it('fails the day when protein is only close', () => {
@@ -137,12 +197,13 @@ describe('evaluateDay', () => {
     expect(score.dayMet).toBe(false)
   })
 
-  it('fails the day on alcohol at two standard drinks', () => {
+  it('gain: alcohol at two standard drinks is over, and the day still stands', () => {
     const score = evaluateDay(
       day({ energy_kcal: 3250, protein_g: 150, alcohol_std_drinks: 2 }, 3),
       targets,
     )
-    expect(score.dayMet).toBe(false)
+    expect(score.scores.alcohol_std_drinks?.status).toBe('over')
+    expect(score.dayMet).toBe(true)
   })
 
   it('treats fewer than 2 entries under 40% of energy as unlogged, never met', () => {

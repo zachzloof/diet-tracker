@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import type { DayScore } from '@diet-tracker/shared'
+import { dayMetRule, type DayScore, type Goal } from '@diet-tracker/shared'
 import { computed } from 'vue'
 import Chip from '@/components/ui/Chip.vue'
 import Icon from '@/components/ui/Icon.vue'
 import { targetLabel } from '@/lib/format'
 
-/** One line under the greeting: is the day met, and if not, what is in the way. */
-const props = defineProps<{ score: DayScore; isToday: boolean }>()
+/**
+ * One line under the greeting: is the day met, and if not, what is in the way. What counts
+ * depends on the goal the targets were built for (`dayMetRule`, D31), so a gainer is never
+ * told sodium cost them the day.
+ */
+const props = defineProps<{ score: DayScore; goal: Goal; isToday: boolean }>()
+
+const rule = computed(() => dayMetRule(props.goal))
 
 const reasons = computed(() => {
   const s = props.score.scores
@@ -16,11 +22,15 @@ const reasons = computed(() => {
     out.push(`energy ${energy.status}`)
   }
   const protein = s.protein_g
-  if (protein && protein.status !== 'met') out.push(`protein ${protein.status}`)
-  for (const score of Object.values(s)) {
-    if (score.kind === 'limit' && score.status === 'over') {
-      out.push(`${targetLabel(score.key).toLowerCase()} over`)
-    }
+  if (
+    protein &&
+    protein.status !== 'met' &&
+    !(rule.value.proteinCloseOk && protein.status === 'close')
+  ) {
+    out.push(`protein ${protein.status}`)
+  }
+  for (const key of rule.value.decidingLimits) {
+    if (s[key]?.status === 'over') out.push(`${targetLabel(key).toLowerCase()} over`)
   }
   return out
 })
@@ -36,7 +46,7 @@ const reasons = computed(() => {
     </template>
     <template v-else-if="score.dayMet">
       <Chip tone="met"><Icon name="check" :size="16" /> Day met</Chip>
-      <span class="text-xs text-fg-muted">Energy in band, protein hit, no limit over.</span>
+      <span class="text-xs text-fg-muted">{{ rule.summary }}</span>
     </template>
     <template v-else>
       <Chip tone="close">{{ isToday ? 'Not met yet' : 'Not met' }}</Chip>
