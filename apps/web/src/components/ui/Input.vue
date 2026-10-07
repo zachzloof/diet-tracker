@@ -16,6 +16,7 @@ withDefaults(
     required?: boolean
     disabled?: boolean
     autofocus?: boolean
+    maxlength?: number
   }>(),
   { type: 'text', error: null, required: false, disabled: false, autofocus: false },
 )
@@ -38,6 +39,7 @@ const id = useId()
         :required="required"
         :disabled="disabled"
         :autofocus="autofocus"
+        :maxlength="maxlength"
         :aria-invalid="error ? true : undefined"
         :aria-describedby="error ? `${id}-error` : helper ? `${id}-helper` : undefined"
         class="h-12 w-full rounded-control border bg-surface-2 px-4 text-base text-fg placeholder:text-fg-muted/70 transition outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 disabled:opacity-60"

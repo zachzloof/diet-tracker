@@ -23,13 +23,15 @@ import { useUiStore } from '@/stores/ui'
 import ItemEditor from './ItemEditor.vue'
 import MealDayPicker from './MealDayPicker.vue'
 import { applyItemEdit, snapshotItem, type EditableItem, type ItemEdit } from './item-edit'
+import { MAX_MEAL_NAME_LENGTH, suggestMealName } from './meal-name'
 
 /**
  * The review card: every item the estimator found, with its grams, key nutrients,
  * confidence, assumptions and, for a named product, the page its label came from. Tap an
  * item to change the quantity or weight (everything rescales) or to correct any single
  * nutrient (only that number changes), remove it, choose meal and day, then confirm.
- * Nothing is saved until the confirm button.
+ * Nothing is saved until the confirm button. With two or more items, "Add to meals" also
+ * keeps them as a saved meal (named from the text) so next time is four taps and no AI call.
  */
 const props = defineProps<{
   result: EstimateResponse
@@ -59,7 +61,9 @@ const reportHref = computed(() => {
 })
 
 const emit = defineEmits<{
-  confirm: [payload: { day: string; meal: Meal; entries: LogEntryInput[] }]
+  confirm: [
+    payload: { day: string; meal: Meal; entries: LogEntryInput[]; saveAsMeal?: { name: string } },
+  ]
   clarify: [answer: string]
   edit: []
 }>()
@@ -90,6 +94,9 @@ const items = ref<ReviewItem[]>([])
 const meal = ref<Meal>(props.result.meal)
 const day = ref(props.result.day)
 const answer = ref('')
+const saveAsMeal = ref(false)
+const mealName = ref('')
+const mealNameError = ref<string | null>(null)
 
 watch(
   () => props.result,
@@ -120,11 +127,20 @@ watch(
     meal.value = result.meal
     day.value = result.day
     answer.value = ''
+    saveAsMeal.value = false
+    mealName.value = suggestMealName(props.text)
+    mealNameError.value = null
   },
   { immediate: true },
 )
 
 const totals = computed(() => sumPortions(items.value))
+
+/** A single item is a food, not a meal: the tickbox only appears with two or more. */
+const canSaveAsMeal = computed(() => items.value.length >= 2)
+watch(mealName, () => {
+  mealNameError.value = null
+})
 
 const TONE: Record<Confidence, ChipTone> = { high: 'met', medium: 'close', low: 'short' }
 
@@ -153,9 +169,16 @@ function remove(item: ReviewItem): void {
 
 function confirm(): void {
   if (items.value.length === 0) return
+  const wantsMeal = saveAsMeal.value && canSaveAsMeal.value
+  const name = mealName.value.trim()
+  if (wantsMeal && !name) {
+    mealNameError.value = 'Give the meal a name'
+    return
+  }
   emit('confirm', {
     day: day.value,
     meal: meal.value,
+    ...(wantsMeal ? { saveAsMeal: { name } } : {}),
     entries: items.value.map((item) => ({
       name: item.name,
       quantity: item.quantity,
@@ -331,6 +354,33 @@ function confirm(): void {
       :today="today"
       :previous-day="result.previousDay"
     />
+
+    <div v-if="canSaveAsMeal" class="space-y-3 rounded-card border border-border p-3">
+      <label class="flex min-h-11 cursor-pointer items-start gap-3">
+        <input
+          v-model="saveAsMeal"
+          type="checkbox"
+          class="mt-0.5 size-5 shrink-0 accent-[var(--accent)]"
+          data-testid="save-as-meal"
+        />
+        <span class="min-w-0">
+          <span class="block text-base text-fg">Add to meals</span>
+          <span class="block text-sm text-fg-muted">
+            Keep these {{ items.length }} items as one meal, so next time you log it in a few
+            taps with no AI estimate.
+          </span>
+        </span>
+      </label>
+      <Input
+        v-if="saveAsMeal"
+        v-model="mealName"
+        label="Meal name"
+        placeholder="e.g. Eggs on toast"
+        :error="mealNameError"
+        :maxlength="MAX_MEAL_NAME_LENGTH"
+        autocomplete="off"
+      />
+    </div>
 
     <p v-if="error" class="text-sm text-over" role="alert">{{ error }}</p>
     <Button block :loading="saving" :disabled="items.length === 0" @click="confirm">

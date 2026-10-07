@@ -111,6 +111,7 @@ export function useCreateEntries() {
         entryCount: 0,
       },
       foodsSaved: 0,
+      savedMeal: null,
       queued: true,
     }
   }
@@ -140,8 +141,10 @@ export function useCreateEntries() {
       if (result.foodsSaved > 0 || input.entries.some((e) => e.foodId)) {
         await queryClient.invalidateQueries({ queryKey: FOODS_KEY })
       }
-      // The meal that was just logged moves to the top of the list.
-      if (input.savedMealId) await queryClient.invalidateQueries({ queryKey: MEALS_KEY })
+      // The meal that was just logged moves to the top of the list; a new one appears there.
+      if (input.savedMealId || result.savedMeal) {
+        await queryClient.invalidateQueries({ queryKey: MEALS_KEY })
+      }
     },
   })
 }

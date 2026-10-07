@@ -200,6 +200,7 @@ function log(payload: {
   meal: Meal
   entries: LogEntryInput[]
   savedMealId?: string
+  saveAsMeal?: { name: string }
 }): void {
   saveError.value = null
   create.mutate(
@@ -209,14 +210,16 @@ function log(payload: {
       loggedAt: new Date().toISOString(),
       entries: payload.entries,
       ...(payload.savedMealId ? { savedMealId: payload.savedMealId } : {}),
+      ...(payload.saveAsMeal ? { saveAsMeal: payload.saveAsMeal } : {}),
     },
     {
       onSuccess: (response) => {
         const kcal = response.entries.reduce((sum, e) => sum + e.nutrients.energy_kcal, 0)
+        const andMeal = payload.saveAsMeal ? ` · saved as "${payload.saveAsMeal.name}"` : ''
         ui.toast(
           response.queued
-            ? `Saved offline · ${formatKcal(kcal)}. It will be sent when you're back online.`
-            : `Added to ${MEAL_LABELS[payload.meal].toLowerCase()} · ${formatKcal(kcal)}`,
+            ? `Saved offline · ${formatKcal(kcal)}${andMeal}. It will be sent when you're back online.`
+            : `Added to ${MEAL_LABELS[payload.meal].toLowerCase()} · ${formatKcal(kcal)}${andMeal}`,
           'success',
         )
         ui.closeQuickAdd()
