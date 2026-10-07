@@ -31,6 +31,7 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 
 ## Worth watching during the week
 
+- **Goal-aware "day met"** (D31, 2026-10-07). After a week: does the maintain rule (protein close is enough, every limit counts) feel right for anyone on that goal, and should lose also count alcohol? Both are one-line changes in `dayMetRule`.
 - **The four new nutrients** (vitamin E, K, iodine, omega-3; D30, 2026-10-07). Do the daily numbers look plausible for what you ate, and is iodine too noisy to keep scored? Entries logged before 2026-10-07 show 0 for all four and AI entries from before then read as low confidence; re-estimating old entries was not done (it would cost a call per entry).
 - Whether the AI estimates feel right for the foods you actually eat, and whether "4 eggs" the second time reuses your saved food (D5, D14).
 - The OpenAI bill: `ai_calls` has tokens per call and `web_search_calls` per named-product lookup (D16). `AI_WEB_SEARCH=false` switches search off without a deploy.

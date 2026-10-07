@@ -512,3 +512,16 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **Cost.** The estimate prompt grew by one sentence and each item vector by four numbers; token counts in `ai_calls` show the difference. The seven fixtures were patched with zeros for the new keys rather than re-recorded; the live smoke test passed and a real "salmon, spinach, olive oil, walnuts" estimate gave sensible values (salmon 3.3 g omega-3 and 45 mcg iodine, spinach 483 mcg vitamin K, walnuts 2.7 g omega-3).
 
 **Status.** `adopted` (2026-10-07), owner to confirm A over B or C.
+
+## D31. "Day met" depends on the goal (adopted)
+
+**Context.** The owner (goal: gain lean mass) was hitting energy and protein most days and still seeing "Not met", because sodium and saturated fat scale with food volume and the one-rule-for-everyone verdict failed any day with a limit over by more than 15%. A verdict that penalises a gainer for eating enough is wrong for that goal. The owner asked for the verdict to follow the goal: losing, gaining and staying healthy are three different things.
+
+**Options.**
+- **A. One rule per goal.** Energy met or close for everyone. Gain and recomp: protein met, no limit decides the day. Lose: protein met, added sugar is the only limit that decides the day (sodium, saturated fat and alcohol are shown but do not fail it). Maintain, which is the "stay healthy" goal: protein met or close, all four limits decide the day, as before. Limits keep their status chips, gap detection and the weekly review's commentary; only the verdict changes.
+- **B. Limits never decide a day for anyone.** Simplest, but the maintain goal has nothing to say about diet quality beyond energy and protein.
+- **C. A per-user toggle, "count limits toward my day".** Hides the goal logic behind a setting most people would never find.
+
+**Recommendation.** A, taken. The rule is `dayMetRule(goal)` in `packages/shared/src/nutrition/scoring.ts`; `evaluateDay` reads `goalApplied` from the targets it is scoring against, so a flagged profile (D10) is judged by the maintain rule its targets were built with. Retroactive by construction: nothing is stored, so history, streaks and "days met" rescored on deploy (the owner chose this; the user base is a few friends). Today's status line names only the limits that could have failed the day, and the weekly review prompt states the goal's rule in words so the model does not blame a limit the rule ignores. Finn's seeded week goes from 4 to 5 met days.
+
+**Status.** `adopted` (2026-10-07) on the owner's instruction, including the alcohol exclusion for lose.

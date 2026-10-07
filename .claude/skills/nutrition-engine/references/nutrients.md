@@ -91,7 +91,15 @@ Per-target status from `actual / target`:
 | info | not scored | | |
 
 Overall:
-- `dayMet` = energy is `met` or `close`, and protein is `met`, and no `limit` is `over`. This is the number behind "days met this week". It is deliberately achievable: energy in band, protein hit, nothing blown.
+- `dayMet` depends on the goal the targets were built for (`dayMetRule(goal)`, D31). Energy must be `met` or `close` for everyone. Then:
+
+| goal | protein | limits that fail the day when `over` |
+|---|---|---|
+| gain, recomp | `met` | none (shown, never counted) |
+| lose | `met` | added sugar only |
+| maintain | `met` or `close` | sodium, saturated fat, added sugar, alcohol |
+
+  `evaluateDay` reads `targets.meta.goalApplied`, so a flagged profile (forced to maintain) is judged by the maintain rule. This is the number behind "days met this week". It is deliberately achievable: energy in band, protein hit, nothing that matters for the goal blown.
 - `completeness` = share of `minimum` targets (fibre, micronutrients, food groups) that are `met` or `close`. Shown as a secondary score and used by gap detection; it never flips `dayMet`.
 - A day with fewer than 2 log entries and under 40% of the energy target is `unlogged`, not `short`, so forgotten days do not pollute stats. Unlogged days are excluded from averages and gap rules but break streaks.
 
