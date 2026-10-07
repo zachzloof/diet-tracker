@@ -4,6 +4,10 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Four more nutrients (2026-10-07)
+- Vitamin E, vitamin K, iodine and omega-3 are now estimated, logged, targeted and scored like the other vitamins and minerals (D30). Targets: vitamin E 15 mg, vitamin K 120 mcg for men and 90 mcg for women, iodine 150 mcg, omega-3 1.6 g for men and 1.1 g for women (total ALA, EPA and DHA against the ALA adequate intake). They appear on Today's "Vitamins and minerals" grid (now 14 tiles), the Targets screen (section renamed "Vitamins, minerals and omega-3"), the manual entry form's "more nutrients", the CSV export, the weekly gaps (with food ideas filtered by diet pattern, allergies and dislikes) and the AI estimator's prompt. Iodine is flagged as rough because it hinges on iodised salt.
+- Existing data: migration 0008 adds the four keys at 0 to every stored food, log entry, saved meal ingredient and day total, and marks AI entries made before the change as low confidence since four of their values are unknown. Every stored target version is recomputed on boot from its own inputs and overrides (engine version 2), so existing people get the new targets without editing their profile; the same mechanism will carry any future engine change.
+- Nutrient completeness now counts 20 minimums (was 16), so the same day scores a little lower on that secondary number.
 ### Slice 6 - Meals (2026-10-01)
 - Meals: save the meals you eat often, ingredients and all, and log them in one go instead of entering each ingredient every time. Meals has its own tab in the bar (Today, Meals, Log, Week, You, with the + now in the centre) and is also a way in when you tap the + to log.
 - Search your meals by name or by ingredient ("oats" finds the porridge), on the Meals tab and in the Log food sheet.

@@ -14,21 +14,25 @@ The enum lives in `packages/shared/src/nutrition/nutrients.ts`. Every JSONB nutr
 | sugar_g | g | info | macros |
 | added_sugar_g | g | limit | macros |
 | saturated_fat_g | g | limit | macros |
+| omega3_g | g (total ALA + EPA + DHA) | minimum | macros |
 | sodium_mg | mg | limit | minerals |
 | potassium_mg | mg | minimum | minerals |
 | calcium_mg | mg | minimum | minerals |
 | iron_mg | mg | minimum | minerals |
 | magnesium_mg | mg | minimum | minerals |
 | zinc_mg | mg | minimum | minerals |
+| iodine_ug | mcg | minimum | minerals |
 | vitamin_a_ug | mcg RAE | minimum | vitamins |
 | vitamin_c_mg | mg | minimum | vitamins |
 | vitamin_d_ug | mcg | minimum | vitamins |
 | vitamin_b12_ug | mcg | minimum | vitamins |
 | folate_ug | mcg DFE | minimum | vitamins |
+| vitamin_e_mg | mg alpha-tocopherol | minimum | vitamins |
+| vitamin_k_ug | mcg | minimum | vitamins |
 | water_ml | ml | goal | hydration |
 | alcohol_std_drinks | drinks (10 g ethanol) | limit | other |
 
-Vectors are complete: every key present, numbers >= 0, no nulls. Unknown means 0 with low confidence on the item, never a missing key. This keeps aggregation trivial and the AI schema strict.
+Vectors are complete: every key present, numbers >= 0, no nulls. 25 keys since D30 (21 before). Unknown means 0 with low confidence on the item, never a missing key. This keeps aggregation trivial and the AI schema strict.
 
 ## 2. Dietary reference intakes (adults)
 
@@ -46,7 +50,13 @@ Source: US NIH Office of Dietary Supplements DRI tables (RDA, or AI where no RDA
 | vitamin_d_ug | 15 | 15 | 15 | 20 | 15 | 15 | 15 | 20 |
 | vitamin_b12_ug | 2.4 | 2.4 | 2.4 | 2.4 | 2.4 | 2.4 | 2.4 | 2.4 |
 | folate_ug | 400 | 400 | 400 | 400 | 400 | 400 | 400 | 400 |
+| vitamin_e_mg | 15 | 15 | 15 | 15 | 15 | 15 | 15 | 15 |
+| vitamin_k_ug (AI) | 120 | 120 | 120 | 120 | 90 | 90 | 90 | 90 |
+| iodine_ug | 150 | 150 | 150 | 150 | 150 | 150 | 150 | 150 |
+| omega3_g (AI, for ALA) | 1.6 | 1.6 | 1.6 | 1.6 | 1.1 | 1.1 | 1.1 | 1.1 |
 | sodium_mg (limit) | 2300 | 2300 | 2300 | 2300 | 2300 | 2300 | 2300 | 2300 |
+
+Added 2026-10-07 (D30): vitamin E, vitamin K, iodine and omega-3. Omega-3 is logged as total ALA + EPA + DHA against the ALA adequate intake, because no reference value exists for EPA + DHA; the reason says so. Iodine estimates hinge on iodised salt and the local bread and dairy supply, so the reason and the Today footnote call it rough. `ADEQUATE_INTAKE_KEYS` in `dri.ts` lists the AI-based keys so the reason reads "Adequate intake" rather than "RDA".
 
 Notes for reasons and UI copy: vegans get B12 from fortified foods or supplements, so the gap suggestion list must say so rather than list meat. Upper limits are not enforced from food; they would only matter for supplements.
 

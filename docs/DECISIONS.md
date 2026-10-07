@@ -102,7 +102,7 @@ Small defaults that are not decisions are listed at the bottom so they're visibl
 
 **Recommendation.** A. Micronutrients are shown with a status but weighted lightly in "day met" (see the nutrition-engine skill), because AI estimates of them are rough. Stored as a JSONB vector keyed by one enum, so adding a nutrient later is an enum change plus backfill rather than a wide-table migration.
 
-**Status.** `accepted` (2026-09-25)
+**Status.** `accepted` (2026-09-25). Extended by D30 (2026-10-07): 25 keys.
 
 ---
 
@@ -495,3 +495,20 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 - Custom domain vs Railway subdomain. Still open after slice 5; the Railway subdomain works for the friends group.
 - Email provider (Resend free tier is the obvious pick) for password reset. Change password exists; "forgot my password" does not, and nothing in the repo resets one (a short admin script against the database is the stopgap). Decide before opening the app beyond friends.
 - Photo-of-meal estimation and barcode lookup via Open Food Facts (ideas after slice 5).
+
+---
+
+## D30. Four more nutrients: vitamin E, vitamin K, iodine and omega-3 (adopted, please confirm)
+
+**Context.** After a week of use the owner asked which vitamins beyond the five in D7 were worth tracking. Nothing extra was being logged: the AI returns exactly the enum. Of the candidates, these four have a common real-world shortfall, a DRI, and foods an LLM can estimate from (nuts, seeds and oils; leafy greens; dairy, fish, eggs and iodised salt; oily fish, flax, chia and walnuts). The B-group (thiamin, riboflavin, niacin, B6, pantothenic acid, biotin), choline, selenium and phosphorus were left out: rarely short in a mixed diet, or food data too sparse for a model to do better than noise.
+
+**Options.**
+- **A. Add all four as scored minimums in the same grid as the other micros.** Vitamin E 15 mg (RDA), vitamin K 120 / 90 mcg (AI, men / women), iodine 150 mcg (RDA), omega-3 1.6 / 1.1 g (AI for ALA; logged as total ALA + EPA + DHA because EPA + DHA has no reference value). Existing rows get the keys at 0; AI entries made before the change drop to low confidence; stored target versions are recomputed on boot.
+- **B. Vitamin E and K only now, iodine and omega-3 after the next week.** Fewer rough numbers on screen; iodine is the least reliable of the four.
+- **C. Show the four as information only, not scored.** No gaps or "on track" count, so nobody chases a noisy number, but also no signal.
+
+**Recommendation.** A, taken. Iodine is called rough in its reason and the Today footnote. The engine version mechanism (`ENGINE_VERSION` 2, `upgradeTargetVersions` in `apps/api/src/db/migrations.ts`) is new and general: any future change to what the engine emits gets a bump and existing people's targets follow without a profile edit.
+
+**Cost.** The estimate prompt grew by one sentence and each item vector by four numbers; token counts in `ai_calls` show the difference. The seven fixtures were patched with zeros for the new keys rather than re-recorded; the live smoke test passed and a real "salmon, spinach, olive oil, walnuts" estimate gave sensible values (salmon 3.3 g omega-3 and 45 mcg iodine, spinach 483 mcg vitamin K, walnuts 2.7 g omega-3).
+
+**Status.** `adopted` (2026-10-07), owner to confirm A over B or C.

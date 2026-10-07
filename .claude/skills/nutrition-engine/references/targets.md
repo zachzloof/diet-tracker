@@ -121,7 +121,7 @@ Worked example (Tess, gentle loss): flat trend over 14 days at 50 kg, 12 logged 
 - Fibre = max(14 * 3.25, 25) = 45.5, capped **45 g**
 - Added sugar limit = 0.10 * 3250 / 4 = **81 g**; saturated fat limit = 0.10 * 3250 / 9 = **36 g**
 - Sodium **2300 mg**; water = 35*75 + 500 = 3125, rounded to 250 gives **3250 ml** on training days and 2625 rounded to **2750 ml** on rest days
-- Iron 8 mg, calcium 1000 mg, magnesium 400 mg, zinc 11 mg, potassium 3400 mg, vitamin A 900 mcg, C 90 mg, D 15 mcg, B12 2.4 mcg, folate 400 mcg
+- Iron 8 mg, calcium 1000 mg, magnesium 400 mg, zinc 11 mg, potassium 3400 mg, vitamin A 900 mcg, C 90 mg, D 15 mcg, B12 2.4 mcg, folate 400 mcg, E 15 mg, K 120 mcg, iodine 150 mcg, omega-3 1.6 g
 
 ### Tess - female, 30, 160 cm, 50 kg, activity `moderate` (gym 3x/wk), goal `lose`, pace `gentle`, omnivore
 - BMR = 10*50 + 6.25*160 - 5*30 - 161 = 500 + 1000 - 150 - 161 = **1189 kcal**
@@ -133,7 +133,7 @@ Worked example (Tess, gentle loss): flat trend over 14 days at 50 kg, 12 logged 
 - Fibre = max(14 * 1.57 = 22, 25) = **25 g**
 - Added sugar limit = **39 g**; saturated fat limit = **17 g**
 - Sodium **2300 mg**; water = 35*50 + 500 = 2250, so **2250 ml** on training days and 1750 ml on rest days
-- Iron **18 mg**, calcium 1000 mg, magnesium 310 mg, zinc 8 mg, potassium 2600 mg, vitamin A 700 mcg, C 75 mg, D 15 mcg, B12 2.4 mcg, folate 400 mcg
+- Iron **18 mg**, calcium 1000 mg, magnesium 310 mg, zinc 8 mg, potassium 2600 mg, vitamin A 700 mcg, C 75 mg, D 15 mcg, B12 2.4 mcg, folate 400 mcg, E 15 mg, K 90 mcg, iodine 150 mcg, omega-3 1.1 g
 
 ### Edge cases to cover in tests
 - Aggressive pace that would breach the 25% clamp or the floor: energy stops at the clamp, reason says so.

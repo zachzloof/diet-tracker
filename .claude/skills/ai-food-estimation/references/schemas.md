@@ -30,8 +30,8 @@ FoodItem {
 
 NutrientVector = { energy_kcal, protein_g, carbs_g, fat_g, fiber_g, sugar_g, added_sugar_g,
   saturated_fat_g, sodium_mg, potassium_mg, calcium_mg, iron_mg, magnesium_mg, zinc_mg,
-  vitamin_a_ug, vitamin_c_mg, vitamin_d_ug, vitamin_b12_ug, folate_ug, water_ml,
-  alcohol_std_drinks }                    // all number >= 0
+  omega3_g, iodine_ug, vitamin_a_ug, vitamin_c_mg, vitamin_d_ug, vitamin_b12_ug, folate_ug,
+  vitamin_e_mg, vitamin_k_ug, water_ml, alcohol_std_drinks }   // all number >= 0 (25 keys)
 
 FoodGroupServes = { vegetables, fruit, whole_grains, protein_foods, dairy_or_alt, legumes,
   nuts_seeds }                            // all number >= 0
@@ -48,10 +48,12 @@ Rules:
 - If a quantity is missing, assume one typical serving for {region} and state it in assumptions.
 - Ask a clarifying_question only if the answer would change energy by more than about 30%.
   Otherwise estimate and state the assumption.
-- Units: energy kcal; protein, carbs, fat, fibre, sugars, saturated fat in g; sodium, potassium,
-  calcium, iron, magnesium, zinc, vitamin C in mg; vitamin A (RAE), vitamin D, B12, folate (DFE)
-  in mcg; water ml; alcohol in standard drinks of 10 g ethanol. Never leave a value null; use 0
-  and lower confidence if genuinely unknown.
+- Units: energy kcal; protein, carbs, fat, fibre, sugars, added sugar, saturated fat and omega-3
+  (total ALA, EPA and DHA) in g; sodium, potassium, calcium, iron, magnesium, zinc, vitamin C and
+  vitamin E (alpha-tocopherol) in mg; vitamin A (RAE), vitamin D, B12, folate (DFE), vitamin K and
+  iodine in mcg; water ml; alcohol in standard drinks of 10 g ethanol. Iodine depends on iodised
+  salt and the local supply, so estimate it for the region. Never leave a value null; use 0 and
+  lower confidence if genuinely unknown.
 - Food-group serves use these definitions exactly: {serve definitions from nutrients.md}.
 - The user's diet pattern is {dietPattern}; allergies: {allergies}. Interpret ambiguous foods
   accordingly (a vegan's "milk" is plant milk).
