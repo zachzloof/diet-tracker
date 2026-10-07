@@ -9,6 +9,7 @@ import {
   foodResponseSchema,
   foodsResponseSchema,
   portionOf,
+  savedMealsResponseSchema,
   updateEntryResponseSchema,
   type FoodInput,
   type LogEntryInput,
@@ -20,7 +21,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../app.js'
 import { SESSION_COOKIE } from '../auth/session-service.js'
 import { db } from '../db/client.js'
-import { aiCalls, foods, logEntries } from '../db/schema/index.js'
+import { aiCalls, foods, logEntries, savedMeals } from '../db/schema/index.js'
 import { resetRateLimits } from '../middleware/rate-limit.js'
 
 const app = createApp()
@@ -128,7 +129,7 @@ async function register(email: string): Promise<{ cookie: string; id: string }> 
 beforeEach(async () => {
   resetRateLimits()
   await db.execute(
-    sql`truncate table log_entries, daily_summaries, foods, ai_calls, weight_entries, target_versions, profiles, sessions, users cascade`,
+    sql`truncate table saved_meal_items, saved_meals, log_entries, daily_summaries, foods, ai_calls, weight_entries, target_versions, profiles, sessions, users cascade`,
   )
   const registered = await register('finn@example.com')
   cookie = registered.cookie
@@ -186,6 +187,64 @@ describe('day log', () => {
     )
     expect(day.entries).toHaveLength(2)
     expect(day.summary.totals.energy_kcal).toBe(540)
+  })
+
+  it('keeps a described meal as a saved meal when asked, linked to the foods it saved', async () => {
+    const res = await send('POST', '/api/v1/log/entries', {
+      day: DAY,
+      meal: 'breakfast',
+      loggedAt: LOGGED_AT,
+      entries: [eggs, toast],
+      saveAsMeal: { name: '  Eggs on toast  ' },
+    })
+    expect(res.status).toBe(201)
+    const body = createEntriesResponseSchema.parse(await res.json())
+    expect(body.entries).toHaveLength(2)
+    expect(body.foodsSaved).toBe(1)
+    // One portion is exactly what was logged, in order, with the toast linked to the new food.
+    const meal = body.savedMeal
+    expect(meal).not.toBeNull()
+    expect(meal?.name).toBe('Eggs on toast')
+    expect(meal?.items.map((i) => [i.name, i.quantity, i.unit, i.grams])).toEqual([
+      ['Egg, whole, large, boiled', 4, 'egg', 200],
+      ['Wholegrain toast with butter', 2, 'slice', 80],
+    ])
+    expect(meal?.items[0]?.foodId).toBeNull()
+    expect(meal?.items[1]?.foodId).toBe(body.entries[1]?.foodId)
+    expect(meal?.items[1]?.nutrients.energy_kcal).toBe(230)
+    // It counts as used now, so it lists first and can be logged again without AI.
+    expect(meal?.lastUsedAt).not.toBeNull()
+    const listed = savedMealsResponseSchema.parse(await (await send('GET', '/api/v1/meals')).json())
+    expect(listed.meals.map((m) => m.id)).toEqual([meal?.id])
+    expect(listed.meals[0]?.items).toEqual(meal?.items)
+    // Without the flag nothing is saved and the response says so.
+    const plain = createEntriesResponseSchema.parse(
+      await (
+        await send('POST', '/api/v1/log/entries', {
+          day: DAY,
+          meal: 'lunch',
+          loggedAt: LOGGED_AT,
+          entries: [eggs],
+        })
+      ).json(),
+    )
+    expect(plain.savedMeal).toBeNull()
+    expect(await db.select().from(savedMeals)).toHaveLength(1)
+  })
+
+  it('refuses "Add to meals" with an empty name and logs nothing', async () => {
+    const res = await send('POST', '/api/v1/log/entries', {
+      day: DAY,
+      meal: 'breakfast',
+      loggedAt: LOGGED_AT,
+      entries: [eggs, toast],
+      saveAsMeal: { name: '   ' },
+    })
+    expect(res.status).toBe(400)
+    expect((await errorBody(res)).code).toBe('validation_error')
+    expect(await db.select().from(logEntries)).toHaveLength(0)
+    expect(await db.select().from(foods)).toHaveLength(0)
+    expect(await db.select().from(savedMeals)).toHaveLength(0)
   })
 
   it('edits a quantity, moves an entry to another day and deletes it, updating both summaries', async () => {

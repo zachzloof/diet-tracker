@@ -134,6 +134,12 @@ export type LogEntryInput = z.infer<typeof logEntryInputSchema>
 
 export const MAX_ENTRIES_PER_REQUEST = 20
 
+const savedMealName = z
+  .string({ error: 'Give the meal a name' })
+  .trim()
+  .min(1, 'Give the meal a name')
+  .max(80, 'Keep the name under 80 characters')
+
 export const createEntriesRequestSchema = z.object({
   day: z.iso.date(),
   meal: mealSchema,
@@ -141,6 +147,12 @@ export const createEntriesRequestSchema = z.object({
   entries: z.array(logEntryInputSchema).min(1, 'Nothing to log').max(MAX_ENTRIES_PER_REQUEST),
   /** The saved meal these entries came from, so it sorts to the top of Meals next time. */
   savedMealId: z.uuid().optional(),
+  /**
+   * Also keep these entries as a saved meal under `name` (the "Add to meals" tickbox when a
+   * described meal has several items). One portion is exactly what is logged; items saved to
+   * My foods in the same request become linked ingredients.
+   */
+  saveAsMeal: z.object({ name: savedMealName }).optional(),
 })
 export type CreateEntriesRequest = z.infer<typeof createEntriesRequestSchema>
 
@@ -175,12 +187,6 @@ export const dayLogResponseSchema = z.object({
 })
 export type DayLogResponse = z.infer<typeof dayLogResponseSchema>
 
-export const createEntriesResponseSchema = z.object({
-  entries: z.array(logEntrySchema),
-  summary: dailySummarySchema,
-  foodsSaved: z.number().int().min(0),
-})
-export type CreateEntriesResponse = z.infer<typeof createEntriesResponseSchema>
 
 /**
  * Edit an entry. Send `quantity`, `grams`, `nutrients` and `foodGroups` together to change
@@ -223,12 +229,6 @@ export type DeleteEntryResponse = z.infer<typeof deleteEntryResponseSchema>
 export const MAX_SAVED_MEAL_ITEMS = MAX_ENTRIES_PER_REQUEST
 export const MAX_SAVED_MEALS = 100
 
-const savedMealName = z
-  .string({ error: 'Give the meal a name' })
-  .trim()
-  .min(1, 'Give the meal a name')
-  .max(80, 'Keep the name under 80 characters')
-
 /**
  * One ingredient of a saved meal, for one portion of the meal. The numbers are a snapshot
  * taken when the ingredient was added: editing or deleting the library food later does not
@@ -259,6 +259,15 @@ export const savedMealSchema = z.object({
   updatedAt: z.iso.datetime(),
 })
 export type SavedMeal = z.infer<typeof savedMealSchema>
+
+export const createEntriesResponseSchema = z.object({
+  entries: z.array(logEntrySchema),
+  summary: dailySummarySchema,
+  foodsSaved: z.number().int().min(0),
+  /** The meal created by `saveAsMeal`, or null when it was not asked for. */
+  savedMeal: savedMealSchema.nullable().default(null),
+})
+export type CreateEntriesResponse = z.infer<typeof createEntriesResponseSchema>
 
 export const savedMealsResponseSchema = z.object({ meals: z.array(savedMealSchema) })
 export type SavedMealsResponse = z.infer<typeof savedMealsResponseSchema>

@@ -28,7 +28,7 @@ import {
 import { errors } from '../errors.js'
 import type { Tx } from '../profile/targets-service.js'
 import { createFood, ownedFoodIds, touchFoods } from './foods-service.js'
-import { touchSavedMeal } from './saved-meals-service.js'
+import { createSavedMeal, touchSavedMeal } from './saved-meals-service.js'
 
 /**
  * Log entries and the daily summary that shadows them. Every write recomputes the summary
@@ -219,11 +219,36 @@ export async function createEntries(
       now,
     )
     if (request.savedMealId) await touchSavedMeal(tx, userId, request.savedMealId, now)
+    // "Add to meals": the logged items become a saved meal, one portion as logged, in the same
+    // transaction, so a meal never exists without its log and the links to the foods just
+    // saved are kept. It counts as used now, so it sits at the top of Meals.
+    const savedMeal = request.saveAsMeal
+      ? await createSavedMeal(
+          userId,
+          {
+            name: request.saveAsMeal.name,
+            items: rows
+              .filter((row) => !isWaterEntry(row))
+              .map((row) => ({
+                name: row.name,
+                quantity: row.quantity,
+                unit: row.unit,
+                grams: row.grams,
+                nutrients: row.nutrients,
+                foodGroups: row.foodGroups,
+                foodId: row.foodId,
+              })),
+          },
+          now,
+          { tx, lastUsedAt: now },
+        )
+      : null
     const summary = await recomputeSummary(tx, userId, request.day, now)
     return {
       entries: inserted.map(toWireEntry),
       summary: toWireSummary(summary, request.day),
       foodsSaved,
+      savedMeal,
     }
   })
 }

@@ -103,12 +103,17 @@ async function itemRows(
   }))
 }
 
+/**
+ * Creates a meal. Pass `tx` to create it inside a caller's transaction (logging entries with
+ * "Add to meals"), and `lastUsedAt` when the meal is being logged as it is created.
+ */
 export async function createSavedMeal(
   userId: string,
   input: SavedMealInput,
   now: Date = new Date(),
+  options: { tx?: Tx; lastUsedAt?: Date | null } = {},
 ): Promise<SavedMeal> {
-  return db.transaction(async (tx) => {
+  const run = async (tx: Tx): Promise<SavedMeal> => {
     const counted = await tx
       .select({ count: sql<number>`count(*)::int` })
       .from(savedMeals)
@@ -124,7 +129,7 @@ export async function createSavedMeal(
         id: uuidv7(),
         userId,
         name: input.name,
-        lastUsedAt: null,
+        lastUsedAt: options.lastUsedAt ?? null,
         createdAt: now,
         updatedAt: now,
       })
@@ -136,7 +141,8 @@ export async function createSavedMeal(
       .values(await itemRows(tx, userId, meal.id, input))
       .returning()
     return toWireSavedMeal(meal, items)
-  })
+  }
+  return options.tx ? run(options.tx) : db.transaction(run)
 }
 
 /** Replaces the name and the whole ingredient list. Entries already logged are untouched. */
