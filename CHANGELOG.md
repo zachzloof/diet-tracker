@@ -4,6 +4,11 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Log a meal by grams (2026-10-07)
+- When you log a saved meal there is now a Portions / Grams switch above the amount. In Grams, type what you weighed out and the card works out the portions from what one portion of the saved meal weighs (its ingredients' grams added up): a 265 g meal served as 133 g is 0.5 portions, and every ingredient and the total scale to match. The helper line under the field says the portion weight and the portions it comes to, and the Portions field says the weight too. Switching between the two keeps the amount. Handy for bulk cooking: save the whole batch as one meal, weigh out what you eat.
+- Grams is only offered when the saved meal's ingredients carry a weight. The same cap applies as for portions (20 portions' worth of grams).
+- Web: `portionGrams` and `portionsFromGrams` in `apps/web/src/features/meals/meal-items.ts`.
+
 ### Slice 7 - Add to meals while describing a meal (2026-10-07)
 - When you describe a meal with two or more items and the estimate comes back, there is an "Add to meals" tickbox under the meal and day pickers. Tick it, keep or change the suggested name (what you typed, minus the "I had"), and tap Add: the items are logged as usual and also kept as a meal on the Meals tab, so next time it is four taps and no AI estimate. One portion of the meal is exactly what you logged, and items saved to My foods in the same go are linked ingredients.
 - The tickbox is only offered for two or more items; a single item is a food, not a meal, and can still be saved to My foods from the item itself. A blank name is refused before anything is logged.

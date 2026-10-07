@@ -10,21 +10,24 @@ import {
 import { computed, ref, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import NumberField from '@/components/ui/NumberField.vue'
+import SegmentedControl, { type SegmentOption } from '@/components/ui/SegmentedControl.vue'
 import MealDayPicker from '@/features/log/MealDayPicker.vue'
-import { formatKcal, formatNumber } from '@/lib/format'
+import { formatGrams, formatKcal, formatNumber } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
 import MealItemList from './MealItemList.vue'
 import {
   fromDraftItem,
   ingredientCount,
+  portionGrams,
+  portionsFromGrams,
   scaleDraftItems,
   toDraftItem,
   type MealDraftItem,
 } from './meal-items'
 
 /**
- * Drop a saved meal into the log: how many portions, which meal of the day and which day,
- * then confirm. Nothing needs typing and no AI call is made. An ingredient can be changed
+ * Drop a saved meal into the log: how many portions (or how many grams, for a batch that
+ * was cooked and then weighed out), which meal of the day and which day, then confirm. Nothing needs typing and no AI call is made. An ingredient can be changed
  * or left out for this one time; the saved meal itself is only changed in the editor.
  */
 const props = defineProps<{
@@ -44,9 +47,18 @@ const emit = defineEmits<{
   back: []
 }>()
 
+type Measure = 'portions' | 'grams'
+const MEASURES: SegmentOption<Measure>[] = [
+  { value: 'portions', label: 'Portions' },
+  { value: 'grams', label: 'Grams' },
+]
+
 const ui = useUiStore()
 const items = ref<MealDraftItem[]>([])
+const measure = ref<Measure>('portions')
 const portions = ref<number | null>(1)
+/** The weight typed in grams mode; portions are derived from it. */
+const grams = ref<number | null>(null)
 /** The portions the items on screen are currently scaled to. */
 const applied = ref(1)
 const meal = ref<Meal>(props.initialMeal)
@@ -56,15 +68,50 @@ watch(
   () => props.saved,
   (saved) => {
     items.value = saved.items.map(toDraftItem)
+    measure.value = 'portions'
     portions.value = 1
+    grams.value = null
     applied.value = 1
   },
   { immediate: true },
 )
 
+/** What one portion of the saved meal weighs, from the ingredients as saved (not as edited). */
+const perPortion = computed(() => portionGrams(props.saved.items))
+const canWeigh = computed(() => perPortion.value > 0)
+const maxGrams = computed(() => Math.floor(perPortion.value * MAX_SAVED_MEAL_PORTIONS))
+
 const portionsValid = computed(
   () => portions.value !== null && portions.value > 0 && portions.value <= MAX_SAVED_MEAL_PORTIONS,
 )
+
+// Switching measure keeps the amount on screen: 2 portions of a 240 g meal becomes 480 g.
+watch(measure, (next) => {
+  if (next === 'grams') {
+    grams.value = portionsValid.value ? Math.round((portions.value ?? 0) * perPortion.value) : null
+  } else if (!portionsValid.value) {
+    portions.value = applied.value
+  }
+})
+
+// In grams mode the weight drives the portions; the ingredient rescale below follows.
+watch(grams, (next) => {
+  if (measure.value !== 'grams') return
+  portions.value = portionsFromGrams(next, perPortion.value)
+})
+
+const gramsError = computed(() =>
+  grams.value !== null && grams.value > maxGrams.value
+    ? `Up to ${formatGrams(maxGrams.value)} at a time`
+    : null,
+)
+const gramsHelper = computed(() => {
+  const asPortions = portionsFromGrams(grams.value, perPortion.value)
+  const weighs = `One portion weighs ${formatGrams(perPortion.value)}`
+  return asPortions === null || gramsError.value
+    ? `${weighs}.`
+    : `${weighs}, so this is ${formatNumber(asPortions, 2)} portions.`
+})
 
 // Typing passes through empty and 0; the ingredients only rescale on a usable number.
 watch(portions, (next) => {
@@ -98,7 +145,21 @@ function confirm(): void {
       <p class="mt-1 text-base font-semibold text-fg">{{ saved.name }}</p>
     </div>
 
+    <SegmentedControl v-if="canWeigh" v-model="measure" label="Measure" :options="MEASURES" />
     <NumberField
+      v-if="measure === 'grams'"
+      v-model="grams"
+      label="How many grams"
+      unit="g"
+      :min="0"
+      :max="maxGrams"
+      :step="10"
+      placeholder="0"
+      :error="gramsError"
+      :helper="gramsHelper"
+    />
+    <NumberField
+      v-else
       v-model="portions"
       label="How many portions"
       :min="0.5"
@@ -109,6 +170,7 @@ function confirm(): void {
           ? `Up to ${MAX_SAVED_MEAL_PORTIONS} portions at a time`
           : null
       "
+      :helper="canWeigh ? `One portion weighs ${formatGrams(perPortion)}.` : undefined"
     />
 
     <MealItemList v-if="items.length" v-model="items" />

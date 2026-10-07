@@ -82,3 +82,20 @@ export function filterMeals(meals: readonly SavedMeal[], query: string): SavedMe
 export function ingredientCount(count: number): string {
   return `${count} ingredient${count === 1 ? '' : 's'}`
 }
+
+/**
+ * What one portion of a saved meal weighs: its ingredients' grams added up. 0 when no
+ * ingredient carries a weight, in which case the meal cannot be logged by grams.
+ */
+export function portionGrams(items: readonly { grams: number }[]): number {
+  return round3(items.reduce((sum, item) => sum + (item.grams > 0 ? item.grams : 0), 0))
+}
+
+/**
+ * How many portions a weight of the cooked meal is, for logging a batch by the scale: a
+ * 480 g recipe served as 240 g is 0.5 portions. Null when either number is unusable.
+ */
+export function portionsFromGrams(grams: number | null, perPortion: number): number | null {
+  if (grams === null || !(grams > 0) || !(perPortion > 0)) return null
+  return round3(grams / perPortion)
+}

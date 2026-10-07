@@ -11,6 +11,8 @@ import {
   filterMeals,
   fromDraftItem,
   ingredientCount,
+  portionGrams,
+  portionsFromGrams,
   scaleDraftItems,
   toDraftItem,
 } from './meal-items'
@@ -134,5 +136,25 @@ describe('ingredientCount', () => {
   it('pluralises', () => {
     expect(ingredientCount(1)).toBe('1 ingredient')
     expect(ingredientCount(3)).toBe('3 ingredients')
+  })
+})
+
+describe('portionGrams and portionsFromGrams', () => {
+  it('weigh one portion from its ingredients and ignore ingredients with no weight', () => {
+    expect(portionGrams([oats, eggs])).toBe(200)
+    expect(portionGrams([oats, { ...eggs, grams: 0 }])).toBe(50)
+    expect(portionGrams([])).toBe(0)
+  })
+
+  it('turn grams of the cooked meal into portions', () => {
+    expect(portionsFromGrams(100, 200)).toBe(0.5)
+    expect(portionsFromGrams(300, 200)).toBe(1.5)
+    expect(portionsFromGrams(100, 300)).toBe(0.333)
+  })
+
+  it('give nothing for an empty, zero or weightless meal', () => {
+    expect(portionsFromGrams(null, 200)).toBeNull()
+    expect(portionsFromGrams(0, 200)).toBeNull()
+    expect(portionsFromGrams(100, 0)).toBeNull()
   })
 })
