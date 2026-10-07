@@ -42,7 +42,11 @@
           "vitamin_b12_ug": 1.5,
           "folate_ug": 15,
           "water_ml": 310,
-          "alcohol_std_drinks": 0
+          "alcohol_std_drinks": 0,
+          "omega3_g": 0,
+          "iodine_ug": 0,
+          "vitamin_e_mg": 0,
+          "vitamin_k_ug": 0
         },
         "food_groups": {
           "vegetables": 0,

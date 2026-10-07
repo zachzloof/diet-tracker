@@ -41,7 +41,11 @@
           "vitamin_b12_ug": 0,
           "folate_ug": 8,
           "water_ml": 136,
-          "alcohol_std_drinks": 0
+          "alcohol_std_drinks": 0,
+          "omega3_g": 0,
+          "iodine_ug": 0,
+          "vitamin_e_mg": 0,
+          "vitamin_k_ug": 0
         },
         "food_groups": {
           "vegetables": 0,
@@ -86,7 +90,11 @@
           "vitamin_b12_ug": 0.4,
           "folate_ug": 5,
           "water_ml": 78,
-          "alcohol_std_drinks": 0
+          "alcohol_std_drinks": 0,
+          "omega3_g": 0,
+          "iodine_ug": 0,
+          "vitamin_e_mg": 0,
+          "vitamin_k_ug": 0
         },
         "food_groups": {
           "vegetables": 0,
@@ -133,7 +141,11 @@
           "vitamin_b12_ug": 0,
           "folate_ug": 75,
           "water_ml": 128,
-          "alcohol_std_drinks": 0
+          "alcohol_std_drinks": 0,
+          "omega3_g": 0,
+          "iodine_ug": 0,
+          "vitamin_e_mg": 0,
+          "vitamin_k_ug": 0
         },
         "food_groups": {
           "vegetables": 2,
@@ -178,7 +190,11 @@
           "vitamin_b12_ug": 0,
           "folate_ug": 0,
           "water_ml": 0,
-          "alcohol_std_drinks": 0
+          "alcohol_std_drinks": 0,
+          "omega3_g": 0,
+          "iodine_ug": 0,
+          "vitamin_e_mg": 0,
+          "vitamin_k_ug": 0
         },
         "food_groups": {
           "vegetables": 0,
@@ -223,7 +239,11 @@
           "vitamin_b12_ug": 0,
           "folate_ug": 2,
           "water_ml": 28,
-          "alcohol_std_drinks": 0
+          "alcohol_std_drinks": 0,
+          "omega3_g": 0,
+          "iodine_ug": 0,
+          "vitamin_e_mg": 0,
+          "vitamin_k_ug": 0
         },
         "food_groups": {
           "vegetables": 0,

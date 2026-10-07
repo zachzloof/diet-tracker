@@ -47,6 +47,19 @@ import { createEntries } from '../log/log-service.js'
  *   average 383 mcg), water (4 days, 62%).
  */
 
+/**
+ * Vitamin E, vitamin K, iodine and omega-3 joined the enum after these weeks were worked out.
+ * Every meal carries a flat share that meets the highest target over any three meals
+ * (6 mg, 50 mcg, 60 mcg and 0.6 g against 15 mg, 120 mcg, 150 mcg and 1.6 g), so the
+ * hand-computed gap lists above are unchanged.
+ */
+const SEED_MEAL_EXTRAS: Partial<NutrientVector> = {
+  vitamin_e_mg: 6,
+  vitamin_k_ug: 50,
+  iodine_ug: 60,
+  omega3_g: 0.6,
+}
+
 export interface SeedMeal {
   name: string
   grams: number
@@ -62,7 +75,7 @@ const meal = (
 ): SeedMeal => ({
   name,
   grams,
-  nutrients: { ...emptyNutrientVector(), ...nutrients },
+  nutrients: { ...emptyNutrientVector(), ...SEED_MEAL_EXTRAS, ...nutrients },
   foodGroups: { ...emptyFoodGroupServes(), ...foodGroups },
 })
 

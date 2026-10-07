@@ -33,7 +33,7 @@ export const MAX_ESTIMATE_ITEMS = 15
 const MAX_LIBRARY_MATCHES = 20
 
 const UNITS_RULE =
-  'Units: energy kcal; protein, carbs, fat, fibre, sugars, added sugar, saturated fat in g; sodium, potassium, calcium, iron, magnesium, zinc, vitamin C in mg; vitamin A (RAE), vitamin D, B12 and folate (DFE) in mcg; water in ml; alcohol in standard drinks of 10 g ethanol.'
+  'Units: energy kcal; protein, carbs, fat, fibre, sugars, added sugar, saturated fat and omega-3 (total ALA, EPA and DHA) in g; sodium, potassium, calcium, iron, magnesium, zinc, vitamin C and vitamin E (alpha-tocopherol) in mg; vitamin A (RAE), vitamin D, B12, folate (DFE), vitamin K and iodine in mcg; water in ml; alcohol in standard drinks of 10 g ethanol. Iodine depends on iodised salt and the local bread and dairy supply, so estimate it for the region named below.'
 
 function serveDefinitions(): string {
   return FOOD_GROUP_KEYS.map(

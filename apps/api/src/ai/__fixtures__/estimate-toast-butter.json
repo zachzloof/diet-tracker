@@ -39,7 +39,11 @@
           "vitamin_b12_ug": 0,
           "folate_ug": 54,
           "water_ml": 27,
-          "alcohol_std_drinks": 0
+          "alcohol_std_drinks": 0,
+          "omega3_g": 0,
+          "iodine_ug": 0,
+          "vitamin_e_mg": 0,
+          "vitamin_k_ug": 0
         },
         "food_groups": {
           "vegetables": 0,
@@ -84,7 +88,11 @@
           "vitamin_b12_ug": 0.02,
           "folate_ug": 0,
           "water_ml": 2,
-          "alcohol_std_drinks": 0
+          "alcohol_std_drinks": 0,
+          "omega3_g": 0,
+          "iodine_ug": 0,
+          "vitamin_e_mg": 0,
+          "vitamin_k_ug": 0
         },
         "food_groups": {
           "vegetables": 0,

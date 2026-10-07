@@ -51,7 +51,9 @@ describe('estimate prompt', () => {
       expect(system).toContain(`${key}: 1 serve is ${FOOD_GROUPS[key].serveDefinition}`)
     }
     expect(system).toMatch(/energy kcal; protein, carbs, fat, fibre/)
-    expect(system).toMatch(/vitamin A \(RAE\), vitamin D, B12 and folate \(DFE\) in mcg/)
+    expect(system).toMatch(
+      /vitamin A \(RAE\), vitamin D, B12, folate \(DFE\), vitamin K and iodine in mcg/,
+    )
     expect(system).toMatch(/TOTAL quantity described, not per 100 g/)
     expect(system).toMatch(/diet pattern is Vegan; allergies or intolerances: shellfish, peanuts/)
     expect(system).toMatch(/one typical serving for Australia/)
