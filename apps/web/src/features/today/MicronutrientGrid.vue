@@ -14,7 +14,7 @@ import ContributorsPanel from './ContributorsPanel.vue'
 import NutrientTile from './NutrientTile.vue'
 
 /**
- * Vitamins and minerals as a grid of small tiles with a met / close / short status, and
+ * Vitamins, minerals and omega-3 as a grid of small tiles with a met / close / short status, and
  * the limits (sodium, saturated fat, added sugar, alcohol) below them. Every tile carries
  * the status word, so colour is never the only signal. Tap a tile to open, under its row,
  * the entries that supplied it; one tile is open at a time across both grids.
@@ -140,8 +140,8 @@ const met = computed(
       </template>
     </ul>
     <p class="mt-3 text-xs text-fg-muted">
-      Tap a tile to see which foods it came from. Estimates of vitamins and minerals are rough; they
-      never decide whether a day is met.
+      Tap a tile to see which foods it came from. Estimates of vitamins, minerals and omega-3 are
+      rough (iodine especially); they never decide whether a day is met.
     </p>
   </Card>
 </template>

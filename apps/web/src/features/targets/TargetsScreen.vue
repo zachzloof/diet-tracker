@@ -43,7 +43,7 @@ const SECTIONS: { title: string; keys: readonly TargetKey[] }[] = [
     keys: ['added_sugar_g', 'saturated_fat_g', 'sodium_mg', 'alcohol_std_drinks'],
   },
   { title: 'Hydration', keys: ['water_ml'] },
-  { title: 'Vitamins and minerals', keys: MICRO_KEYS },
+  { title: 'Vitamins, minerals and omega-3', keys: MICRO_KEYS },
   { title: 'Food groups', keys: FOOD_GROUP_KEYS },
 ]
 
