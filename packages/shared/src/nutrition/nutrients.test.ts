@@ -13,7 +13,7 @@ import {
 } from './nutrients.js'
 
 describe('nutrient enum', () => {
-  it('has the 21 canonical keys from nutrients.md, in order', () => {
+  it('has the 25 canonical keys from nutrients.md, in order', () => {
     expect(NUTRIENT_KEYS).toEqual([
       'energy_kcal',
       'protein_g',
@@ -23,17 +23,21 @@ describe('nutrient enum', () => {
       'sugar_g',
       'added_sugar_g',
       'saturated_fat_g',
+      'omega3_g',
       'sodium_mg',
       'potassium_mg',
       'calcium_mg',
       'iron_mg',
       'magnesium_mg',
       'zinc_mg',
+      'iodine_ug',
       'vitamin_a_ug',
       'vitamin_c_mg',
       'vitamin_d_ug',
       'vitamin_b12_ug',
       'folate_ug',
+      'vitamin_e_mg',
+      'vitamin_k_ug',
       'water_ml',
       'alcohol_std_drinks',
     ])

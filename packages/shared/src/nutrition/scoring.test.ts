@@ -162,7 +162,7 @@ describe('evaluateDay', () => {
   })
 
   it('reports completeness as the share of minimum targets met or close', () => {
-    // 16 minimums for Finn: fibre, 10 micronutrients, 5 scored food groups.
+    // 20 minimums for Finn: fibre, 14 nutrients with a DRI (minerals, vitamins, omega-3), 5 scored food groups.
     const nothing = evaluateDay(day({ energy_kcal: 3000, protein_g: 150 }, 3), targets)
     expect(nothing.completeness).toBe(0)
 
@@ -182,7 +182,7 @@ describe('evaluateDay', () => {
       },
       targets,
     )
-    expect(some.completeness).toBe(0.25) // 4 of 16
+    expect(some.completeness).toBe(0.2) // 4 of 20
   })
 
   it('scores every target in the version, including food groups', () => {

@@ -47,6 +47,10 @@ const GOOD: NutrientVector = {
   vitamin_d_ug: 15,
   vitamin_b12_ug: 2.4,
   folate_ug: 400,
+  vitamin_e_mg: 15,
+  vitamin_k_ug: 120,
+  iodine_ug: 150,
+  omega3_g: 1.6,
   water_ml: 3250,
 }
 const GOOD_GROUPS: FoodGroupServes = {

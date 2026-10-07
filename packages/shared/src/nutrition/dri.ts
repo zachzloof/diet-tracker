@@ -3,7 +3,8 @@ import type { FoodGroupKey, NutrientKey } from './nutrients.js'
 
 /**
  * Dietary reference intakes for adults, from the US NIH Office of Dietary Supplements
- * (RDA, or AI where no RDA exists). Source table: nutrition-engine/references/nutrients.md
+ * (RDA, or AI where no RDA exists; vitamin E as mg alpha-tocopherol, vitamin K and omega-3
+ * (ALA) as AIs, iodine 150 mcg). Source table: nutrition-engine/references/nutrients.md
  * section 2. Sex `unspecified` takes the higher of the two so nobody is under-targeted.
  */
 
@@ -16,6 +17,10 @@ export function ageBand(age: number): AgeBand {
   return '71+'
 }
 
+/**
+ * Keys with a DRI the engine turns into a `minimum` target: the minerals and vitamins plus
+ * omega-3 (an Adequate Intake for ALA, the only omega-3 with a reference value).
+ */
 export type MicroKey = Extract<
   NutrientKey,
   | 'potassium_mg'
@@ -23,11 +28,15 @@ export type MicroKey = Extract<
   | 'iron_mg'
   | 'magnesium_mg'
   | 'zinc_mg'
+  | 'iodine_ug'
   | 'vitamin_a_ug'
   | 'vitamin_c_mg'
   | 'vitamin_d_ug'
   | 'vitamin_b12_ug'
   | 'folate_ug'
+  | 'vitamin_e_mg'
+  | 'vitamin_k_ug'
+  | 'omega3_g'
 >
 
 export const MICRO_KEYS: readonly MicroKey[] = [
@@ -36,11 +45,15 @@ export const MICRO_KEYS: readonly MicroKey[] = [
   'iron_mg',
   'magnesium_mg',
   'zinc_mg',
+  'iodine_ug',
   'vitamin_a_ug',
   'vitamin_c_mg',
   'vitamin_d_ug',
   'vitamin_b12_ug',
   'folate_ug',
+  'vitamin_e_mg',
+  'vitamin_k_ug',
+  'omega3_g',
 ]
 
 type BandTable = Readonly<Record<AgeBand, number>>
@@ -59,12 +72,23 @@ export const DRI: Readonly<Record<MicroKey, SexTable>> = {
   iron_mg: { male: bands(8, 8, 8, 8), female: bands(18, 18, 8, 8) },
   magnesium_mg: { male: bands(400, 420, 420, 420), female: bands(310, 320, 320, 320) },
   zinc_mg: { male: bands(11, 11, 11, 11), female: bands(8, 8, 8, 8) },
+  iodine_ug: { male: bands(150, 150, 150, 150), female: bands(150, 150, 150, 150) },
   vitamin_a_ug: { male: bands(900, 900, 900, 900), female: bands(700, 700, 700, 700) },
   vitamin_c_mg: { male: bands(90, 90, 90, 90), female: bands(75, 75, 75, 75) },
   vitamin_d_ug: { male: bands(15, 15, 15, 20), female: bands(15, 15, 15, 20) },
   vitamin_b12_ug: { male: bands(2.4, 2.4, 2.4, 2.4), female: bands(2.4, 2.4, 2.4, 2.4) },
   folate_ug: { male: bands(400, 400, 400, 400), female: bands(400, 400, 400, 400) },
+  vitamin_e_mg: { male: bands(15, 15, 15, 15), female: bands(15, 15, 15, 15) },
+  vitamin_k_ug: { male: bands(120, 120, 120, 120), female: bands(90, 90, 90, 90) },
+  omega3_g: { male: bands(1.6, 1.6, 1.6, 1.6), female: bands(1.1, 1.1, 1.1, 1.1) },
 }
+
+/** Nutrients whose reference value is an Adequate Intake rather than an RDA. */
+export const ADEQUATE_INTAKE_KEYS: readonly MicroKey[] = [
+  'potassium_mg',
+  'vitamin_k_ug',
+  'omega3_g',
+]
 
 export function driFor(key: MicroKey, sex: Sex, age: number): number {
   const band = ageBand(age)

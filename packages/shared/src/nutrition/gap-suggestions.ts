@@ -185,6 +185,30 @@ export const GAP_SUGGESTIONS: Readonly<Partial<Record<SuggestionKey, readonly Su
     { text: 'Oranges and avocado' },
     { text: 'Fortified breakfast cereal' },
   ],
+  vitamin_e_mg: [
+    { text: 'Almonds, sunflower seeds and hazelnuts', allergens: ['nuts'] },
+    { text: 'Avocado and olive oil' },
+    { text: 'Spinach and red peppers' },
+    { text: 'Wheat germ or a wholegrain cereal' },
+  ],
+  vitamin_k_ug: [
+    { text: 'Kale, spinach or silverbeet' },
+    { text: 'Broccoli and Brussels sprouts' },
+    { text: 'A green salad with olive oil' },
+  ],
+  iodine_ug: [
+    { text: 'Milk and yoghurt', exclude: ANIMAL, allergens: ['dairy'] },
+    { text: 'White fish such as cod or haddock', exclude: FISH, allergens: ['fish'] },
+    { text: 'Eggs', exclude: ANIMAL, allergens: ['eggs'] },
+    { text: 'Iodised salt in cooking, or bread made with it' },
+    { text: 'Seaweed snacks or nori' },
+  ],
+  omega3_g: [
+    { text: 'Salmon, sardines or mackerel twice a week', exclude: FISH, allergens: ['fish'] },
+    { text: 'Chia seeds or ground flaxseed on breakfast' },
+    { text: 'Walnuts', allergens: ['nuts'] },
+    { text: 'An algae-based omega-3 supplement', only: ['vegan', 'vegetarian'] },
+  ],
   logging: [
     { text: 'Log meals as you eat them rather than at the end of the day' },
     { text: 'Save your regular meals to My foods for one-tap logging' },

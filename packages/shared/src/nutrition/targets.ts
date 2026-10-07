@@ -18,7 +18,14 @@ import {
   type Sex,
   type TrainingType,
 } from '../profile.js'
-import { MICRO_KEYS, SODIUM_LIMIT_MG, ageBand, driFor, foodGroupServesFor } from './dri.js'
+import {
+  ADEQUATE_INTAKE_KEYS,
+  MICRO_KEYS,
+  SODIUM_LIMIT_MG,
+  ageBand,
+  driFor,
+  foodGroupServesFor,
+} from './dri.js'
 import {
   FOOD_GROUPS,
   FOOD_GROUP_KEYS,
@@ -42,7 +49,8 @@ import {
  * who sets energy to 3000 kcal gets macros that still add up.
  */
 
-export const ENGINE_VERSION = 1
+/** Bumped when the engine's output shape changes; stored versions behind it are recomputed on boot. */
+export const ENGINE_VERSION = 2
 
 export const targetInputSchema = z.object({
   sex: sexSchema,
@@ -506,13 +514,21 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
   const who = driLabel(sex, age)
   for (const key of MICRO_KEYS) {
     const value = driFor(key, sex, age)
-    const basis = key === 'potassium_mg' ? 'Adequate intake' : 'RDA'
+    const basis = ADEQUATE_INTAKE_KEYS.includes(key) ? 'Adequate intake' : 'RDA'
     const unspecified = sex === 'unspecified' ? ' (the higher of the two sex-specific values)' : ''
     const vegan =
       key === 'vitamin_b12_ug' && input.dietPattern === 'vegan'
         ? ' On a vegan diet this comes from fortified foods or a supplement.'
         : ''
-    add(key, value, `${basis} for ${who}${unspecified}.${vegan}`, {
+    const omega =
+      key === 'omega3_g'
+        ? ' Counted as total omega-3 (ALA, EPA and DHA); the reference value is for ALA.'
+        : ''
+    const iodine =
+      key === 'iodine_ug'
+        ? ' Estimates depend on whether your salt and bread are iodised, so treat this one as rough.'
+        : ''
+    add(key, value, `${basis} for ${who}${unspecified}.${vegan}${omega}${iodine}`, {
       range: { min: roundMicro(value * 0.8), max: roundMicro(value * 2) },
     })
   }
