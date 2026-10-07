@@ -525,3 +525,18 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **Recommendation.** A, taken. The rule is `dayMetRule(goal)` in `packages/shared/src/nutrition/scoring.ts`; `evaluateDay` reads `goalApplied` from the targets it is scoring against, so a flagged profile (D10) is judged by the maintain rule its targets were built with. Retroactive by construction: nothing is stored, so history, streaks and "days met" rescored on deploy (the owner chose this; the user base is a few friends). Today's status line names only the limits that could have failed the day, and the weekly review prompt states the goal's rule in words so the model does not blame a limit the rule ignores. Finn's seeded week goes from 4 to 5 met days.
 
 **Status.** `adopted` (2026-10-07) on the owner's instruction, including the alcohol exclusion for lose.
+
+---
+
+## D32. "Add to meals" creates the meal inside the log request (adopted)
+
+**Context.** The owner asked for a tickbox on the AI review card that keeps a multi-item estimate as a saved meal. Something has to decide whether the meal is a second request from the browser or part of the entries write.
+
+**Options.**
+- **A. One request.** Built. `POST /api/v1/log/entries` takes `saveAsMeal: { name }` and creates the meal in the same transaction as the entries, after the `saveToLibrary` foods exist, so the meal's ingredients link to the foods saved in that tap; the meal is stamped as used now, so it tops the Meals list; the response carries it. A blank name or the meal cap fails the whole request, so there is never a meal without its log or a log without the meal the person asked for. Offline needs nothing extra: the queued request already carries the flag.
+- **B. Two requests from the browser.** Log the entries, then `POST /api/v1/meals` with the same items. No API change, but the second call can fail after the first succeeded (then the person has the entries and no meal and no clear retry), the ingredients cannot link to the foods just saved without reading the first response, and the offline queue would need a second item type.
+- **C. A server-side "save as meal" from existing entries** (`POST /api/v1/meals/from-entries`). Also serves the deferred "Save as a meal" on a meal group in the day log, but is a second step for the person, not a tickbox, and needs entry ids the browser only has after the first request.
+
+**Recommendation.** A, taken. C stays the natural shape for "Save as a meal" on an existing day-log group; it would be additive.
+
+**Status.** `adopted` (2026-10-07), slice 7.

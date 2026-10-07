@@ -4,6 +4,12 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Slice 7 - Add to meals while describing a meal (2026-10-07)
+- When you describe a meal with two or more items and the estimate comes back, there is an "Add to meals" tickbox under the meal and day pickers. Tick it, keep or change the suggested name (what you typed, minus the "I had"), and tap Add: the items are logged as usual and also kept as a meal on the Meals tab, so next time it is four taps and no AI estimate. One portion of the meal is exactly what you logged, and items saved to My foods in the same go are linked ingredients.
+- The tickbox is only offered for two or more items; a single item is a food, not a meal, and can still be saved to My foods from the item itself. A blank name is refused before anything is logged.
+- Offline, the request waits in the queue with the tickbox, and the meal appears once it is sent.
+- API: `POST /api/v1/log/entries` accepts `saveAsMeal: { name }` and returns the created `savedMeal` (D32). Web: `suggestMealName` in `apps/web/src/features/log/meal-name.ts`.
+
 ### "Day met" follows your goal (2026-10-07)
 - What counts as a met day now depends on what you are trying to do (D31). Energy in band and protein hit are the bar for everyone. If you are gaining muscle or recomping, going over a limit (sodium, saturated fat, added sugar, alcohol) no longer costs you the day: the limits are still shown and still come up in the weekly gaps, they just do not decide the verdict. If you are losing weight, only added sugar can fail the day. If you are maintaining, every limit counts as before, and protein close (75% or more) is now enough.
 - The line under "Day met" says what the bar was for your goal, and "Not met" lists only the things that could have failed it. The weekly review is told the same rule.

@@ -191,12 +191,37 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ---
 
+## Slice 7 - Add to meals from a described meal
+
+**Status:** done (2026-10-07)
+
+**Goal.** The first time someone describes a meal with several parts ("4 eggs and two slices of toast with butter"), they can keep it as a saved meal in the same tap, so the second time is four taps and no AI call.
+
+**In scope.**
+- An "Add to meals" tickbox on the AI review card, shown only when two or more items remain after edits and removals. Ticking it reveals a name field pre-filled from what was typed with the lead-in dropped ("I had 4 eggs and toast" suggests "4 eggs and toast"); an empty name is refused inline.
+- The meal is created in the same request and transaction as the entries (`saveAsMeal: { name }` on `POST /api/v1/log/entries`, D32): one portion is exactly what was logged, items saved to My foods in that request become linked ingredients, and the meal counts as used so it tops the Meals list. The response returns it as `savedMeal`.
+- Offline, the queued request carries the flag, so the meal appears once the queue is sent.
+
+**Out of scope.** Turning a meal already in the day log into a saved meal; a tickbox on the manual entry form or the My foods path (one item is a food, not a meal); grouping the logged entries under one header (D29 option C).
+
+**Done when.**
+- [x] Describing a meal with several items shows the tickbox; one item does not. *Walked against the production build at 390x844 dark, 360x780 light and 430x932 dark with the live model: "I had 4 eggs and two slices of toast with butter" came back as three items (eggs, toast, butter) and the tickbox appeared under the meal and day pickers; "I had a banana" came back as one item with no tickbox; removing the three-item estimate down to one item made the tickbox disappear.*
+- [x] Ticking it, naming it and confirming logs the entries and creates the meal in one go. *The confirm request carried `saveAsMeal`, answered 201 with a three-ingredient `savedMeal` and `lastUsedAt` set; the toast read "Added to snack · 550 kcal · saved as "Eggs on toast""; the Meals tab listed it as "550 kcal · 3 ingredients · logged 7 Oct, 16:30" and the + sheet's Meals tab offered it. No horizontal scroll at any width. `log.test.ts` pins the shape: items in order, the toast linked to the food saved by `saveToLibrary`, the eggs unlinked, the meal first in the list, nothing saved without the flag.*
+- [x] A blank name is refused and nothing is logged. *Inline "Give the meal a name" under the field in the browser; on the API a whitespace name is a 400 and leaves `log_entries`, `foods` and `saved_meals` empty (the meal is created inside the entries transaction).*
+- [x] The suggested name drops the lead-in. *`meal-name.test.ts`: "I had 4 eggs and two slices of toast" to "4 eggs and two slices of toast", "for breakfast I had porridge and a coffee" to "Porridge and a coffee", long text cut at a word under 80 characters.*
+
+**Deferrals.** No real-phone check (headless only). The offline case (queue carries the flag, Meals refreshes on flush) is covered by the existing queue code paths and was not walked with the service worker this session. Hitting the 100-meal cap while confirming fails the whole log with the cap message rather than logging without the meal.
+
+**Decisions it depends on.** D28, D29. Surfaced D32 (the meal is created in the entries request).
+
+---
+
 ## Ideas after slice 6 (not planned)
 
 - Coach chat: a conversational agent with tools to log food, answer "how am I doing", and propose target changes.
 - Photo-of-meal estimation via the vision model.
 - Barcode scanning with Open Food Facts lookup.
 - USDA FoodData Central as a second resolver for whole foods (D5 option B).
-- Meals, next steps: "Save as a meal" on a meal group in the day log (log it once by describing it, keep it forever); build a meal by describing it; show a logged meal's ingredients under one collapsible header (D29 option C); a "refresh from My foods" button in the meal editor (D28).
+- Meals, next steps: "Save as a meal" on a meal group already in the day log; show a logged meal's ingredients under one collapsible header (D29 option C); a "refresh from My foods" button in the meal editor (D28). ("Add to meals" while describing a meal shipped as slice 7.)
 - Sharing a week summary with a friend or coach.
 - Apple Health / Google Fit weight sync via Capacitor.
