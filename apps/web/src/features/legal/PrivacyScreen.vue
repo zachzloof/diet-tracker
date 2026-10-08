@@ -59,8 +59,7 @@ import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_OPERATOR, LEGAL_UPDATED } from './
       </li>
       <li>
         Your account, profile, current targets, saved foods and meals, and your workouts and
-        exercises are kept until you delete
-        them or your account.
+        exercises are kept until you delete them or your account.
       </li>
       <li>A sign-in on a device ends 30 days after you last used it there.</li>
     </ul>

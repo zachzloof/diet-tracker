@@ -11,15 +11,24 @@ import { formatNumber } from '@/lib/format'
 
 /** Pure helpers for the session screen and the cards; the maths lives in `@diet-tracker/shared`. */
 
-/** What a block's set rows show: the exercise's measures when it is known, else weight and reps. */
+/**
+ * What a block's set rows show: the exercise's measures when it is known; otherwise (a custom
+ * exercise since deleted) whatever its sets already record, else weight and reps.
+ */
 export function blockMeasures(
-  block: Pick<WorkoutExerciseInput, 'exerciseId'>,
+  block: Pick<WorkoutExerciseInput, 'exerciseId' | 'sets'>,
   exercises: readonly Exercise[],
 ): readonly ExerciseMeasure[] {
   const exercise = block.exerciseId
     ? exercises.find((candidate) => candidate.id === block.exerciseId)
     : undefined
-  return exercise?.measures ?? DEFAULT_MEASURES
+  if (exercise) return exercise.measures
+  const used: ExerciseMeasure[] = []
+  if (block.sets.some((set) => set.weightKg !== null)) used.push('weight')
+  if (block.sets.some((set) => set.reps !== null)) used.push('reps')
+  if (block.sets.some((set) => set.durationS !== null)) used.push('time')
+  if (block.sets.some((set) => set.distanceM !== null)) used.push('distance')
+  return used.length ? used : DEFAULT_MEASURES
 }
 
 export function formatDuration(minutes: number): string {

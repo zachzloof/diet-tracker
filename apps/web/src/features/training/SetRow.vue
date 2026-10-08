@@ -88,12 +88,12 @@ const inputId = (key: string) => `set-${props.set.id}-${key}`
 
 <template>
   <div
-    class="flex items-center gap-2 rounded-control py-1"
+    class="flex items-center gap-1.5 rounded-control py-1"
     :class="set.completed ? 'bg-met/10' : ''"
   >
     <button
       type="button"
-      class="flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums transition"
+      class="flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums transition"
       :class="set.isWarmup ? 'bg-close/20 text-fg' : 'bg-surface-2 text-fg-muted'"
       :aria-label="
         set.isWarmup
@@ -108,7 +108,7 @@ const inputId = (key: string) => `set-${props.set.id}-${key}`
 
     <button
       type="button"
-      class="min-h-9 w-[4.75rem] shrink-0 truncate text-left text-xs text-fg-muted tabular-nums disabled:opacity-60"
+      class="min-h-9 w-14 shrink-0 text-left text-[11px] leading-tight text-fg-muted tabular-nums disabled:opacity-60"
       :disabled="!previous"
       :aria-label="previous ? `Last time ${previousLabel}. Tap to use it` : 'No earlier set'"
       @click="fillFromPrevious"
@@ -126,11 +126,11 @@ const inputId = (key: string) => `set-${props.set.id}-${key}`
         autocomplete="off"
         enterkeyhint="next"
         :placeholder="previous && previous[field.key] !== null ? String(previous[field.key]) : '–'"
-        class="h-11 w-full rounded-control border border-border bg-surface-2 pr-8 pl-2 text-center text-base text-fg tabular-nums outline-none placeholder:text-fg-muted/50 focus:border-accent focus:ring-2 focus:ring-accent/30"
+        class="h-11 w-full rounded-control border border-border bg-surface-2 pr-6 pl-1 text-center text-base text-fg tabular-nums outline-none placeholder:text-fg-muted/50 focus:border-accent focus:ring-2 focus:ring-accent/30"
         @input="commit(field, ($event.target as HTMLInputElement).value)"
       />
       <span
-        class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[11px] text-fg-muted"
+        class="pointer-events-none absolute inset-y-0 right-1.5 flex items-center text-[10px] text-fg-muted"
         aria-hidden="true"
         >{{ field.unit }}</span
       >
@@ -138,7 +138,7 @@ const inputId = (key: string) => `set-${props.set.id}-${key}`
 
     <button
       type="button"
-      class="flex size-11 shrink-0 items-center justify-center rounded-control border transition"
+      class="flex h-11 w-10 shrink-0 items-center justify-center rounded-control border transition"
       :class="
         set.completed ? 'border-met bg-met text-bg' : 'border-border bg-surface-2 text-fg-muted'
       "

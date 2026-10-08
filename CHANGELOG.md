@@ -4,6 +4,17 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Gym logging (slice 8, 2026-10-08)
+- A Training card on Today, under Weight: that day's sessions with their time, sets and weight lifted ("Push A · 48 min · 12 sets · 1,308 kg"), or "Rest day so far" with "Log a workout". Past days show their sessions too.
+- The session screen: name it, add exercises from a catalogue of 74 common lifts (or add your own, with what a set records), log each set as kg and reps (seconds and metres for timed and cardio work), tick sets done, mark warm-ups by tapping the set number, add a note per exercise, say how it felt, and finish. Everything saves itself a moment after each change; the header says "Saved", "Saving…" or "Saved on this phone".
+- "Last time" beside every set: what you did in your previous session with that exercise, greyed in each row and as the input placeholders; tap it to copy. "Add set" copies the set above.
+- Works with no signal: the session lives on the phone and reaches the server when the connection is back or the app is next opened. Airplane mode mid-session loses nothing.
+- Repeat a session: New workout lists your recent sessions, one per name, to start from with the same exercises and sets, none ticked done. A finished session also has "Repeat this session".
+- Workouts under You: the last three months of sessions by day, with "New".
+- Deleting a custom exercise keeps past sessions readable under its name. Workouts and custom exercises are kept until you delete them, not purged at six months (D36), and are part of the account export.
+- `docs/TRAINING-MATHS.md` starts: working sets, volume, duration, top set, repeat.
+- API: `exercises`, `workouts`, `workout_exercises`, `workout_sets` (migration 0010, D35), `GET/POST/PATCH/DELETE /exercises`, `GET /exercises/:id/history`, `GET /workouts?from&to`, `GET/PUT/DELETE /workouts/:id` (PUT upserts a whole session by its client-minted id). Web: `apps/web/src/features/training`, `stores/workout-draft.ts`.
+
 ### Tighter scoring bands, upper limits, alcohol hidden (2026-10-08)
 - Energy now reads "Met" within 5% of target and "Close" within 10%; outside that it is short or over. Water reads "Met" from 95% and "Close" from 90%, and is never "Over": past 4 litres the water card shows a caution in words instead. Vitamins, minerals, omega-3, fibre and food groups read "Met" from 95% of target and "Close" from 90%, so "1.6 / 1.6 g" of omega-3 is met, not close. Limits (sodium, saturated fat, added sugar) are met up to 5% over the line, close up to 10% over, and red beyond. Protein, carbs and fat are unchanged.
 - A vitamin or mineral turns red only when the day's intake reaches its tolerable upper intake level (calcium, iron, zinc, iodine, vitamins A, C, D and E; D34 lists the numbers). The Targets screen says the level in each nutrient's reason. Nutrients with no food-based upper limit never go red.

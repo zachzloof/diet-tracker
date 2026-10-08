@@ -105,11 +105,11 @@ function remove(): void {
 
     <div
       v-if="block.sets.length"
-      class="mt-2 flex items-center gap-2 px-1 text-[11px] font-medium text-fg-muted uppercase"
+      class="mt-2 flex items-center gap-1.5 px-1 text-[11px] font-medium text-fg-muted uppercase"
       aria-hidden="true"
     >
-      <span class="w-9 text-center">Set</span>
-      <span class="w-[4.75rem]">Last</span>
+      <span class="w-8 text-center">Set</span>
+      <span class="w-14">Last</span>
       <span v-for="measure in measures" :key="measure" class="flex-1 text-center">
         {{
           measure === 'weight'
@@ -121,7 +121,7 @@ function remove(): void {
                 : 'Metres'
         }}
       </span>
-      <span class="w-11 text-center">Done</span>
+      <span class="w-10 text-center">Done</span>
     </div>
 
     <div class="mt-1 space-y-1">

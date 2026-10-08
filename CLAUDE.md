@@ -5,6 +5,7 @@ Free, phone-first nutrition tracker. A person onboards once (body, goals, traini
 ## Where things are
 - `docs/PLAN.md` - development slices: scope, acceptance checks, status. Build one slice per session, only when asked.
 - `docs/NUTRITION-MATHS.md` - the owner-facing picture of every formula, band, reference value and rule the engine uses. **Any change to `packages/shared/src/nutrition` that alters a number or a rule updates this page in the same commit** (and its change log at the bottom).
+- `docs/TRAINING-MATHS.md` - the same for the gym side (`packages/shared/src/training`): working sets, volume, duration, repeat rules. Same update rule.
 - `docs/DECISIONS.md` - big design decisions with options. Anything marked `proposed` is still the owner's call; you may build on the recommended option but say so.
 - `CHANGELOG.md` - what shipped per slice.
 - `docs/OUTSTANDING.md` - what is deferred or waiting on a decision after slice 5; the owner revisits it after a week of real use.

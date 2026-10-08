@@ -218,7 +218,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ## Slice 8 - Gym logging: exercises, sessions, the Today card
 
-**Status:** in progress (2026-10-08)
+**Status:** done with deferrals (2026-10-08)
 
 **Goal.** Log a gym session on the phone, at the gym, with bad signal: pick exercises, enter sets as weight and reps, see what you did last time for each exercise, finish, and see the session on Today beside the food. This is the first of three training slices (D35); progress charts and the nutrition crossover come next.
 
@@ -231,13 +231,15 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **Out of scope.** Per-exercise charts, PRs and estimated one-rep max (slice 9). Training days feeding water, protein, the weekly review or recalibration (slice 10). AI "describe your workout". Templates, supersets, rest timers, a Workout tab. Cardio distance is stored but has no UI yet. Apple Health workouts.
 
 **Done when.**
-- [ ] From Today, "Log a workout" opens a new session; picking "Barbell back squat" from the catalogue and entering three sets saves without touching a Save button, and the session shows on Today with its duration, sets and volume after Finish.
-- [ ] Opening the same exercise in a later session shows last time's sets greyed in each row, and "Add set" copies the last set entered.
-- [ ] Airplane mode mid-session: the sets keep going in, the header says "Saved on this phone", and the session reaches the server on reconnect.
-- [ ] "Repeat" on a past session starts a new one with the same exercises and sets, none ticked done.
-- [ ] A custom exercise can be added from the picker and appears in later searches; deleting it leaves past sessions showing its name.
-- [ ] A workout older than six months survives the purge; the export JSON lists workouts and custom exercises; deleting the account removes all four tables' rows.
-- [ ] Looks right at 360, 390 and 430 wide, dark and light; the keyboard never hides the row being edited.
+- [x] From Today, "Log a workout" opens a new session; picking "Barbell back squat" from the catalogue and entering three sets saves without touching a Save button, and the session shows on Today with its duration, sets and volume after Finish. *Walked with Playwright at 390x844 dark (full flow), 360x780 light and 430x932 dark against Vite and the API: the card read "Rest day so far", the session was created from the start screen, the squat picked from the catalogue search, three sets entered (100×5, 100×5, 102.5×3) and ticked; the header went "Saving…" then "Saved" and `GET /workouts` returned the three sets. After Finish the card showed "Finished · 3 sets · 1,308 kg" and Today read "Push A · 0 min · 3 sets · 1,308 kg".*
+- [x] Opening the same exercise in a later session shows last time's sets greyed in each row, and "Add set" copies the last set entered. *The repeated session showed "Last time 8 Oct · 3 sets" under the exercise and "100 kg × 5" in row 1's Last column (a button that fills the row); "Add set" after a 100×5 set produced a 100×5 row, not done.*
+- [x] Airplane mode mid-session: the sets keep going in, the header says "Saved on this phone", and the session reaches the server on reconnect. *`context.setOffline(true)`, a fourth set (105×1) added and ticked, header "Saved on this phone", the draft in localStorage marked dirty; back online the header returned to "Saved" and the server copy had four sets.*
+- [x] "Repeat" on a past session starts a new one with the same exercises and sets, none ticked done. *From New workout, "Push A" started a session with the squat and its three sets, all with "Mark set n done" buttons (none done). `stats.test.ts` pins the copy rules.*
+- [x] A custom exercise can be added from the picker and appears in later searches; deleting it leaves past sessions showing its name. *"Pistol squat" (bodyweight, reps only) added from the picker's form became a reps-only block; searching "pistol" listed it with a "Yours" badge; after `DELETE /exercises/:id` and a reload the block still read "Pistol squat" with its set, `exerciseId` null on the server, and its rows kept reps-only because measures are inferred from the sets when the exercise is gone.*
+- [x] A workout older than six months survives the purge; the export JSON lists workouts and custom exercises; deleting the account removes all four tables' rows. *`training.test.ts`: `purgeExpiredData` leaves a 213-day-old session; `/account/export/json` (schema 3) carries `workouts` and `exercises`; `DELETE FROM users` empties the four tables and leaves the 74 catalogue rows.*
+- [x] Looks right at 360, 390 and 430 wide, dark and light; the keyboard never hides the row being edited. *No horizontal scroll on Today, the start screen, the session, the picker and the list at all three widths; the set row was tightened after the first pass clipped "102.5" at 360. The keyboard check is headless only: inputs are plain text fields in normal flow (no sticky footer over them), so the browser scrolls the focused row into view; the Finish button is below the rows, not pinned.*
+
+**Deferrals.** No real-phone check (headless only); the keyboard-over-row check in particular wants a real iPhone. Blocks cannot be reordered; a set can only be removed from the end of a block ("Remove last set"); RPE is stored but has no input yet; cardio distance and time have plain number inputs (seconds, metres) rather than a mm:ss or km field. The seed does not create sessions for Finn or Tess. Pending drafts of a session created offline are listed on Today and under Workouts but a never-synced draft cannot be opened from another device until it syncs (by design).
 
 **Decisions it depends on.** D35 (data model, session document, placement), D36 (retention).
 

@@ -47,7 +47,7 @@ const draft = computed(() => drafts.get(id.value))
 const input = computed(() => draft.value?.input ?? null)
 
 // Not on this phone: fetch it. The query is enabled only while there is no draft.
-const remote = useWorkout(id)
+const remote = useWorkout(id, () => draft.value === null)
 watch(
   () => remote.workout.value,
   (workout: Workout | null) => {

@@ -100,8 +100,14 @@ export function workoutQueryOptions(id: string) {
   })
 }
 
-export function useWorkout(id: MaybeRefOrGetter<string>) {
-  const query = useQuery(computed(() => workoutQueryOptions(toValue(id))))
+/** Fetches a session; pass `enabled` false while a local draft already holds it. */
+export function useWorkout(
+  id: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean> = true,
+) {
+  const query = useQuery(
+    computed(() => ({ ...workoutQueryOptions(toValue(id)), enabled: toValue(enabled) })),
+  )
   return {
     workout: computed(() => query.data.value ?? null),
     isLoading: query.isPending,
