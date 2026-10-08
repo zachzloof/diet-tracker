@@ -4,6 +4,7 @@ Free, phone-first nutrition tracker. A person onboards once (body, goals, traini
 
 ## Where things are
 - `docs/PLAN.md` - development slices: scope, acceptance checks, status. Build one slice per session, only when asked.
+- `docs/NUTRITION-MATHS.md` - the owner-facing picture of every formula, band, reference value and rule the engine uses. **Any change to `packages/shared/src/nutrition` that alters a number or a rule updates this page in the same commit** (and its change log at the bottom).
 - `docs/DECISIONS.md` - big design decisions with options. Anything marked `proposed` is still the owner's call; you may build on the recommended option but say so.
 - `CHANGELOG.md` - what shipped per slice.
 - `docs/OUTSTANDING.md` - what is deferred or waiting on a decision after slice 5; the owner revisits it after a week of real use.
@@ -36,7 +37,7 @@ docker compose up -d db
 
 ## Non-negotiables
 1. **Phone first.** Design at 390x844; must work 360 to 430 wide; thumb-reachable; safe areas respected. Desktop is just a wide phone.
-2. **Nutrition math is deterministic.** All target, goal, scoring and gap math lives in `packages/shared/src/nutrition`, is pure, and is unit-tested against worked examples. AI explains and estimates; it never sets targets.
+2. **Nutrition math is deterministic.** All target, goal, scoring and gap math lives in `packages/shared/src/nutrition`, is pure, and is unit-tested against worked examples. AI explains and estimates; it never sets targets. Every rule is written up in `docs/NUTRITION-MATHS.md`; a change to one without the other is incomplete.
 3. **AI output is validated.** Every OpenAI call uses Structured Outputs against a zod schema from `packages/shared`. Parse before persisting. Log model, tokens, latency and purpose for every call.
 4. **Canonical units.** Energy kcal; macros g; minerals mg; vitamins mcg or mg exactly as the nutrient enum in `packages/shared` says. Never store mixed units.
 5. **A day is the user's local day.** Log days are `YYYY-MM-DD` in `profiles.timezone`. Never derive a day from server time.

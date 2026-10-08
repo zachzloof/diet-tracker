@@ -9,6 +9,7 @@ All user-visible changes, grouped by slice. Newest first.
 - A vitamin or mineral turns red only when the day's intake reaches its tolerable upper intake level (calcium, iron, zinc, iodine, vitamins A, C, D and E; D34 lists the numbers). The Targets screen says the level in each nutrient's reason. Nutrients with no food-based upper limit never go red.
 - Alcohol is gone from Today, Targets, the item editor and the manual food form, and it no longer counts towards anything: not the day verdict, not the weekly gaps, not the review. It is still estimated and kept on each entry, so it can come back later.
 - "Day met" follows the new bands: energy within 10% (was 20%), and a deciding limit fails the day past 110% (was 115%). Past days are rescored, so streaks and "days met" may change.
+- `docs/NUTRITION-MATHS.md` is the full write-up of every formula, band and rule, kept in step with the engine from now on.
 - Engine: `ENGINE_VERSION` 3; stored target versions are recomputed on boot. `HIDDEN_NUTRIENT_KEYS`, `VISIBLE_NUTRIENT_KEYS`, `UPPER_LIMIT` and `upperLimitFor` in `packages/shared/src/nutrition`.
 
 ### A logged meal is one row on Today (2026-10-08)

@@ -20,6 +20,7 @@ Two people at the same weight need very different targets: a 75 kg fighter in a 
 - `references/nutrients.md` - the `NutrientKey` enum with units, DRIs by sex and age, food-group serve definitions, scoring thresholds and gap rules. Read it before touching schemas, `evaluateDay`, `findGaps`, or any prompt that defines serves.
 
 ## Rules that must survive every refactor
+0. **`docs/NUTRITION-MATHS.md` moves with the code.** It is the owner's full picture of the maths. Any change to a band, formula, reference value, constant or rule in this package updates that page in the same commit, names the decision, and adds a line to the change log at its foot. Keep the two engine references in `references/` in step as well.
 1. **Pure and deterministic.** No `Date.now()`, no randomness, no I/O inside the engine. Age is an input, computed by the caller from `dob` and the user's local today.
 2. **Every number carries a reason.** `{ value: 150, unit: 'g', reason: '2.0 g/kg for lean gain with fighter training' }`. The targets screen and the AI explanation prompt both read these, so nobody has to reverse-engineer a number.
 3. **Ranges first, then a default inside the range.** Protein for fat loss is 1.8 to 2.4 g/kg with 2.0 as default. Overrides inside the range are accepted silently; outside the range they are accepted with a warning; below a safety floor they are refused unless the user explicitly confirms.
