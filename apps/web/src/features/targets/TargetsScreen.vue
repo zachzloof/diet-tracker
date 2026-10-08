@@ -38,10 +38,7 @@ const welcome = computed(() => route.query.welcome === '1')
 
 const SECTIONS: { title: string; keys: readonly TargetKey[] }[] = [
   { title: 'Macros', keys: ['protein_g', 'carbs_g', 'fat_g', 'fiber_g'] },
-  {
-    title: 'Limits',
-    keys: ['added_sugar_g', 'saturated_fat_g', 'sodium_mg', 'alcohol_std_drinks'],
-  },
+  { title: 'Limits', keys: ['added_sugar_g', 'saturated_fat_g', 'sodium_mg'] },
   { title: 'Hydration', keys: ['water_ml'] },
   { title: 'Vitamins, minerals and omega-3', keys: MICRO_KEYS },
   { title: 'Food groups', keys: FOOD_GROUP_KEYS },

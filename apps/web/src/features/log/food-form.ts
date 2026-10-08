@@ -1,6 +1,7 @@
 import {
   FOOD_GROUP_KEYS,
   NUTRIENT_KEYS,
+  VISIBLE_NUTRIENT_KEYS,
   emptyFoodGroupServes,
   emptyNutrientVector,
   foodInputSchema,
@@ -43,7 +44,7 @@ export const LABEL_NUTRIENTS: readonly NutrientKey[] = [
   'sodium_mg',
 ]
 
-export const MORE_NUTRIENTS: readonly NutrientKey[] = NUTRIENT_KEYS.filter(
+export const MORE_NUTRIENTS: readonly NutrientKey[] = VISIBLE_NUTRIENT_KEYS.filter(
   (key) => !LABEL_NUTRIENTS.includes(key),
 )
 

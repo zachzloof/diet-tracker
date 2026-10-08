@@ -29,8 +29,8 @@ const eaten = computed(() => energy.value?.actual ?? 0)
 const target = computed(() => energy.value?.target ?? 0)
 const remaining = computed(() => Math.round(target.value - eaten.value))
 /**
- * Past the target by the numbers, which is not the same as the `over` status: up to 120%
- * of energy still scores close, and 2,835 of 2,500 kcal is "335 kcal over" all the same.
+ * Past the target by the numbers, which is not the same as the `over` status: up to 110%
+ * of energy still scores close (D34), and 2,700 of 2,500 kcal is "200 kcal over" all the same.
  * The ring only turns red once the status is over.
  */
 const past = computed(() => remaining.value < 0)

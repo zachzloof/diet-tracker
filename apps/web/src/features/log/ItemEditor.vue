@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NUTRIENTS, NUTRIENT_KEYS, type NutrientKey } from '@diet-tracker/shared'
+import { NUTRIENTS, VISIBLE_NUTRIENT_KEYS, type NutrientKey } from '@diet-tracker/shared'
 import { computed, ref } from 'vue'
 import Icon from '@/components/ui/Icon.vue'
 import NumberField from '@/components/ui/NumberField.vue'
@@ -15,7 +15,7 @@ const props = defineProps<{ item: EditableItem; unit: string }>()
 const emit = defineEmits<{ edit: [change: ItemEdit] }>()
 
 const HEADLINE: readonly NutrientKey[] = ['energy_kcal', 'protein_g', 'carbs_g', 'fat_g']
-const MORE: readonly NutrientKey[] = NUTRIENT_KEYS.filter((key) => !HEADLINE.includes(key))
+const MORE: readonly NutrientKey[] = VISIBLE_NUTRIENT_KEYS.filter((key) => !HEADLINE.includes(key))
 
 const moreOpen = ref(false)
 

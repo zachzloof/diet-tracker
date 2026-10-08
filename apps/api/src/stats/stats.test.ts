@@ -122,18 +122,19 @@ describe('GET /api/v1/stats/week', () => {
     const body = weekStatsResponseSchema.parse(
       await (await send('GET', '/api/v1/stats/week')).json(),
     )
-    // Day by day (see the table in seed-weeks.ts): missed, met, met, met, met, met, unlogged.
-    // Finn is gaining, so sodium over on -5 no longer costs him the day (D31).
+    // Day by day (see the table in seed-weeks.ts): missed, missed, missed, met, met, missed, unlogged.
+    // Finn is gaining, so sodium over never costs him the day (D31); the 2700 kcal days are
+    // short under the D34 energy band (83%, below the 90% close line).
     expect(
       body.days.map((d) => (d.score.logged ? (d.score.dayMet ? 'met' : 'missed') : 'unlogged')),
-    ).toEqual(['missed', 'met', 'met', 'met', 'met', 'met', 'unlogged'])
+    ).toEqual(['missed', 'missed', 'missed', 'met', 'met', 'missed', 'unlogged'])
     expect(body.daysLogged).toBe(6)
-    expect(body.daysMet).toBe(5)
-    expect(body.streak).toBe(5)
+    expect(body.daysMet).toBe(2)
+    expect(body.streak).toBe(0)
 
     const [d6, d5, , d3, , d1, d0] = body.days
     // -6: 700 + 1500 + 370 = 2570 kcal (79%, short); protein 45 + 60 + 3 = 108 (72%, short);
-    // sodium 250 + 3400 + 30 = 3680 (160%, over); alcohol 4 drinks (over).
+    // sodium 250 + 3400 + 30 = 3680 (160%, over); alcohol 4 drinks (logged, hidden, unscored: D34).
     expect(d6?.score.scores.energy_kcal).toMatchObject({
       actual: 2570,
       target: 3250,
@@ -141,16 +142,16 @@ describe('GET /api/v1/stats/week', () => {
     })
     expect(d6?.score.scores.protein_g).toMatchObject({ actual: 108, status: 'short' })
     expect(d6?.score.scores.sodium_mg).toMatchObject({ actual: 3680, status: 'over' })
-    expect(d6?.score.scores.alcohol_std_drinks).toMatchObject({ actual: 4, status: 'over' })
-    // -5: 850 + 350 + 1500 = 2700 (83%, close); protein 150 (met); sodium 700 + 100 + 3400 = 4200 (over).
-    expect(d5?.score.scores.energy_kcal).toMatchObject({ actual: 2700, status: 'close' })
+    expect(d6?.score.scores.alcohol_std_drinks).toBeUndefined()
+    // -5: 850 + 350 + 1500 = 2700 (83%, short); protein 150 (met); sodium 700 + 100 + 3400 = 4200 (over).
+    expect(d5?.score.scores.energy_kcal).toMatchObject({ actual: 2700, status: 'short' })
     expect(d5?.score.scores.protein_g).toMatchObject({ actual: 150, status: 'met' })
     expect(d5?.score.scores.sodium_mg).toMatchObject({ actual: 4200, status: 'over' })
-    // -3: 700 + 850 + 950 + 600 = 3100 (95%, met); sodium 250 + 700 + 900 + 450 = 2300 exactly (met).
+    // -3: 700 + 850 + 950 + 600 = 3100 (95.4%, met); sodium 250 + 700 + 900 + 450 = 2300 exactly (met).
     expect(d3?.score.scores.energy_kcal).toMatchObject({ actual: 3100, status: 'met' })
     expect(d3?.score.scores.sodium_mg).toMatchObject({ actual: 2300, status: 'met' })
-    // -1: 700 + 350 + 950 + 600 = 2600, exactly 80% (close, not short).
-    expect(d1?.score.scores.energy_kcal).toMatchObject({ actual: 2600, status: 'close' })
+    // -1: 700 + 350 + 950 + 600 = 2600, exactly 80%: short under the D34 band.
+    expect(d1?.score.scores.energy_kcal).toMatchObject({ actual: 2600, status: 'short' })
     // Today: one breakfast of 700 kcal (22%) with one entry is unlogged.
     expect(d0?.score).toMatchObject({ logged: false, entryCount: 1 })
     expect(d0?.score.scores.energy_kcal?.actual).toBe(700)
@@ -200,10 +201,10 @@ describe('GET /api/v1/stats/week', () => {
     )
     expect(
       body.days.map((d) => (d.score.logged ? (d.score.dayMet ? 'met' : 'missed') : 'unlogged')),
-    ).toEqual(['missed', 'met', 'missed', 'missed', 'met', 'met', 'unlogged'])
+    ).toEqual(['missed', 'met', 'missed', 'missed', 'met', 'missed', 'unlogged'])
     expect(body.daysLogged).toBe(6)
-    expect(body.daysMet).toBe(3)
-    expect(body.streak).toBe(2)
+    expect(body.daysMet).toBe(2)
+    expect(body.streak).toBe(0)
 
     const [d6, , d4, d3] = body.days
     // -6: 400 + 500 + 650 + 450 = 2000 kcal (127%, over); protein 85 (85%, close); added sugar 49 of 39 (over).
@@ -214,12 +215,14 @@ describe('GET /api/v1/stats/week', () => {
     })
     expect(d6?.score.scores.protein_g).toMatchObject({ actual: 85, status: 'close' })
     expect(d6?.score.scores.added_sugar_g).toMatchObject({ actual: 49, status: 'over' })
-    // -4: 1750 kcal is 111%, just outside the met band (close); protein 56 (short).
-    expect(d4?.score.scores.energy_kcal).toMatchObject({ actual: 1750, status: 'close' })
+    // -4: 1750 kcal is 111%, just past the 110% close line (over); protein 56 (short).
+    expect(d4?.score.scores.energy_kcal).toMatchObject({ actual: 1750, status: 'over' })
     expect(d4?.score.scores.protein_g).toMatchObject({ actual: 56, status: 'short' })
-    // -3: saturated fat 2 + 3 + 12 + 0.2 = 17.2 of 17 (101%, close, not over).
+    // -3: 1490 kcal is 94.9%, just under the 95% met line (close).
+    expect(d3?.score.scores.energy_kcal).toMatchObject({ actual: 1490, status: 'close' })
+    // -3: saturated fat 2 + 3 + 12 + 0.2 = 17.2 of 17 (101%, met: a limit is met to 105%).
     expect(d3?.score.scores.saturated_fat_g?.actual).toBeCloseTo(17.2, 6)
-    expect(d3?.score.scores.saturated_fat_g?.status).toBe('close')
+    expect(d3?.score.scores.saturated_fat_g?.status).toBe('met')
 
     expect(body.gaps.map(rule)).toEqual([
       'protein_short:protein_g', // 3 days short or close; average 82.8 of 100 (83%)
@@ -264,7 +267,7 @@ describe('GET /api/v1/stats/week', () => {
     expect(yesterday.score.scores.energy_kcal?.target).toBe(3250)
     expect(now.score.scores.energy_kcal?.target).toBeGreaterThan(3250)
     // The past days did not change their verdicts.
-    expect(body.daysMet).toBe(5)
+    expect(body.daysMet).toBe(2)
   })
 })
 
@@ -286,7 +289,12 @@ describe('GET /api/v1/stats/month', () => {
     // On the first of a month yesterday belongs to the month before and is not listed.
     const yesterday = addDays(today(), -1)
     if (yesterday.startsWith(body.month)) {
-      expect(byDay.get(yesterday)).toMatchObject({ logged: true, dayMet: true })
+      // Tess's -1 is 1750 kcal, over the 110% line: logged, not met.
+      expect(byDay.get(yesterday)).toMatchObject({ logged: true, dayMet: false })
+    }
+    const twoDaysAgo = addDays(today(), -2)
+    if (twoDaysAgo.startsWith(body.month)) {
+      expect(byDay.get(twoDaysAgo)).toMatchObject({ logged: true, dayMet: true })
     }
     expect(byDay.get(today())).toMatchObject({ logged: false, dayMet: false })
 

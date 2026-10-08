@@ -82,10 +82,10 @@ describe('weekly-review prompt', () => {
       /gain muscle.*protein is at least 90%.*no limit affects/,
     )
     expect(dayMetSentence(computeTargets({ ...base, goal: 'lose', pace: null }))).toMatch(
-      /added sugar is not more than 15% over the limit/,
+      /added sugar is not more than 10% over the limit/,
     )
     expect(dayMetSentence(computeTargets({ ...base, goal: 'maintain', pace: null }))).toMatch(
-      /protein is at least 75%.*sodium, saturated fat, added sugar, alcohol are not more than 15% over/,
+      /protein is at least 75%.*sodium, saturated fat, added sugar are not more than 10% over/,
     )
   })
 
@@ -98,13 +98,16 @@ describe('weekly-review prompt', () => {
     expect(message).toMatch(/Diet pattern: Omnivore/)
     expect(message).toMatch(/Dislikes: liver/)
     expect(message).toMatch(/WEEK \(Sun 20 Sep to Sat 26 Sep; today is Sat 26 Sep\)/)
-    expect(message).toMatch(/Days logged: 6 of 7\. Days met: 5\. Current streak: 5 days\./)
+    expect(message).toMatch(/energy is within 10% of target/)
+    expect(message).toMatch(/Days logged: 6 of 7\. Days met: 2\. Current streak: 0 days\./)
+    // Alcohol was logged on this day but is hidden (D34): it never appears in the prompt.
     expect(message).toMatch(
-      /- Sun 20 Sep: energy 2570 \/ 3250 kcal, protein 108 \/ 150 g, .*: missed \(energy short, protein short, carbs short, sodium over, water short, alcohol over\)/,
+      /- Sun 20 Sep: energy 2570 \/ 3250 kcal, protein 108 \/ 150 g, .*: missed \(energy short, protein short, carbs short, sodium over, water short\)/,
     )
-    expect(message).toMatch(/- Tue 22 Sep: energy 2700 \/ 3250 kcal, .*: met/)
+    expect(message).not.toMatch(/alcohol/i)
+    expect(message).toMatch(/- Wed 23 Sep: energy 3100 \/ 3250 kcal, .*: met/)
     expect(message).toMatch(/- Sat 26 Sep: today, in progress \(700 kcal so far\)/)
-    expect(message).toMatch(/- Energy: 2770 \/ 3250 kcal \(85%\), met on 2 of 6 days/)
+    expect(message).toMatch(/- Energy: 2770 \/ 3250 kcal \(85%\), met on 1 of 6 days/)
     expect(message).toMatch(/- Vegetables: 2\.5 \/ 6 serves \(42%\), met on 0 of 6 days/)
     expect(message).toMatch(/KEY TARGETS\n- Energy: 3250 kcal\./)
     expect(message).toMatch(

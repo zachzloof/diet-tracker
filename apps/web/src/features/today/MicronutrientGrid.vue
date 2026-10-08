@@ -14,19 +14,15 @@ import ContributorsPanel from './ContributorsPanel.vue'
 import NutrientTile from './NutrientTile.vue'
 
 /**
- * Vitamins, minerals and omega-3 as a grid of small tiles with a met / close / short status, and
- * the limits (sodium, saturated fat, added sugar, alcohol) below them. Every tile carries
+ * Vitamins, minerals and omega-3 as a grid of small tiles with a met / close / short status
+ * (or over, at a tolerable upper intake level), and
+ * the limits (sodium, saturated fat, added sugar) below them. Every tile carries
  * the status word, so colour is never the only signal. Tap a tile to open, under its row,
  * the entries that supplied it; one tile is open at a time across both grids.
  */
 const props = defineProps<{ score: DayScore; entries: LogEntry[]; isToday: boolean }>()
 
-const LIMIT_KEYS: readonly NutrientKey[] = [
-  'sodium_mg',
-  'saturated_fat_g',
-  'added_sugar_g',
-  'alcohol_std_drinks',
-]
+const LIMIT_KEYS: readonly NutrientKey[] = ['sodium_mg', 'saturated_fat_g', 'added_sugar_g']
 const MICRO_COLUMNS = 3
 const LIMIT_COLUMNS = 2
 
