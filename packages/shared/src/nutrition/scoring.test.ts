@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { NO_FLAGS } from '../profile.js'
 import { emptyFoodGroupServes, emptyNutrientVector, type NutrientVector } from './nutrients.js'
-import { dayMetRule, evaluateDay, scoreTarget, type DayTotals } from './scoring.js'
+import {
+  WATER_CAUTION_ML,
+  dayMetRule,
+  evaluateDay,
+  scoreTarget,
+  type DayTotals,
+} from './scoring.js'
 import { computeTargets, targetFor, type TargetInput, type TargetKey } from './targets.js'
 
 /** Finn from targets.md: energy 3250, protein 150, carbs 460, fat 90, fibre 45, sodium 2300. */
@@ -68,14 +74,16 @@ describe('scoreTarget', () => {
     expect(scoreTarget(carbs, 622).status).toBe('over')
   })
 
-  it('scores water with the same band as energy', () => {
+  it('scores water as met from 95%, close from 90%, never over', () => {
     const water = entry('water_ml') // 3250
     expect(scoreTarget(water, 3100).status).toBe('met') // 0.954
-    expect(scoreTarget(water, 3400).status).toBe('met') // 1.046
+    expect(scoreTarget(water, 3087.5).status).toBe('met') // 0.95 exactly
+    expect(scoreTarget(water, 3087).status).toBe('close')
     expect(scoreTarget(water, 2925).status).toBe('close') // 0.90
-    expect(scoreTarget(water, 3575).status).toBe('close') // 1.10
     expect(scoreTarget(water, 2924).status).toBe('short')
-    expect(scoreTarget(water, 5000).status).toBe('over')
+    expect(scoreTarget(water, 5000).status).toBe('met')
+    expect(scoreTarget(water, 9000).status).toBe('met') // the UI cautions above WATER_CAUTION_ML
+    expect(WATER_CAUTION_ML).toBe(4000)
   })
 
   it('scores minimums: met from 95%, close from 90%', () => {

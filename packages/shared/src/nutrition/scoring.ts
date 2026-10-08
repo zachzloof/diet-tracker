@@ -16,7 +16,9 @@ import { targetKeySchema, type TargetEntry, type TargetKey, type Targets } from 
  * Today screen, so the two can never disagree.
  *
  * Per-target status from actual / target (D34 bands):
- * - goal (energy, water): met 0.95 to 1.05, close 0.90 to 1.10, else short or over
+ * - goal (energy): met 0.95 to 1.05, close 0.90 to 1.10, else short or over
+ * - goal (water): met >= 0.95, close 0.90 to 0.95, else short; never over (the UI shows a
+ *   caution above `WATER_CAUTION_ML` instead)
  * - goal (protein): met >= 0.90, close 0.75 to 0.90, else short; never over
  * - goal (carbs, fat): met 0.80 to 1.20, close 0.65 to 1.35, else short or over
  * - minimum: met >= 0.95, close 0.90 to 0.95, else short; over at or above `overAbove`
@@ -128,8 +130,13 @@ const BANDS: Readonly<Record<'energy' | 'protein' | 'macro' | 'water', Band>> = 
   energy: { metMin: 0.95, metMax: 1.05, closeMin: 0.9, closeMax: 1.1 },
   protein: { metMin: 0.9, metMax: Infinity, closeMin: 0.75, closeMax: Infinity },
   macro: { metMin: 0.8, metMax: 1.2, closeMin: 0.65, closeMax: 1.35 },
-  water: { metMin: 0.95, metMax: 1.05, closeMin: 0.9, closeMax: 1.1 },
+  water: { metMin: 0.95, metMax: Infinity, closeMin: 0.9, closeMax: Infinity },
 }
+/**
+ * Water is never "over" (D34), but above this the Today card shows a caution: more than
+ * most people need in a day unless they are training hard in the heat.
+ */
+export const WATER_CAUTION_ML = 4000
 /** Minimums: met from 95%, close from 90%. */
 const MINIMUM_MET = 0.95
 const MINIMUM_CLOSE = 0.9

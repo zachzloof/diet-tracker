@@ -104,7 +104,7 @@ Per-target status from `actual / target`:
 | goal (energy) | 0.95 to 1.05 | 0.90 to 1.10 | below 0.90 short, above 1.10 over |
 | goal (protein) | >= 0.90 | 0.75 to 0.90 | below 0.75 short; never "over" |
 | goal (carbs, fat) | 0.80 to 1.20 | 0.65 to 1.35 | outside: short or over |
-| goal (water) | 0.95 to 1.05 | 0.90 to 1.10 | below 0.90 short, above 1.10 over |
+| goal (water) | >= 0.95 | 0.90 to 0.95 | below 0.90 short; never over. The Today card shows a caution in words at or above `WATER_CAUTION_ML` (4000 ml) |
 | minimum | >= 0.95 | 0.90 to 0.95 | below 0.90 short; `over` at or above the UL (`overAbove`) when the nutrient has one |
 | limit | <= 1.05 | 1.05 to 1.10 | above 1.10 over |
 | info, hidden (alcohol) | not scored | | |

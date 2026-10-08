@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  WATER_CAUTION_ML,
   WATER_QUICK_ADD_ML,
   isWaterEntry,
   waterEntryInput,
@@ -35,6 +36,8 @@ const target = computed(() => water.value?.target ?? 0)
 const glasses = computed(() => props.entries.filter(isWaterEntry))
 const lastGlass = computed(() => glasses.value[glasses.value.length - 1] ?? null)
 const busy = computed(() => create.isPending.value || remove.isPending.value)
+/** Water never scores "over"; past 4 litres the card says so in words instead (D34). */
+const caution = computed(() => actual.value >= WATER_CAUTION_ML)
 
 function add(): void {
   create.mutate(
@@ -70,6 +73,14 @@ function undo(): void {
       <span class="text-sm text-fg-muted">/ {{ formatNumber(target, 0) }} ml</span>
     </div>
     <ProgressBar class="mt-3" :value="actual" :max="target" color="water" label="Water" />
+    <p v-if="caution" class="mt-2 flex items-start gap-1.5 text-xs text-fg" role="status">
+      <Icon name="alert" :size="14" class="mt-px shrink-0 text-close" aria-hidden="true" />
+      <span>
+        Over {{ formatNumber(WATER_CAUTION_ML / 1000, 0) }} litres today. That is more than most
+        people need in a day unless you are training hard or in the heat; ease off and let thirst
+        lead.
+      </span>
+    </p>
     <div class="mt-3 flex items-center gap-2">
       <Button class="flex-1" :loading="create.isPending.value" :disabled="busy" @click="add">
         <Icon name="plus" :size="20" /> {{ WATER_QUICK_ADD_ML }} ml
