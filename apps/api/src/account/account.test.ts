@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_EXPORT_SCHEMA_VERSION,
   accountExportSchema,
   apiErrorSchema,
   emptyFoodGroupServes,
@@ -174,7 +175,7 @@ describe('GET /api/v1/account/export', () => {
     expect(data.weightEntries.length).toBeGreaterThanOrEqual(8)
     expect(data.savedMeals).toHaveLength(1)
     expect(data.savedMeals[0]).toMatchObject({ name: 'Porridge', items: porridge.items })
-    expect(data.app.schema).toBe(2)
+    expect(data.app.schema).toBe(ACCOUNT_EXPORT_SCHEMA_VERSION)
     expect(data.dailySummaries.length).toBeGreaterThan(0)
     expect(data.aiUsage.calls).toBe(0)
     const rows = await db.select().from(logEntries)

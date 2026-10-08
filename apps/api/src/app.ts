@@ -15,6 +15,7 @@ import { profileRoutes, targetsRoutes } from './profile/routes.js'
 import { recalibrationRoutes, weightRoutes } from './progress/routes.js'
 import { meRoutes } from './routes/me.js'
 import { statsRoutes, weeklyReviewRoutes } from './stats/routes.js'
+import { exercisesRoutes, workoutsRoutes } from './training/routes.js'
 import { registerStatic } from './static.js'
 import type { AppEnv } from './types.js'
 
@@ -72,6 +73,8 @@ export function createApp(): Hono<AppEnv> {
   app.route('/api/v1/stats', statsRoutes)
   app.route('/api/v1/weight', weightRoutes)
   app.route('/api/v1/recalibration', recalibrationRoutes)
+  app.route('/api/v1/exercises', exercisesRoutes)
+  app.route('/api/v1/workouts', workoutsRoutes)
   app.route('/api/v1/account', accountRoutes)
 
   // Unknown API paths get the JSON error format, never the SPA fallback.

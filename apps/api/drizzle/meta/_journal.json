@@ -71,6 +71,13 @@
       "when": 1791455533712,
       "tag": "0009_log_entry_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791470034618,
+      "tag": "0010_training",
+      "breakpoints": true
     }
   ]
 }

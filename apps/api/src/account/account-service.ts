@@ -12,6 +12,7 @@ import { db } from '../db/client.js'
 import {
   aiCalls,
   dailySummaries,
+  exercises,
   foods,
   logEntries,
   sessions,
@@ -28,6 +29,8 @@ import { passwordAttemptLimiter } from '../middleware/rate-limit.js'
 import { getProfile } from '../profile/profile-service.js'
 import { toWireVersion } from '../profile/targets-service.js'
 import { allWeights, toWireWeight } from '../progress/weight-service.js'
+import { toWireExercise } from '../training/exercises-service.js'
+import { allWorkouts } from '../training/workouts-service.js'
 
 /**
  * Account housekeeping (slice 5): change password, export everything, delete everything.
@@ -74,42 +77,59 @@ export async function deleteAccount(user: User, password: string): Promise<void>
 }
 
 export async function exportAccount(user: User, now: Date = new Date()): Promise<AccountExport> {
-  const [profile, versions, weights, library, meals, entries, summaries, reviews, usage] =
-    await Promise.all([
-      getProfile(user.id),
-      db
-        .select()
-        .from(targetVersions)
-        .where(eq(targetVersions.userId, user.id))
-        .orderBy(asc(targetVersions.effectiveFrom), asc(targetVersions.createdAt)),
-      allWeights(user.id),
-      db.select().from(foods).where(eq(foods.userId, user.id)).orderBy(asc(foods.createdAt)),
-      listSavedMeals(user.id, 'created'),
-      db
-        .select()
-        .from(logEntries)
-        .where(eq(logEntries.userId, user.id))
-        .orderBy(asc(logEntries.day), asc(logEntries.loggedAt), asc(logEntries.createdAt)),
-      db
-        .select()
-        .from(dailySummaries)
-        .where(eq(dailySummaries.userId, user.id))
-        .orderBy(asc(dailySummaries.day)),
-      db
-        .select()
-        .from(weeklyReviews)
-        .where(eq(weeklyReviews.userId, user.id))
-        .orderBy(asc(weeklyReviews.weekEnd)),
-      db
-        .select({
-          calls: sql<number>`count(*)::int`,
-          inputTokens: sql<number>`coalesce(sum(${aiCalls.inputTokens}), 0)::int`,
-          outputTokens: sql<number>`coalesce(sum(${aiCalls.outputTokens}), 0)::int`,
-          webSearchCalls: sql<number>`coalesce(sum(${aiCalls.webSearchCalls}), 0)::int`,
-        })
-        .from(aiCalls)
-        .where(eq(aiCalls.userId, user.id)),
-    ])
+  const [
+    profile,
+    versions,
+    weights,
+    library,
+    meals,
+    entries,
+    summaries,
+    reviews,
+    usage,
+    customExercises,
+    workoutDocs,
+  ] = await Promise.all([
+    getProfile(user.id),
+    db
+      .select()
+      .from(targetVersions)
+      .where(eq(targetVersions.userId, user.id))
+      .orderBy(asc(targetVersions.effectiveFrom), asc(targetVersions.createdAt)),
+    allWeights(user.id),
+    db.select().from(foods).where(eq(foods.userId, user.id)).orderBy(asc(foods.createdAt)),
+    listSavedMeals(user.id, 'created'),
+    db
+      .select()
+      .from(logEntries)
+      .where(eq(logEntries.userId, user.id))
+      .orderBy(asc(logEntries.day), asc(logEntries.loggedAt), asc(logEntries.createdAt)),
+    db
+      .select()
+      .from(dailySummaries)
+      .where(eq(dailySummaries.userId, user.id))
+      .orderBy(asc(dailySummaries.day)),
+    db
+      .select()
+      .from(weeklyReviews)
+      .where(eq(weeklyReviews.userId, user.id))
+      .orderBy(asc(weeklyReviews.weekEnd)),
+    db
+      .select({
+        calls: sql<number>`count(*)::int`,
+        inputTokens: sql<number>`coalesce(sum(${aiCalls.inputTokens}), 0)::int`,
+        outputTokens: sql<number>`coalesce(sum(${aiCalls.outputTokens}), 0)::int`,
+        webSearchCalls: sql<number>`coalesce(sum(${aiCalls.webSearchCalls}), 0)::int`,
+      })
+      .from(aiCalls)
+      .where(eq(aiCalls.userId, user.id)),
+    db
+      .select()
+      .from(exercises)
+      .where(eq(exercises.userId, user.id))
+      .orderBy(asc(exercises.createdAt)),
+    allWorkouts(user.id),
+  ])
   const ai = usage[0] ?? { calls: 0, inputTokens: 0, outputTokens: 0, webSearchCalls: 0 }
   return accountExportSchema.parse({
     exportedAt: now.toISOString(),
@@ -120,6 +140,8 @@ export async function exportAccount(user: User, now: Date = new Date()): Promise
     weightEntries: weights.map(toWireWeight),
     foods: library.map(toWireFood),
     savedMeals: meals,
+    exercises: customExercises.map((row) => toWireExercise(row)),
+    workouts: workoutDocs,
     logEntries: entries.map(toWireEntry),
     dailySummaries: summaries.map((row) => toWireSummary(row, row.day)),
     weeklyReviews: reviews.map((row) => ({ isoWeek: row.isoWeek, ...row.review })),

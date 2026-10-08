@@ -19,7 +19,9 @@ export interface PurgeResult {
  * weekly reviews and AI usage rows go by their day. A target version goes only once a
  * newer version was already in force at the cutoff, so every day that is kept is still
  * scored against the targets it had. The account, the profile, the current targets and the
- * saved foods and meals are not history and stay until the person deletes them.
+ * saved foods and meals are not history and stay until the person deletes them. Workouts and
+ * custom exercises are history but are kept on purpose (D36): a strength log is only useful
+ * as a long series.
  *
  * The cutoff is a UTC calendar day; a person's local day differs by at most a day, which
  * does not matter at six months.

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { storedWeeklyReviewSchema } from './ai/schemas.js'
 import { PASSWORD_MAX_LENGTH, newPasswordSchema, publicUserSchema } from './auth.js'
 import { dailySummarySchema, foodSchema, logEntrySchema, savedMealSchema } from './log/schemas.js'
+import { exerciseSchema, workoutSchema } from './training/schemas.js'
 import { profileSchema } from './profile.js'
 import { weightEntrySchema } from './progress-api.js'
 import { targetVersionSchema } from './targets-api.js'
@@ -46,6 +47,9 @@ export const accountExportSchema = z.object({
   weightEntries: z.array(weightEntrySchema),
   foods: z.array(foodSchema),
   savedMeals: z.array(savedMealSchema),
+  /** The person's own exercises; the shared catalogue is not theirs to export. */
+  exercises: z.array(exerciseSchema),
+  workouts: z.array(workoutSchema),
   logEntries: z.array(logEntrySchema),
   dailySummaries: z.array(dailySummarySchema),
   weeklyReviews: z.array(exportedWeeklyReviewSchema),
@@ -58,5 +62,5 @@ export const accountExportSchema = z.object({
 })
 export type AccountExport = z.infer<typeof accountExportSchema>
 
-/** 2 added `savedMeals`. */
-export const ACCOUNT_EXPORT_SCHEMA_VERSION = 2
+/** 2 added `savedMeals`; 3 added `exercises` (custom only) and `workouts` (slice 8). */
+export const ACCOUNT_EXPORT_SCHEMA_VERSION = 3
