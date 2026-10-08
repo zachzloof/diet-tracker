@@ -117,14 +117,18 @@ describe('scoreTarget', () => {
     expect(scoreTarget(entry('magnesium_mg'), 900).status).toBe('met')
   })
 
-  it('scores limits: met to 105%, close to 110%, over beyond', () => {
+  it('scores limits: met to the limit, close to 105%, over beyond', () => {
     const sodium = entry('sodium_mg') // 2300
-    expect(scoreTarget(sodium, 2300).status).toBe('met')
-    expect(scoreTarget(sodium, 2415).status).toBe('met') // 1.05 exactly
-    expect(scoreTarget(sodium, 2416).status).toBe('close')
-    expect(scoreTarget(sodium, 2530).status).toBe('close') // 1.10 exactly
-    expect(scoreTarget(sodium, 2531).status).toBe('over')
+    expect(scoreTarget(sodium, 2300).status).toBe('met') // 1.00 exactly
+    expect(scoreTarget(sodium, 2301).status).toBe('close') // 1 mg over is already close
+    expect(scoreTarget(sodium, 2415).status).toBe('close') // 1.05 exactly
+    expect(scoreTarget(sodium, 2416).status).toBe('over')
     expect(scoreTarget(sodium, 0).status).toBe('met')
+    // Saturated fat over by a gram reads close, not met.
+    const satFat = entry('saturated_fat_g')
+    expect(scoreTarget(satFat, satFat.value).status).toBe('met')
+    expect(scoreTarget(satFat, satFat.value + 1).status).toBe('close')
+    expect(scoreTarget(satFat, satFat.value * 1.06).status).toBe('over')
   })
 
   it('gives alcohol no target and no score (hidden, D34)', () => {
@@ -198,9 +202,9 @@ describe('evaluateDay', () => {
     const sugary = evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.3 }), lose)
     expect(sugary.scores.added_sugar_g?.status).toBe('over')
     expect(sugary.dayMet).toBe(false)
-    // Within the 10% close band is still met.
-    expect(evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.1 }), lose).dayMet).toBe(true)
-    expect(evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.11 }), lose).dayMet).toBe(false)
+    // Within the 5% close band is still met.
+    expect(evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.05 }), lose).dayMet).toBe(true)
+    expect(evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.06 }), lose).dayMet).toBe(false)
   })
 
   it('maintain: every limit decides the day, and close protein is enough', () => {

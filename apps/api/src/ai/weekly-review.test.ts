@@ -84,10 +84,10 @@ describe('weekly-review prompt', () => {
       /gain muscle.*protein is at least 90%.*no limit affects/,
     )
     expect(dayMetSentence(computeTargets({ ...base, goal: 'lose', pace: null }))).toMatch(
-      /added sugar is not more than 10% over the limit/,
+      /added sugar is not more than 5% over the limit/,
     )
     expect(dayMetSentence(computeTargets({ ...base, goal: 'maintain', pace: null }))).toMatch(
-      /protein is at least 75%.*sodium, saturated fat, added sugar are not more than 10% over/,
+      /protein is at least 75%.*sodium, saturated fat, added sugar are not more than 5% over/,
     )
   })
 

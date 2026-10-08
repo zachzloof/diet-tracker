@@ -132,7 +132,7 @@ export function dayMetSentence(targets: Targets): string {
   const limits =
     rule.decidingLimits.length === 0
       ? 'no limit affects whether the day is met for this goal'
-      : `${rule.decidingLimits.map((k) => label(k).toLowerCase()).join(', ')} ${rule.decidingLimits.length === 1 ? 'is' : 'are'} not more than 10% over the limit`
+      : `${rule.decidingLimits.map((k) => label(k).toLowerCase()).join(', ')} ${rule.decidingLimits.length === 1 ? 'is' : 'are'} not more than 5% over the limit`
   return `A day is met (for the goal "${GOAL_LABELS[rule.goal].label.toLowerCase()}") when energy is within 10% of target, ${protein} and ${limits}.`
 }
 

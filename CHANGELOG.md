@@ -4,6 +4,10 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Limits read "close" the moment you pass them (2026-10-08)
+- Sodium, saturated fat and added sugar are "met" (green) only up to the limit itself. One gram over is "close" (orange) up to 5% past the limit, and "over" (red) beyond that. Before, up to 5% over still read met and close ran to 10%.
+- For goals where a limit decides the day (added sugar when losing; all three when maintaining), the day now fails past 5% over rather than 10%. Past days are rescored when you open them; nothing is stored.
+
 ### Preferences (2026-10-08)
 - Settings now has a Preferences page: turn off water tracking, turn off the gym features, or switch to "Macros only" (calories, protein, carbs, fat and fibre). Everything is on to begin with, each change saves on its own, and nothing you logged is lost: vitamins, minerals, water and workouts are still estimated and kept, just not shown until you turn them back on.
 - Water off hides the water card on Today, the Hydration target and the water row and gap on Week. Workouts off hides the Training card on Today and Workouts under You. Macros only hides the vitamins grid, food groups and limits on Today, the matching sections on Targets, the sodium row on Week (the Nutrients tile becomes "Protein, days hit"), and asks for fibre alone under "More nutrients" when you edit an entry.

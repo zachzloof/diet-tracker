@@ -220,9 +220,9 @@ describe('GET /api/v1/stats/week', () => {
     expect(d4?.score.scores.protein_g).toMatchObject({ actual: 56, status: 'short' })
     // -3: 1490 kcal is 94.9%, just under the 95% met line (close).
     expect(d3?.score.scores.energy_kcal).toMatchObject({ actual: 1490, status: 'close' })
-    // -3: saturated fat 2 + 3 + 12 + 0.2 = 17.2 of 17 (101%, met: a limit is met to 105%).
+    // -3: saturated fat 2 + 3 + 12 + 0.2 = 17.2 of 17 (101%, close: a limit is met only to 100%, close to 105%).
     expect(d3?.score.scores.saturated_fat_g?.actual).toBeCloseTo(17.2, 6)
-    expect(d3?.score.scores.saturated_fat_g?.status).toBe('met')
+    expect(d3?.score.scores.saturated_fat_g?.status).toBe('close')
 
     expect(body.gaps.map(rule)).toEqual([
       'protein_short:protein_g', // 3 days short or close; average 82.8 of 100 (83%)

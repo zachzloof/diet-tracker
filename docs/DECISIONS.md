@@ -541,7 +541,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Consequences.** Water was briefly given an "over" status above 110%; the owner asked for no "over" on water and a caution past 4 litres instead, which is what shipped. "Day met" is stricter: energy must be within 10% rather than 20%, and a deciding limit fails the day past 110% rather than 115%. Retroactive, like D31: history rescored on deploy; Finn's seeded week drops from 5 met days to 2, Tess's from 3 to 2. `ENGINE_VERSION` is 3 so every stored target version is recomputed on boot (the alcohol entry disappears, micronutrient entries gain `overAbove`). The weekly review prompt states the new numbers.
 
-**Status.** `adopted` (2026-10-08) on the owner's instruction, water caution included.
+**Status.** `adopted` (2026-10-08) on the owner's instruction, water caution included. Follow-up the same day: the owner saw saturated fat 1 g over read "met", so limits now have no tolerance on the met side: met to 100%, close to 105%, over past 105%. A deciding limit fails the day past 105%.
 
 ---
 

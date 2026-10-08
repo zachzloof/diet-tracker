@@ -168,7 +168,7 @@ Every target is scored as `ratio = eaten / target`, then given a status: **met**
 | protein | 90% and up | 75 to 90% | under 75% | never |
 | carbs, fat | 80 to 120% | 65 to 80% and 120 to 135% | under 65% | over 135% |
 | minimums: fibre, every vitamin and mineral, omega-3, food groups | 95% and up | 90 to 95% | under 90% | only at or above the upper limit in 1.9; nutrients without one never go red |
-| limits: sodium, saturated fat, added sugar | up to 105% | 105 to 110% | not applicable | over 110% |
+| limits: sodium, saturated fat, added sugar | up to the limit (100%) | over the limit, up to 105% | not applicable | over 105% |
 | info (total sugar, legumes, nuts and seeds) | unscored | | | |
 | hidden (alcohol) | unscored, not shown | | | |
 
@@ -180,7 +180,7 @@ A day with fewer than 2 food entries **and** under 40% of the energy target is "
 
 The verdict follows the goal the targets were built for (D31). Energy must be met or close (within 10%) for everyone. Then:
 
-| goal | protein must be | limits that fail the day when over (past 110%) |
+| goal | protein must be | limits that fail the day when over (past 105%) |
 |---|---|---|
 | gain, recomp | met (90%+) | none; limits are shown but never decide the day |
 | lose | met (90%+) | added sugar only |
@@ -285,4 +285,5 @@ BMR 1189. TDEE 1843. Energy 1843 − 275 = 1568, rounded 1570 kcal (deficit 14.9
 
 ## Change log for this page
 
+- 2026-10-08 (D34 follow-up): limits now read met only up to the limit itself, close from there to 105%, over past 105% (was met to 105%, close to 110%). A deciding limit fails the day past 105%.
 - 2026-10-08 (D34): page created. Energy met within 5%, close within 10%; water met from 95%, never over, caution at 4 litres; minimums met from 95%, red only at the UL; limits met to 105%, close to 110%; alcohol hidden. Upper-limit table added.

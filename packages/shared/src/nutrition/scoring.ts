@@ -23,7 +23,7 @@ import { targetKeySchema, type TargetEntry, type TargetKey, type Targets } from 
  * - goal (carbs, fat): met 0.80 to 1.20, close 0.65 to 1.35, else short or over
  * - minimum: met >= 0.95, close 0.90 to 0.95, else short; over at or above `overAbove`
  *   (the tolerable upper intake level) when the entry carries one
- * - limit: met <= 1.05, close 1.05 to 1.10, else over
+ * - limit: met <= 1.00, close 1.00 to 1.05, else over (any amount past the limit is at least close)
  * - info, and any hidden nutrient (alcohol): not scored
  *
  * `dayMet` depends on the goal the targets were computed for (`dayMetRule`, D31): energy met
@@ -140,9 +140,9 @@ export const WATER_CAUTION_ML = 4000
 /** Minimums: met from 95%, close from 90%. */
 const MINIMUM_MET = 0.95
 const MINIMUM_CLOSE = 0.9
-/** Limits: met up to 105%, close up to 110%, over beyond. */
-const LIMIT_MET = 1.05
-const LIMIT_CLOSE = 1.1
+/** Limits: met up to the limit itself, close up to 105%, over beyond. */
+const LIMIT_MET = 1
+const LIMIT_CLOSE = 1.05
 
 function goalBand(key: TargetKey): Band {
   switch (key) {
