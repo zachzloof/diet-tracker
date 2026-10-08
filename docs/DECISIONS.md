@@ -540,3 +540,20 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **Recommendation.** A, taken. C stays the natural shape for "Save as a meal" on an existing day-log group; it would be additive.
 
 **Status.** `adopted` (2026-10-07), slice 7.
+
+---
+
+## D33. A logged meal is one row on Today (adopted)
+
+**Context.** Logging a saved meal wrote one `log_entries` row per ingredient (D29) and Today listed them all, so "My favourite pasta bake" showed as four lines of pasta, chicken, sauce and cheese. The owner wants it as one entry named after the meal, with the ingredients a tap away to view or edit.
+
+**Options.**
+- **A. Group the rows.** Built. Two nullable columns on `log_entries`, `group_id` and `group_name` (migration 0009), stamped by `POST /log/entries` on every non-water entry when the request carries `savedMealId` (the saved meal's name) or `saveAsMeal` (that name). No foreign key: the saved meal can be renamed or deleted and the logged meal keeps the name it was logged under. The day log collapses rows that share a group into one row with the meal's total; tapping it opens a sheet listing the ingredients, each opening the ordinary item editor. Two new routes move or delete the whole group in one transaction (`PATCH` and `DELETE /log/groups/:id`). Totals, scoring, gaps and the export are untouched because the rows are the same rows.
+- **B. One row per logged meal, ingredients in JSONB.** Fewer rows, but every piece of code that sums, scores, exports or edits entries would need a second shape, and editing one ingredient becomes a partial update of a document.
+- **C. Group in the browser by `logged_at` and `saved_meal_id`.** No migration, but a meal logged with "Add to meals" has no saved meal id until after the write, two meals logged in the same second would merge, and a deleted saved meal would take its name with it.
+
+**Rules.** A quantity or nutrient edit on an ingredient keeps it in the meal. Moving one ingredient to another meal of the day or another day on its own takes it out of the group (`group_id` cleared), which the editor says in a line under the pickers; the rest stay together. A saved meal id that is not the person's logs the ingredients ungrouped rather than failing, as before. Entries logged before 2026-10-08 have no group and show singly. Offline, the queued ingredients show as one pending row when the meal's name is in the mirrored meals list (or came from "Add to meals"), and singly otherwise until they are sent.
+
+**Recommendation.** A, taken. Additive, boot-safe, and C's "Save as a meal" on a day-log group (D32) would now have a natural anchor: the group.
+
+**Status.** `adopted` (2026-10-08) on the owner's request.

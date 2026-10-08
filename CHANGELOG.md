@@ -4,6 +4,13 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### A logged meal is one row on Today (2026-10-08)
+- When you log a saved meal, Today now shows it as one entry under the meal's name ("My favourite pasta bake · 4 ingredients · 510 g · 744 kcal") with a fork-and-knife badge, instead of one line per ingredient. The same goes for a described meal you kept with "Add to meals". The meal's calories count towards the meal-of-the-day subtotal as before.
+- Tap the meal to open it: a sheet with the meal's total and macros, its ingredients with their amounts and calories, the meal and day pickers, "Move the whole meal" and "Delete the whole meal" (tap twice). Tap an ingredient to change its amount or nutrients, or remove just that one, in the usual item editor; the meal sheet comes back when you are done. Moving a single ingredient to another meal or day takes it out of the meal (the editor says so); the rest stay together.
+- Meals logged before today show as they did, one line per ingredient, because they were not stored as a meal.
+- Offline, a saved meal you log shows as one pending row.
+- API: `log_entries` gains `group_id` and `group_name` (migration 0009, D33); `POST /log/entries` stamps them when `savedMealId` or `saveAsMeal` is sent; new `PATCH /log/groups/:id` (meal and/or day) and `DELETE /log/groups/:id`. Entries on the wire carry `groupId` and `groupName`. Web: `groupEntries` and `mealSections` in `apps/web/src/features/log/day-groups.ts`, `MealGroupSheet.vue`.
+
 ### Log a meal by grams (2026-10-07)
 - When you log a saved meal there is now a Portions / Grams switch above the amount. In Grams, type what you weighed out and the card works out the portions from what one portion of the saved meal weighs (its ingredients' grams added up): a 265 g meal served as 133 g is 0.5 portions, and every ingredient and the total scale to match. The helper line under the field says the portion weight and the portions it comes to, and the Portions field says the weight too. Switching between the two keeps the amount. Handy for bulk cooking: save the whole batch as one meal, weigh out what you eat.
 - Grams is only offered when the saved meal's ingredients carry a weight. The same cap applies as for portions (20 portions' worth of grams).

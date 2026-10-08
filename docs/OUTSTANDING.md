@@ -31,6 +31,7 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 
 ## Worth watching during the week
 
+- **Logged meals as one row** (D33, 2026-10-08). Does the meal sheet cover what you reach for (edit an ingredient, move or delete the lot)? Two things were left out on purpose: "Save as a meal" from a logged meal that came from the estimator without the tickbox, and re-logging a meal from its row on Today. Meals logged before 2026-10-08 stay as separate lines.
 - **Goal-aware "day met"** (D31, 2026-10-07). After a week: does the maintain rule (protein close is enough, every limit counts) feel right for anyone on that goal, and should lose also count alcohol? Both are one-line changes in `dayMetRule`.
 - **"Add to meals" on the review card** (slice 7, D32, 2026-10-07). Does the suggested name read well often enough, and should the tickbox remember being ticked? Also: hitting the 100-meal cap while confirming fails the whole log with the cap message rather than logging without the meal; fine for now, say if it bites.
 - **The four new nutrients** (vitamin E, K, iodine, omega-3; D30, 2026-10-07). Do the daily numbers look plausible for what you ate, and is iodine too noisy to keep scored? Entries logged before 2026-10-07 show 0 for all four and AI entries from before then read as low confidence; re-estimating old entries was not done (it would cost a call per entry).
