@@ -12,6 +12,8 @@ import Skeleton from '@/components/ui/Skeleton.vue'
 import { useSession } from '@/features/auth/useSession'
 import DayLog from '@/features/log/DayLog.vue'
 import EntrySheet from '@/features/log/EntrySheet.vue'
+import MealGroupSheet from '@/features/log/MealGroupSheet.vue'
+import { groupMembers, type GroupRow } from '@/features/log/day-groups'
 import { useDayLog } from '@/features/log/useLog'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import RecalibrationCard from '@/features/progress/RecalibrationCard.vue'
@@ -82,13 +84,43 @@ const proposal = computed(() =>
   recalibration.assessment.value?.status === 'proposal' ? recalibration.assessment.value : null,
 )
 
+// A logged meal opens as one sheet listing its ingredients (D33). Tapping an ingredient
+// swaps to the ordinary item editor and comes back to the meal afterwards, as long as the
+// meal still has ingredients.
+const viewedGroup = ref<Pick<GroupRow, 'groupId' | 'name'> | null>(null)
+const groupSheetOpen = ref(false)
+const groupEntries = computed(() =>
+  viewedGroup.value ? groupMembers(log.entries.value, viewedGroup.value.groupId) : [],
+)
+const returnToGroup = ref(false)
+
+function openGroup(group: GroupRow): void {
+  viewedGroup.value = { groupId: group.groupId, name: group.name }
+  returnToGroup.value = false
+  groupSheetOpen.value = true
+}
+
 const editing = ref<LogEntry | null>(null)
 const entrySheetOpen = computed({
   get: () => editing.value !== null,
   set: (open: boolean) => {
-    if (!open) editing.value = null
+    if (open) return
+    editing.value = null
+    if (returnToGroup.value) {
+      returnToGroup.value = false
+      // Let the editor finish sliding away before the meal sheet rises again.
+      window.setTimeout(() => {
+        if (groupEntries.value.length > 0) groupSheetOpen.value = true
+      }, 260)
+    }
   },
 })
+
+function editIngredient(entry: LogEntry): void {
+  groupSheetOpen.value = false
+  returnToGroup.value = true
+  editing.value = entry
+}
 
 // Cached data always wins over an error: offline, the last known day stays on screen.
 const loading = computed(
@@ -197,7 +229,12 @@ function retry(): void {
 
       <WeightCard v-if="isToday" :today="today" />
 
-      <DayLog v-if="foodEntries.length" :entries="foodEntries" @select="editing = $event" />
+      <DayLog
+        v-if="foodEntries.length"
+        :entries="foodEntries"
+        @select="editing = $event"
+        @select-group="openGroup"
+      />
 
       <Card v-else :padded="false">
         <EmptyState
@@ -212,7 +249,8 @@ function retry(): void {
       </Card>
 
       <p v-if="foodEntries.length" class="px-2 text-center text-xs text-fg-muted">
-        Tap an item to change the amount, move it to another meal or day, or remove it.
+        Tap an item to change the amount, move it to another meal or day, or remove it. Tap a meal
+        to see its ingredients.
       </p>
 
       <template v-if="score">
@@ -222,5 +260,13 @@ function retry(): void {
     </div>
 
     <EntrySheet v-model:open="entrySheetOpen" :entry="editing" :today="today" />
+    <MealGroupSheet
+      v-model:open="groupSheetOpen"
+      :group-id="viewedGroup?.groupId ?? null"
+      :name="viewedGroup?.name ?? ''"
+      :entries="groupEntries"
+      :today="today"
+      @select="editIngredient"
+    />
   </AppShell>
 </template>

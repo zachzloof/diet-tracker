@@ -13,6 +13,7 @@ import {
   type Food,
   type FoodInput,
   type UpdateEntryRequest,
+  type UpdateGroupRequest,
 } from '@diet-tracker/shared'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
@@ -174,6 +175,33 @@ export function useDeleteEntry() {
       return logApi.deleteEntry(id)
     },
     onSuccess: (result) => (result ? applySummaries(queryClient, [result.summary]) : undefined),
+  })
+}
+
+/** Moves a whole logged meal (every entry sharing a `groupId`) to another meal or day. */
+export function useUpdateGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ groupId, patch }: { groupId: string; patch: UpdateGroupRequest }) =>
+      logApi.updateGroup(groupId, patch),
+    onSuccess: (result) => applySummaries(queryClient, result.summaries),
+  })
+}
+
+/** Removes a whole logged meal; a queued one is dropped from the queue entry by entry. */
+export function useDeleteGroup() {
+  const queryClient = useQueryClient()
+  const queue = useQueueStore()
+  return useMutation({
+    mutationFn: async ({ groupId, entryIds }: { groupId: string; entryIds: string[] }) => {
+      const queued = entryIds.filter((id) => queue.has(id))
+      if (queued.length === entryIds.length) {
+        for (const id of queued) queue.removeEntry(id)
+        return null
+      }
+      return logApi.deleteGroup(groupId)
+    },
+    onSuccess: (result) => (result ? applySummaries(queryClient, result.summaries) : undefined),
   })
 }
 

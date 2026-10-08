@@ -167,6 +167,11 @@ function del(): void {
       </ul>
 
       <MealDayPicker v-model:meal="meal" v-model:day="day" :today="today" />
+      <p v-if="entry.groupName" class="flex gap-2 text-sm text-fg-muted">
+        <Icon name="utensils" :size="16" class="mt-0.5 shrink-0" />
+        Part of {{ entry.groupName }}. Moving it to another meal or day takes it out of that meal;
+        the rest stay together.
+      </p>
 
       <Toggle
         v-if="entry.foodId === null"

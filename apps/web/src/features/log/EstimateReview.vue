@@ -366,8 +366,8 @@ function confirm(): void {
         <span class="min-w-0">
           <span class="block text-base text-fg">Add to meals</span>
           <span class="block text-sm text-fg-muted">
-            Keep these {{ items.length }} items as one meal, so next time you log it in a few
-            taps with no AI estimate.
+            Keep these {{ items.length }} items as one meal, so next time you log it in a few taps
+            with no AI estimate.
           </span>
         </span>
       </label>

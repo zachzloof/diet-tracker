@@ -1,4 +1,9 @@
-import { isWaterEntry, type CreateEntriesRequest, type LogEntry } from '@diet-tracker/shared'
+import {
+  isWaterEntry,
+  type CreateEntriesRequest,
+  type LogEntry,
+  type SavedMeal,
+} from '@diet-tracker/shared'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ME_KEY } from '@/features/auth/useSession'
@@ -54,6 +59,18 @@ function newId(): string {
     : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`
 }
 
+/**
+ * The name the server will stamp on the group (D33): the saved meal's name from the mirrored
+ * meals list, or the "Add to meals" name. Null when the meal is not cached, so the queued
+ * ingredients show singly until they are sent.
+ */
+function queuedGroupName(request: CreateEntriesRequest): string | null {
+  if (request.saveAsMeal) return request.saveAsMeal.name
+  if (!request.savedMealId) return null
+  const meals = queryClient.getQueryData<SavedMeal[]>(MEALS_KEY)
+  return meals?.find((meal) => meal.id === request.savedMealId)?.name ?? null
+}
+
 function currentUserId(): string {
   const user = queryClient.getQueryData<{ id: string } | null>(ME_KEY)
   return user?.id ?? 'anonymous'
@@ -91,6 +108,8 @@ export const useQueueStore = defineStore('queue', () => {
 
   function enqueue(request: CreateEntriesRequest): QueuedWrite {
     const now = new Date().toISOString()
+    const groupName = queuedGroupName(request)
+    const groupId = groupName === null ? null : newId()
     const item: QueuedWrite = {
       id: newId(),
       userId: currentUserId(),
@@ -112,6 +131,8 @@ export const useQueueStore = defineStore('queue', () => {
         aiCallId: entry.aiCallId,
         assumptions: entry.assumptions,
         confidence: entry.confidence,
+        groupId: isWaterEntry(entry) ? null : groupId,
+        groupName: isWaterEntry(entry) ? null : groupName,
         createdAt: now,
         updatedAt: now,
       })),

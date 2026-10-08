@@ -2,20 +2,25 @@ import {
   createEntriesResponseSchema,
   dayLogResponseSchema,
   deleteEntryResponseSchema,
+  deleteGroupResponseSchema,
   estimateResponseSchema,
   foodResponseSchema,
   foodsResponseSchema,
   updateEntryResponseSchema,
+  updateGroupResponseSchema,
   type CreateEntriesRequest,
   type CreateEntriesResponse,
   type DayLogResponse,
   type DeleteEntryResponse,
+  type DeleteGroupResponse,
   type EstimateRequest,
   type EstimateResponse,
   type Food,
   type FoodInput,
   type UpdateEntryRequest,
   type UpdateEntryResponse,
+  type UpdateGroupRequest,
+  type UpdateGroupResponse,
 } from '@diet-tracker/shared'
 import { request, requestVoid } from '@/lib/api'
 
@@ -34,6 +39,15 @@ export const logApi = {
   },
   deleteEntry(id: string): Promise<DeleteEntryResponse> {
     return request(`/log/entries/${id}`, deleteEntryResponseSchema, { method: 'DELETE' })
+  },
+  updateGroup(groupId: string, patch: UpdateGroupRequest): Promise<UpdateGroupResponse> {
+    return request(`/log/groups/${groupId}`, updateGroupResponseSchema, {
+      method: 'PATCH',
+      body: patch,
+    })
+  },
+  deleteGroup(groupId: string): Promise<DeleteGroupResponse> {
+    return request(`/log/groups/${groupId}`, deleteGroupResponseSchema, { method: 'DELETE' })
   },
   estimate(input: EstimateRequest): Promise<EstimateResponse> {
     return request('/ai/estimate', estimateResponseSchema, { method: 'POST', body: input })
