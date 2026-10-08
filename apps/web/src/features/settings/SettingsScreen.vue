@@ -16,6 +16,7 @@ import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import Select from '@/components/ui/Select.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import Toggle from '@/components/ui/Toggle.vue'
+import { usePreferences } from '@/features/profile/usePreferences'
 import { useProfile, useSaveProfile } from '@/features/profile/useProfile'
 import { ApiError } from '@/lib/api'
 import { isNative } from '@/lib/native'
@@ -82,6 +83,16 @@ const timezone = computed({
   set: (value: string) => saveField({ timezone: value }, 'Time zone'),
 })
 
+const prefs = usePreferences()
+const preferencesSummary = computed(() => {
+  const off = [
+    !prefs.value.water && 'water off',
+    !prefs.value.workouts && 'workouts off',
+    prefs.value.nutrientDetail === 'macros' && 'macros only',
+  ].filter((item): item is string => typeof item === 'string')
+  return off.length ? off.join(' � ') : 'Water, workouts, nutrient detail'
+})
+
 const consent = useAiConsentStore()
 const aiAllowed = computed({
   get: () => consent.granted,
@@ -132,6 +143,24 @@ async function shareExport(event: Event, format: ExportFormat): Promise<void> {
 <template>
   <AppShell title="Settings" :back="{ name: 'you' }">
     <div class="space-y-4">
+      <Card :padded="false" as="section">
+        <RouterLink
+          :to="{ name: 'preferences' }"
+          class="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
+        >
+          <span
+            class="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent"
+          >
+            <Icon name="sliders" :size="20" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-base font-semibold">Preferences</span>
+            <span class="block truncate text-sm text-fg-muted">{{ preferencesSummary }}</span>
+          </span>
+          <Icon name="chevron-right" :size="18" class="shrink-0 text-fg-muted" />
+        </RouterLink>
+      </Card>
+
       <Card>
         <h2 class="mb-3 text-base font-semibold">Appearance</h2>
         <SegmentedControl v-model="theme" label="Theme" :options="THEMES" />

@@ -3,6 +3,7 @@ import {
   FOOD_GROUP_KEYS,
   MICRO_KEYS,
   PACE_LABELS,
+  shownTargetKeys,
   targetFor,
   type TargetEntry,
   type TargetKey,
@@ -16,6 +17,7 @@ import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import AiConsent from '@/features/ai/AiConsent.vue'
+import { usePreferences } from '@/features/profile/usePreferences'
 import { ApiError } from '@/lib/api'
 import { formatDay, formatNumber } from '@/lib/format'
 import { useAiConsentStore } from '@/stores/ai-consent'
@@ -36,13 +38,21 @@ const overrides = useSetOverrides()
 const version = targets.version
 const welcome = computed(() => route.query.welcome === '1')
 
-const SECTIONS: { title: string; keys: readonly TargetKey[] }[] = [
+const ALL_SECTIONS: { title: string; keys: readonly TargetKey[] }[] = [
   { title: 'Macros', keys: ['protein_g', 'carbs_g', 'fat_g', 'fiber_g'] },
   { title: 'Limits', keys: ['added_sugar_g', 'saturated_fat_g', 'sodium_mg'] },
   { title: 'Hydration', keys: ['water_ml'] },
   { title: 'Vitamins, minerals and omega-3', keys: MICRO_KEYS },
   { title: 'Food groups', keys: FOOD_GROUP_KEYS },
 ]
+// Preferences (D37) hide sections; the targets underneath are still computed and stored.
+const prefs = usePreferences()
+const SECTIONS = computed(() =>
+  ALL_SECTIONS.map((section) => ({
+    ...section,
+    keys: shownTargetKeys(section.keys, prefs.value),
+  })).filter((section) => section.keys.length > 0),
+)
 
 function entry(key: TargetKey): TargetEntry | null {
   return version.value ? (targetFor(version.value.effective, key) ?? null) : null

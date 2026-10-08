@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MIN_REVIEW_DAYS, addDays, summariseWeek } from '@diet-tracker/shared'
+import { MIN_REVIEW_DAYS, addDays, summariseTarget, summariseWeek } from '@diet-tracker/shared'
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
@@ -13,6 +13,7 @@ import Skeleton from '@/components/ui/Skeleton.vue'
 import StatTile from '@/components/ui/StatTile.vue'
 import AiConsent from '@/features/ai/AiConsent.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
+import { usePreferences } from '@/features/profile/usePreferences'
 import { useRegenerateReview, useWeekStats, useWeeklyReview } from '@/features/stats/useStats'
 import { formatDayShort, weekdayShort } from '@/lib/format'
 import { useAiConsentStore } from '@/stores/ai-consent'
@@ -45,6 +46,14 @@ const rangeLabel = computed(() =>
 const week = useWeekStats(end)
 const stats = week.stats
 const summary = computed(() => (stats.value ? summariseWeek(stats.value.days) : null))
+
+// Macros-only mode (D37) has no vitamins to count, so the third tile is protein instead.
+const prefs = usePreferences()
+const proteinWeek = computed(() =>
+  stats.value && prefs.value.nutrientDetail === 'macros'
+    ? summariseTarget(stats.value.days, 'protein_g')
+    : null,
+)
 
 const consent = useAiConsentStore()
 const reviewEnabled = computed(
@@ -139,6 +148,14 @@ const todayIndex = computed(() => {
           :sub="stats.streak > 0 ? 'in a row' : 'start today'"
         />
         <StatTile
+          v-if="proteinWeek"
+          label="Protein"
+          :value="proteinWeek.daysMet"
+          :unit="`/ ${proteinWeek.daysLogged}`"
+          sub="days hit"
+        />
+        <StatTile
+          v-else
           label="Nutrients"
           :value="`${Math.round(summary.completeness * 100)}%`"
           sub="of minimums met"

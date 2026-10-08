@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import { summariseTarget, type ScoredDay, type TargetKey } from '@diet-tracker/shared'
+import {
+  shownTargetKeys,
+  summariseTarget,
+  type ScoredDay,
+  type TargetKey,
+} from '@diet-tracker/shared'
 import { computed } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import Icon from '@/components/ui/Icon.vue'
 import StatusDot from '@/components/ui/StatusDot.vue'
+import { usePreferences } from '@/features/profile/usePreferences'
 import { formatNumber, targetLabel, unitLabel, weekdayShort } from '@/lib/format'
 
 /** Days met per target, the weekly average against the target, and one status dot per day. */
 const props = defineProps<{ days: ScoredDay[] }>()
 
-const KEYS: readonly TargetKey[] = [
+const prefs = usePreferences()
+const ALL_KEYS: readonly TargetKey[] = [
   'energy_kcal',
   'protein_g',
   'carbs_g',
@@ -20,7 +27,7 @@ const KEYS: readonly TargetKey[] = [
 ]
 
 const rows = computed(() =>
-  KEYS.map((key) => {
+  shownTargetKeys(ALL_KEYS, prefs.value).map((key) => {
     const week = summariseTarget(props.days, key)
     return {
       key,

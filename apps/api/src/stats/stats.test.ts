@@ -257,9 +257,7 @@ describe('GET /api/v1/stats/week', () => {
     await signInAs(finn.email, finn.profile)
     expect(await seedWeek(userId, finn.email, TZ)).toBe(25)
 
-    expect(
-      (await send('PATCH', '/api/v1/profile/preferences', { water: false })).status,
-    ).toBe(200)
+    expect((await send('PATCH', '/api/v1/profile/preferences', { water: false })).status).toBe(200)
     const noWater = weekStatsResponseSchema.parse(
       await (await send('GET', '/api/v1/stats/week')).json(),
     )

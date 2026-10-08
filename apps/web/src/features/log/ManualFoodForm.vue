@@ -5,6 +5,7 @@ import Icon from '@/components/ui/Icon.vue'
 import Input from '@/components/ui/Input.vue'
 import NumberField from '@/components/ui/NumberField.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
+import { usePreferences } from '@/features/profile/usePreferences'
 import { LABEL_NUTRIENTS, MORE_NUTRIENTS, type FoodFormState } from './food-form'
 
 /**
@@ -29,6 +30,9 @@ const basis = computed({
 
 const moreOpen = ref(false)
 const groupsOpen = ref(false)
+// Macros only (D37): the packet numbers stay; vitamins and food groups are not asked for.
+const prefs = usePreferences()
+const detailed = computed(() => prefs.value.nutrientDetail === 'full')
 
 const stepFor = (key: string) => (key === 'energy_kcal' ? 10 : key.endsWith('_mg') ? 10 : 1)
 </script>
@@ -85,6 +89,7 @@ const stepFor = (key: string) => (key === 'energy_kcal' ? 10 : key.endsWith('_mg
     </div>
 
     <button
+      v-if="detailed"
       type="button"
       class="flex min-h-11 w-full items-center justify-between text-left text-base font-semibold text-fg"
       :aria-expanded="moreOpen"
@@ -98,7 +103,7 @@ const stepFor = (key: string) => (key === 'energy_kcal' ? 10 : key.endsWith('_mg
         :class="moreOpen && 'rotate-180'"
       />
     </button>
-    <div v-if="moreOpen" class="grid grid-cols-2 gap-3">
+    <div v-if="detailed && moreOpen" class="grid grid-cols-2 gap-3">
       <NumberField
         v-for="key in MORE_NUTRIENTS"
         :key="key"
@@ -113,6 +118,7 @@ const stepFor = (key: string) => (key === 'energy_kcal' ? 10 : key.endsWith('_mg
     </div>
 
     <button
+      v-if="detailed"
       type="button"
       class="flex min-h-11 w-full items-center justify-between text-left text-base font-semibold text-fg"
       :aria-expanded="groupsOpen"
@@ -126,7 +132,7 @@ const stepFor = (key: string) => (key === 'energy_kcal' ? 10 : key.endsWith('_mg
         :class="groupsOpen && 'rotate-180'"
       />
     </button>
-    <div v-if="groupsOpen" class="space-y-3">
+    <div v-if="detailed && groupsOpen" class="space-y-3">
       <p class="text-sm text-fg-muted">
         How many serves of each group the amount above counts as. Leave blank for none.
       </p>

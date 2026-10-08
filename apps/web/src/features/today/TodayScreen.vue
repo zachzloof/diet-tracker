@@ -19,6 +19,7 @@ import { useLocalDay } from '@/features/log/useLocalDay'
 import RecalibrationCard from '@/features/progress/RecalibrationCard.vue'
 import WeightCard from '@/features/progress/WeightCard.vue'
 import { useRecalibration } from '@/features/progress/useProgress'
+import { usePreferences } from '@/features/profile/usePreferences'
 import InstallHint from '@/features/pwa/InstallHint.vue'
 import { useTargets } from '@/features/targets/useTargets'
 import WorkoutCard from '@/features/training/WorkoutCard.vue'
@@ -38,6 +39,8 @@ const session = useSession()
 const targets = useTargets()
 const route = useRoute()
 const { today } = useLocalDay()
+// Display preferences (D37): cards are hidden, never recomputed, so the score is unchanged.
+const prefs = usePreferences()
 
 /** `/day/:day` opens a specific day (from the week strip or the calendar); `/` is today. */
 function routeDay(): string | null {
@@ -225,12 +228,17 @@ function retry(): void {
 
       <template v-if="score">
         <EnergyCard :score="score" />
-        <WaterCard :score="score" :entries="log.entries.value" :day="viewedDay" />
+        <WaterCard
+          v-if="prefs.water"
+          :score="score"
+          :entries="log.entries.value"
+          :day="viewedDay"
+        />
       </template>
 
       <WeightCard v-if="isToday" :today="today" />
 
-      <WorkoutCard :day="viewedDay" :is-today="isToday" />
+      <WorkoutCard v-if="prefs.workouts" :day="viewedDay" :is-today="isToday" />
 
       <DayLog
         v-if="foodEntries.length"
@@ -256,7 +264,7 @@ function retry(): void {
         to see its ingredients.
       </p>
 
-      <template v-if="score">
+      <template v-if="score && prefs.nutrientDetail === 'full'">
         <FoodGroupsCard :score="score" :entries="foodEntries" :is-today="isToday" />
         <MicronutrientGrid :score="score" :entries="foodEntries" :is-today="isToday" />
       </template>

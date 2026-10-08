@@ -1,6 +1,7 @@
 import {
   explainResponseSchema,
   overridesResponseSchema,
+  preferencesResponseSchema,
   profileResponseSchema,
   profileSaveResponseSchema,
   targetHistoryResponseSchema,
@@ -8,6 +9,8 @@ import {
   type ExplainResponse,
   type OverridesInput,
   type OverridesResponse,
+  type Preferences,
+  type PreferencesPatch,
   type Profile,
   type ProfileInput,
   type ProfileSaveResponse,
@@ -23,6 +26,13 @@ export const profileApi = {
   },
   save(input: ProfileInput): Promise<ProfileSaveResponse> {
     return request('/profile', profileSaveResponseSchema, { method: 'PUT', body: input })
+  },
+  async updatePreferences(patch: PreferencesPatch): Promise<Preferences> {
+    const { preferences } = await request('/profile/preferences', preferencesResponseSchema, {
+      method: 'PATCH',
+      body: patch,
+    })
+    return preferences
   },
 }
 

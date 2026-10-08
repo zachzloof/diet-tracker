@@ -8,6 +8,7 @@ import Card from '@/components/ui/Card.vue'
 import Icon, { type IconName } from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { useLogout, useSession } from '@/features/auth/useSession'
+import { usePreferences } from '@/features/profile/usePreferences'
 import { useProfile } from '@/features/profile/useProfile'
 import InstallHint from '@/features/pwa/InstallHint.vue'
 import { useTargets } from '@/features/targets/useTargets'
@@ -16,6 +17,7 @@ import { formatDay, formatNumber, formatWeight } from '@/lib/format'
 const session = useSession()
 const profile = useProfile()
 const targets = useTargets()
+const prefs = usePreferences()
 const appVersion = __APP_VERSION__
 const logout = useLogout()
 
@@ -54,11 +56,20 @@ const NAV = computed<NavItem[]>(() => [
     icon: 'trending-up',
   },
   { name: 'foods', label: 'My foods', sub: 'Saved foods for one-tap logging', icon: 'book' },
-  { name: 'workouts', label: 'Workouts', sub: 'Your gym sessions and lifts', icon: 'dumbbell' },
+  ...(prefs.value.workouts
+    ? [
+        {
+          name: 'workouts',
+          label: 'Workouts',
+          sub: 'Your gym sessions and lifts',
+          icon: 'dumbbell' as const,
+        },
+      ]
+    : []),
   {
     name: 'settings',
     label: 'Settings',
-    sub: 'Theme, units, reminders, password, export, delete',
+    sub: 'Preferences, theme, units, reminders, password, export',
     icon: 'settings',
   },
 ])

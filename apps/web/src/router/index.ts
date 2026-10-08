@@ -40,6 +40,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/settings/SettingsScreen.vue'),
   },
   {
+    path: '/settings/preferences',
+    name: 'preferences',
+    component: () => import('@/features/settings/PreferencesScreen.vue'),
+  },
+  {
     path: '/onboarding',
     name: 'onboarding',
     component: () => import('@/features/onboarding/OnboardingScreen.vue'),

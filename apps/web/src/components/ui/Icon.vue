@@ -37,6 +37,7 @@ export type IconName =
   | 'history'
   | 'scale'
   | 'settings'
+  | 'sliders'
   | 'bell'
   | 'lock'
   | 'file-text'
@@ -85,6 +86,7 @@ const PATHS: Record<IconName, string> = {
   scale:
     'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8 12a4 4 0 0 1 8 0M12 12l2.5-2.5',
   settings: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+  sliders: 'M3 7h10M17 7h4M3 17h4M11 17h10M13 4.5v5M7 14.5v5',
   bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0',
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   'file-text': 'M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h8',

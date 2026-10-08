@@ -63,7 +63,16 @@ describe('isTargetShown', () => {
   it('macros mode keeps energy, protein, carbs, fat and fibre and hides the rest', () => {
     expect(
       shownTargetKeys(
-        ['energy_kcal', 'protein_g', 'carbs_g', 'fat_g', 'fiber_g', 'sodium_mg', 'iron_mg', 'fruit'],
+        [
+          'energy_kcal',
+          'protein_g',
+          'carbs_g',
+          'fat_g',
+          'fiber_g',
+          'sodium_mg',
+          'iron_mg',
+          'fruit',
+        ],
         macrosOnly,
       ),
     ).toEqual(['energy_kcal', 'protein_g', 'carbs_g', 'fat_g', 'fiber_g'])
