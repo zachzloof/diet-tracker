@@ -30,7 +30,9 @@ The enum lives in `packages/shared/src/nutrition/nutrients.ts`. Every JSONB nutr
 | vitamin_e_mg | mg alpha-tocopherol | minimum | vitamins |
 | vitamin_k_ug | mcg | minimum | vitamins |
 | water_ml | ml | goal | hydration |
-| alcohol_std_drinks | drinks (10 g ethanol) | limit | other |
+| alcohol_std_drinks | drinks (10 g ethanol) | limit (hidden, D34) | other |
+
+Hidden keys (`HIDDEN_NUTRIENT_KEYS` in `nutrients.ts`, currently alcohol) stay in the vector and are still estimated and stored, but get no target entry, no score, no gap rule and no place in the UI (`VISIBLE_NUTRIENT_KEYS` drives the nutrient lists in forms and editors). To bring one back: remove it from the list and bump `ENGINE_VERSION`.
 
 Vectors are complete: every key present, numbers >= 0, no nulls. 25 keys since D30 (21 before). Unknown means 0 with low confidence on the item, never a missing key. This keeps aggregation trivial and the AI schema strict.
 
@@ -58,7 +60,24 @@ Source: US NIH Office of Dietary Supplements DRI tables (RDA, or AI where no RDA
 
 Added 2026-10-07 (D30): vitamin E, vitamin K, iodine and omega-3. Omega-3 is logged as total ALA + EPA + DHA against the ALA adequate intake, because no reference value exists for EPA + DHA; the reason says so. Iodine estimates hinge on iodised salt and the local bread and dairy supply, so the reason and the Today footnote call it rough. `ADEQUATE_INTAKE_KEYS` in `dri.ts` lists the AI-based keys so the reason reads "Adequate intake" rather than "RDA".
 
-Notes for reasons and UI copy: vegans get B12 from fortified foods or supplements, so the gap suggestion list must say so rather than list meat. Upper limits are not enforced from food; they would only matter for supplements.
+Notes for reasons and UI copy: vegans get B12 from fortified foods or supplements, so the gap suggestion list must say so rather than list meat.
+
+### Tolerable upper intake levels (`UPPER_LIMIT` in `dri.ts`, D34)
+
+A `minimum` micronutrient scores `over` (red) at or above its UL. The UL is carried on the target entry as `overAbove`, and the reason ends with "Over N unit in a day is flagged." Source: NIH Office of Dietary Supplements DRI tables (IOM). Only ULs that apply to total intake from food are listed.
+
+| key | UL 19-50 | UL 51+ | note |
+|---|---|---|---|
+| calcium_mg | 2500 | 2000 | |
+| iron_mg | 45 | 45 | |
+| zinc_mg | 40 | 40 | |
+| iodine_ug | 1100 | 1100 | |
+| vitamin_a_ug | 3000 | 3000 | UL is for preformed vitamin A (retinol); estimates are in RAE, so a carotenoid-heavy day can trip it. Conservative on purpose. |
+| vitamin_c_mg | 2000 | 2000 | |
+| vitamin_d_ug | 100 | 100 | |
+| vitamin_e_mg | 1000 | 1000 | UL is for supplemental alpha-tocopherol; unreachable from food, listed for completeness. |
+
+No UL from food, so never `over`: potassium, magnesium (its 350 mg UL is for supplements only), vitamin B12, folate (its 1000 mcg UL is for folic acid only), vitamin K, omega-3.
 
 ## 3. Food-group serves
 
@@ -82,13 +101,15 @@ Per-target status from `actual / target`:
 
 | kind | met | close | short / over |
 |---|---|---|---|
-| goal (energy) | 0.90 to 1.10 | 0.80 to 1.20 | below 0.80 short, above 1.20 over |
+| goal (energy) | 0.95 to 1.05 | 0.90 to 1.10 | below 0.90 short, above 1.10 over |
 | goal (protein) | >= 0.90 | 0.75 to 0.90 | below 0.75 short; never "over" |
 | goal (carbs, fat) | 0.80 to 1.20 | 0.65 to 1.35 | outside: short or over |
-| goal (water) | >= 0.90 | 0.70 to 0.90 | below 0.70 short |
-| minimum | >= 1.00 | 0.75 to 1.00 | below 0.75 short |
-| limit | <= 1.00 | 1.00 to 1.15 | above 1.15 over |
-| info | not scored | | |
+| goal (water) | 0.95 to 1.05 | 0.90 to 1.10 | below 0.90 short, above 1.10 over |
+| minimum | >= 0.95 | 0.90 to 0.95 | below 0.90 short; `over` at or above the UL (`overAbove`) when the nutrient has one |
+| limit | <= 1.05 | 1.05 to 1.10 | above 1.10 over |
+| info, hidden (alcohol) | not scored | | |
+
+Bands are D34 (2026-10-08): energy, water, minimums and limits sit at 5% met and 10% close. Protein, carbs and fat keep their earlier, wider bands. Boundary values land inside the band (`EPS`).
 
 Overall:
 - `dayMet` depends on the goal the targets were built for (`dayMetRule(goal)`, D31). Energy must be `met` or `close` for everyone. Then:
@@ -97,7 +118,7 @@ Overall:
 |---|---|---|
 | gain, recomp | `met` | none (shown, never counted) |
 | lose | `met` | added sugar only |
-| maintain | `met` or `close` | sodium, saturated fat, added sugar, alcohol |
+| maintain | `met` or `close` | sodium, saturated fat, added sugar |
 
   `evaluateDay` reads `targets.meta.goalApplied`, so a flagged profile (forced to maintain) is judged by the maintain rule. This is the number behind "days met this week". It is deliberately achievable: energy in band, protein hit, nothing that matters for the goal blown.
 - `completeness` = share of `minimum` targets (fibre, micronutrients, food groups) that are `met` or `close`. Shown as a secondary score and used by gap detection; it never flips `dayMet`.
@@ -111,7 +132,7 @@ Evaluated over the last 7 calendar days, using only logged days; require at leas
 |---|---|---|
 | energy_off_plan | average energy ratio outside 0.85 to 1.15 (note the direction) | high |
 | protein_short | protein `short` or `close` on 3+ logged days | high |
-| limit_over (sodium, saturated_fat, added_sugar, alcohol) | `over` on 3+ logged days | medium |
+| limit_over (sodium, saturated_fat, added_sugar) | `over` on 3+ logged days | medium |
 | fibre_short | fibre below 0.75 on 4+ logged days | medium |
 | food_group_short (vegetables, fruit, whole_grains, dairy_or_alt, protein_foods) | ratio below 0.60 on 4+ logged days | medium |
 | micro_short (each `minimum` micronutrient) | below 0.70 on 5+ logged days | low |

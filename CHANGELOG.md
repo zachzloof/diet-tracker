@@ -4,6 +4,13 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Tighter scoring bands, upper limits, alcohol hidden (2026-10-08)
+- Energy and water now read "Met" within 5% of target and "Close" within 10%; outside that they are short or over. Vitamins, minerals, omega-3, fibre and food groups read "Met" from 95% of target and "Close" from 90%, so "1.6 / 1.6 g" of omega-3 is met, not close. Limits (sodium, saturated fat, added sugar) are met up to 5% over the line, close up to 10% over, and red beyond. Protein, carbs and fat are unchanged.
+- A vitamin or mineral turns red only when the day's intake reaches its tolerable upper intake level (calcium, iron, zinc, iodine, vitamins A, C, D and E; D34 lists the numbers). The Targets screen says the level in each nutrient's reason. Nutrients with no food-based upper limit never go red.
+- Alcohol is gone from Today, Targets, the item editor and the manual food form, and it no longer counts towards anything: not the day verdict, not the weekly gaps, not the review. It is still estimated and kept on each entry, so it can come back later.
+- "Day met" follows the new bands: energy within 10% (was 20%), and a deciding limit fails the day past 110% (was 115%). Past days are rescored, so streaks and "days met" may change.
+- Engine: `ENGINE_VERSION` 3; stored target versions are recomputed on boot. `HIDDEN_NUTRIENT_KEYS`, `VISIBLE_NUTRIENT_KEYS`, `UPPER_LIMIT` and `upperLimitFor` in `packages/shared/src/nutrition`.
+
 ### A logged meal is one row on Today (2026-10-08)
 - When you log a saved meal, Today now shows it as one entry under the meal's name ("My favourite pasta bake · 4 ingredients · 510 g · 744 kcal") with a fork-and-knife badge, instead of one line per ingredient. The same goes for a described meal you kept with "Add to meals". The meal's calories count towards the meal-of-the-day subtotal as before.
 - Tap the meal to open it: a sheet with the meal's total and macros, its ingredients with their amounts and calories, the meal and day pickers, "Move the whole meal" and "Delete the whole meal" (tap twice). Tap an ingredient to change its amount or nutrients, or remove just that one, in the usual item editor; the meal sheet comes back when you are done. Moving a single ingredient to another meal or day takes it out of the meal (the editor says so); the rest stay together.

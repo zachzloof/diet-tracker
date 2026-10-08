@@ -524,7 +524,24 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** A, taken. The rule is `dayMetRule(goal)` in `packages/shared/src/nutrition/scoring.ts`; `evaluateDay` reads `goalApplied` from the targets it is scoring against, so a flagged profile (D10) is judged by the maintain rule its targets were built with. Retroactive by construction: nothing is stored, so history, streaks and "days met" rescored on deploy (the owner chose this; the user base is a few friends). Today's status line names only the limits that could have failed the day, and the weekly review prompt states the goal's rule in words so the model does not blame a limit the rule ignores. Finn's seeded week goes from 4 to 5 met days.
 
-**Status.** `adopted` (2026-10-07) on the owner's instruction, including the alcohol exclusion for lose.
+**Status.** `adopted` (2026-10-07) on the owner's instruction, including the alcohol exclusion for lose. Superseded in part by D34: alcohol is no longer scored for anyone, so the maintain rule counts three limits.
+
+---
+
+## D34. Tighter, uniform scoring bands; upper limits on micronutrients; alcohol hidden (adopted)
+
+**Context.** Two things the owner saw on Today on 2026-10-08. Omega-3 at "1.6 / 1.6 g" read "Close" (the true total was a hair under 1.6, rounded up for display, and a `minimum` was only met at 100%). Alcohol read "Close" because a teaspoon of vanilla extract carried 0.1 standard drinks against a zero target. The owner wants one simple rule a person can hold in their head, a red flag only where intake is actually unsafe, and alcohol out of sight: "it isn't our business".
+
+**Options.**
+- **A. 5% met, 10% close everywhere it makes sense; UL for red; alcohol hidden.** Built. Energy and water: met 95 to 105%, close 90 to 110%, short or over beyond. Minimums (fibre, every micronutrient, food groups): met from 95%, close from 90%, short below; `over` (red) only at or above the nutrient's tolerable upper intake level, carried on the entry as `overAbove`. Limits: met to 105%, close to 110%, over beyond. Protein, carbs and fat keep their wider bands (not asked for; protein especially should stay forgiving on the high side). Alcohol: still in the nutrient enum, still estimated and stored, but `computeTargets` emits no entry, `scoreTarget` returns unscored if it meets a stored one, gap rules and `dayMetRule` drop it, and the UI lists are built from `VISIBLE_NUTRIENT_KEYS`.
+- **B. Fix only the omega-3 rounding** (show one more decimal, or round the ratio before scoring). Cheaper, but leaves "met only at 100%" for every minimum and does nothing for the alcohol chip.
+- **C. Drop alcohol from the enum.** Cleanest UI, but a custom migration over every stored vector, a schema change to the AI output, and no way back.
+
+**Upper limits.** From the NIH Office of Dietary Supplements tables (IOM DRIs): calcium 2500 mg (2000 from 51), iron 45 mg, zinc 40 mg, iodine 1100 mcg, vitamin A 3000 mcg, vitamin C 2000 mg, vitamin D 100 mcg, vitamin E 1000 mg. Not enforced because their UL applies to supplements only or does not exist: potassium, magnesium, B12, folate, vitamin K, omega-3. Vitamin A is the one that can misfire: its UL is for preformed vitamin A and we estimate in RAE, so a very carrot-heavy day can show red. Left in on purpose; one line in `UPPER_LIMIT` to drop.
+
+**Consequences.** Water now has an "over" status (above 110% of target), because the owner asked for the same rule as energy; if that annoys, `BANDS.water.metMax` and `closeMax` back to `Infinity` is the revert. "Day met" is stricter: energy must be within 10% rather than 20%, and a deciding limit fails the day past 110% rather than 115%. Retroactive, like D31: history rescored on deploy; Finn's seeded week drops from 5 met days to 2, Tess's from 3 to 2. `ENGINE_VERSION` is 3 so every stored target version is recomputed on boot (the alcohol entry disappears, micronutrient entries gain `overAbove`). The weekly review prompt states the new numbers.
+
+**Status.** `adopted` (2026-10-08) on the owner's instruction. Open for the owner: whether water should be able to read "over" at all.
 
 ---
 

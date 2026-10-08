@@ -91,7 +91,7 @@ Training check: if `trainingDaysPerWeek >= 5` and carbs < 3 g/kg, reduce fat tow
 | saturated fat | limit | 10% of energy at 9 kcal/g |
 | sodium | limit | 2300 mg; reason notes that heavy sweaters may need more |
 | water | goal | `35 ml/kg + 500 ml per training hour on a training day` (assume 1 h per session), rounded to 250 ml, capped at 5000 ml |
-| alcohol | limit | 0 standard drinks as the daily target; shown as a limit with 2 as the "over" line |
+| alcohol | limit (hidden) | Not emitted since D34: alcohol is logged but never targeted, scored or shown. The code (0 drinks, over above 2) stays behind `isHiddenNutrient` so it can come back. |
 
 ## 8. Micronutrients
 
