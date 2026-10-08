@@ -574,3 +574,34 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **Recommendation.** A, taken. Additive, boot-safe, and C's "Save as a meal" on a day-log group (D32) would now have a natural anchor: the group.
 
 **Status.** `adopted` (2026-10-08) on the owner's request.
+
+## D35. Gym logging: a catalogue, a three-level session document, no new tab (adopted, please confirm)
+
+**Context.** The owner wants to log gym sessions (when, which lifts, what weight) beside the food log, and later combine the two: training days feeding water and protein, sessions and PRs in the weekly review, logged days against the declared training days. The profile already carries activity, training type and days per week, and the water target already wants to know whether a day is a training day. The risk is scope: Hevy and Strong took years. Slice 8 is "log a session"; charts and the crossover follow in slices 9 and 10.
+
+**Options considered.**
+- **Catalogue.** (A) A shared `exercises` catalogue with a null `user_id`, plus per-user custom rows, the same shape as `foods`. (B) User-only exercises, everyone types their own. (C) A text field on each set, no catalogue. A is built: progress per exercise needs a stable id, and "Barbell back squat" should be one thing for everyone.
+- **Session shape.** (A) Three levels: `workouts` (one session on one user-local day), `workout_exercises` (one block in order, with notes) and `workout_sets` (one row per set: weight kg, reps, seconds, metres, RPE, warm-up, done). (B) Two levels, sets carrying the exercise id and a position. (C) One row per session with the sets in JSONB. A is built: ordering, per-exercise notes and later supersets hang off the block, and retrofitting it under existing set rows would be a painful migration; JSONB would put every progress query through `jsonb_array_elements`.
+- **History versus the catalogue.** Food entries snapshot nutrients so an edit to a food never rewrites history. Sets do the opposite: `exercise_id` is the key, because a chart needs the same id across months, and `exercise_name` is only a snapshot for display when a custom exercise is deleted (`set null`). Renaming an exercise renames its history on purpose.
+- **Writes.** (A) The workout is one document: `PUT /api/v1/workouts/:id` with the blocks and sets nested, the id a UUID v7 minted on the phone, the server replacing the rows in one transaction; last write wins per id. (B) One route per set. A is built: gyms have bad signal, so the session lives in local storage and is pushed debounced after every change, and an idempotent upsert keyed by a client id is what makes that safe. The food queue (D21) is not reused; a session is a document with its own retry, not a list of entries.
+- **Placement.** (A) No new tab: a Workout card on Today, the session screen pushed from it, a Workouts list under You. (B) A fifth tab. A is built: five slots are already taken (D-tab-bar) and training belongs beside food on the same day. If sessions become a daily habit for friends, a tab can replace Meals.
+- **Units.** Kilograms, reps, seconds and metres are canonical, as with nutrients. A pounds display is a settings toggle later, never a stored unit.
+
+**Rules.** A workout's `day` is the user's local day, sent by the client like a log entry's. The catalogue lives in the migration (fixed ids) so every deploy has it; adding a lift is a migration. Custom exercises are capped at 200 per person, blocks at 30 per session, sets at 30 per block. Deleting a custom exercise keeps past sessions with the name snapshot. The Today card and the Workouts list come from `GET /workouts?from&to`, mirrored offline like the day log.
+
+**Recommendation.** As built.
+
+**Status.** `adopted` (2026-10-08), please confirm; the tab question stays open until real use.
+
+## D36. Workouts are kept until deleted, not purged at six months (adopted, please confirm)
+
+**Context.** D27 deletes dated history after six months: the food log, totals, weigh-ins, reviews and replaced targets. A strength log is only useful as a long series ("what did I squat last January"), so the same rule would hollow out the feature.
+
+**Options.**
+- **A. Exempt workouts and custom exercises from the purge.** Built. The privacy page lists them beside saved foods and meals as kept until the person deletes them or the account. Account deletion still removes everything through the cascades.
+- **B. Purge the sets and keep a per-exercise best.** Keeps the headline numbers, loses the sessions; more code for less.
+- **C. Purge at six months like everything else.** Consistent, useless for progress.
+
+**Recommendation.** A. The data is small (a set is one short row), it is the person's own training diary, and D27's reason (not holding more health data than the product uses) does not apply to history the product shows on purpose.
+
+**Status.** `adopted` (2026-10-08), please confirm.

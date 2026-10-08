@@ -216,6 +216,33 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ---
 
+## Slice 8 - Gym logging: exercises, sessions, the Today card
+
+**Status:** in progress (2026-10-08)
+
+**Goal.** Log a gym session on the phone, at the gym, with bad signal: pick exercises, enter sets as weight and reps, see what you did last time for each exercise, finish, and see the session on Today beside the food. This is the first of three training slices (D35); progress charts and the nutrition crossover come next.
+
+**In scope.**
+- Four new tables (`exercises`, `workouts`, `workout_exercises`, `workout_sets`) in `apps/api/src/db/schema/training.ts`, one migration, and a shared exercise catalogue of common lifts with a null user id (D35). Custom exercises per user.
+- Shared: enums (exercise kind, muscle group, measure), zod schemas for the catalogue, a workout document and its wire shapes, and the first pure training functions (volume, working sets, duration) with tests. `docs/TRAINING-MATHS.md` starts, with the same update rule as the nutrition page.
+- API: `GET/POST/PATCH/DELETE /api/v1/exercises`, `GET /api/v1/exercises/:id/history` (recent sets for one exercise, for the "last time" numbers), `GET /api/v1/workouts?from&to`, `GET/PUT/DELETE /api/v1/workouts/:id`. A workout is one document, upserted by its client-generated UUID v7 (D35), written in one transaction. Workouts are exempt from the six-month purge (D36) and included in the account export.
+- Web: a Workout card on Today (that day's sessions with duration, sets and volume, or "Rest day" with "Log a workout"); the session screen at `/workouts/:id` (title, exercise blocks, set rows with weight and reps steppers, warm-up and done toggles, "last time" under each exercise, add set copies the last set, finish); an exercise picker sheet with search, recent first and "add your own"; `/workouts/new` offers "repeat a recent session"; a Workouts list under You. The draft lives in local storage and autosaves with a debounced PUT, so a session survives a dead signal and a closed tab.
+
+**Out of scope.** Per-exercise charts, PRs and estimated one-rep max (slice 9). Training days feeding water, protein, the weekly review or recalibration (slice 10). AI "describe your workout". Templates, supersets, rest timers, a Workout tab. Cardio distance is stored but has no UI yet. Apple Health workouts.
+
+**Done when.**
+- [ ] From Today, "Log a workout" opens a new session; picking "Barbell back squat" from the catalogue and entering three sets saves without touching a Save button, and the session shows on Today with its duration, sets and volume after Finish.
+- [ ] Opening the same exercise in a later session shows last time's sets greyed in each row, and "Add set" copies the last set entered.
+- [ ] Airplane mode mid-session: the sets keep going in, the header says "Saved on this phone", and the session reaches the server on reconnect.
+- [ ] "Repeat" on a past session starts a new one with the same exercises and sets, none ticked done.
+- [ ] A custom exercise can be added from the picker and appears in later searches; deleting it leaves past sessions showing its name.
+- [ ] A workout older than six months survives the purge; the export JSON lists workouts and custom exercises; deleting the account removes all four tables' rows.
+- [ ] Looks right at 360, 390 and 430 wide, dark and light; the keyboard never hides the row being edited.
+
+**Decisions it depends on.** D35 (data model, session document, placement), D36 (retention).
+
+---
+
 ## Ideas after slice 6 (not planned)
 
 - Coach chat: a conversational agent with tools to log food, answer "how am I doing", and propose target changes.
