@@ -78,6 +78,13 @@
       "when": 1791470034618,
       "tag": "0010_training",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791472502368,
+      "tag": "0011_profile_preferences",
+      "breakpoints": true
     }
   ]
 }

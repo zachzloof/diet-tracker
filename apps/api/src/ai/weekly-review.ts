@@ -8,10 +8,12 @@ import {
   ageOn,
   isoWeek,
   localDay,
+  shownTargetKeys,
   summariseTarget,
   weeklyReviewSchema,
   type FoodGroupKey,
   type NutrientKey,
+  type Preferences,
   type Profile,
   type ScoredDay,
   type StoredWeeklyReview,
@@ -99,14 +101,14 @@ const AVERAGE_KEYS: readonly TargetKey[] = [
   'dairy_or_alt',
 ]
 
-function dayLine(scored: ScoredDay, today: string): string {
+function dayLine(scored: ScoredDay, today: string, prefs: Preferences): string {
   const { day, score } = scored
   const energy = score.scores.energy_kcal
   if (day === today && !score.logged) {
     return `- ${dayLabel(day)}: today, in progress (${fmt(energy?.actual ?? 0)} kcal so far)`
   }
   if (!score.logged) return `- ${dayLabel(day)}: nothing logged`
-  const parts = DAY_LINE_KEYS.flatMap((key) => {
+  const parts = shownTargetKeys(DAY_LINE_KEYS, prefs).flatMap((key) => {
     const s = score.scores[key]
     if (!s) return []
     return [`${label(key).toLowerCase()} ${fmt(s.actual)} / ${fmt(s.target)} ${unit(key)}`]
@@ -162,10 +164,11 @@ export function buildWeeklyReviewUserMessage(
   )
   lines.push('')
   lines.push('DAYS (actual / target)')
-  for (const day of stats.days) lines.push(dayLine(day, stats.today))
+  for (const day of stats.days) lines.push(dayLine(day, stats.today, profile.preferences))
   lines.push('')
   lines.push('AVERAGES OVER LOGGED DAYS (actual / target)')
-  for (const key of AVERAGE_KEYS) {
+  // Hidden features (D37) stay out of the prompt, or the review would advise on them.
+  for (const key of shownTargetKeys(AVERAGE_KEYS, profile.preferences)) {
     const week = summariseTarget(stats.days, key)
     if (week.average === null || week.target === null) continue
     lines.push(

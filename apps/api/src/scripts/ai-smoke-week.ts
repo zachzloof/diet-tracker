@@ -1,4 +1,5 @@
 import {
+  DEFAULT_PREFERENCES,
   computeTargets,
   currentStreak,
   evaluateDay,
@@ -32,6 +33,7 @@ for (const seed of SEED_USERS) {
   const profile: Profile = {
     ...seed.profile,
     healthConsentAt: null,
+    preferences: DEFAULT_PREFERENCES,
     createdAt: `${today}T00:00:00.000Z`,
     updatedAt: `${today}T00:00:00.000Z`,
   }

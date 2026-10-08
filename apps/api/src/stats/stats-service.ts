@@ -4,6 +4,7 @@ import {
   daysOfMonth,
   emptyDayScore,
   evaluateDay,
+  filterGaps,
   findGaps,
   localDay,
   monthOf,
@@ -121,13 +122,18 @@ export async function weekStats(
     scoreDays(userId, daysEnding(today, STREAK_LOOKBACK_DAYS)),
   ])
   const summary = summariseWeek(scored.days)
-  const gaps = findGaps(
-    scored.days.map((d) => d.score),
-    {
-      dietPattern: profile.dietPattern,
-      allergies: profile.allergies,
-      dislikes: profile.dislikes,
-    },
+  // Every rule runs; the gaps about hidden features (water off, macros only) are dropped
+  // here so the Week screen and the weekly review agree on what to mention (D37).
+  const gaps = filterGaps(
+    findGaps(
+      scored.days.map((d) => d.score),
+      {
+        dietPattern: profile.dietPattern,
+        allergies: profile.allergies,
+        dislikes: profile.dislikes,
+      },
+    ),
+    profile.preferences,
   )
   return {
     start: window[0] ?? endDay,

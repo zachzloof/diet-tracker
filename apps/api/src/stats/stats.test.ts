@@ -33,7 +33,7 @@ const TZ = 'Europe/London'
 let cookie = ''
 let userId = ''
 
-function send(method: 'GET' | 'PUT' | 'POST', path: string, body?: unknown) {
+function send(method: 'GET' | 'PUT' | 'POST' | 'PATCH', path: string, body?: unknown) {
   return app.request(path, {
     method,
     headers: {
@@ -251,6 +251,38 @@ describe('GET /api/v1/stats/week', () => {
     expect(water?.averageRatio).toBeCloseTo(8306 / 6 / 2250, 6)
     // Tess is allergic to shellfish: no oysters in any suggestion.
     expect(body.gaps.flatMap((g) => g.suggestions).join(' ')).not.toMatch(/oyster|prawn/i)
+  })
+
+  it('drops the gaps about hidden features without changing the scores (D37)', async () => {
+    await signInAs(finn.email, finn.profile)
+    expect(await seedWeek(userId, finn.email, TZ)).toBe(25)
+
+    expect(
+      (await send('PATCH', '/api/v1/profile/preferences', { water: false })).status,
+    ).toBe(200)
+    const noWater = weekStatsResponseSchema.parse(
+      await (await send('GET', '/api/v1/stats/week')).json(),
+    )
+    expect(noWater.gaps.map(rule)).toEqual([
+      'food_group_short:vegetables',
+      'fibre_short:fiber_g',
+      'food_group_short:fruit',
+      'micro_short:vitamin_d_ug',
+      'micro_short:vitamin_a_ug',
+    ])
+    // Water is still scored: the preference hides it, the engine does not change.
+    expect(noWater.days[2]?.score.scores.water_ml?.actual).toBe(2400)
+    expect(noWater.daysMet).toBe(2)
+
+    expect(
+      (await send('PATCH', '/api/v1/profile/preferences', { nutrientDetail: 'macros' })).status,
+    ).toBe(200)
+    const macros = weekStatsResponseSchema.parse(
+      await (await send('GET', '/api/v1/stats/week')).json(),
+    )
+    expect(macros.gaps.map(rule)).toEqual(['fibre_short:fiber_g'])
+    expect(macros.days[3]?.score.scores.vitamin_d_ug).toBeDefined()
+    expect(macros.daysMet).toBe(2)
   })
 
   it('scores each day against the targets in force that day', async () => {

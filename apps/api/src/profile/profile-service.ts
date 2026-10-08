@@ -4,8 +4,11 @@ import {
   carryOverrides,
   computeTargets,
   localDay,
+  preferencesSchema,
   profileSchema,
   type Overrides,
+  type Preferences,
+  type PreferencesPatch,
   type Profile,
   type ProfileInput,
   type TargetInput,
@@ -44,6 +47,7 @@ export function toWireProfile(row: ProfileRow): Profile {
     units: row.units,
     flags: row.flags,
     healthConsentAt: row.healthConsentAt?.toISOString() ?? null,
+    preferences: preferencesSchema.parse(row.preferences),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   })
@@ -85,6 +89,26 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   const rows = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
   const row = rows[0]
   return row ? toWireProfile(row) : null
+}
+
+/** Merges a patch into the stored preferences. The profile must exist. */
+export async function updatePreferences(
+  userId: string,
+  patch: PreferencesPatch,
+  now: Date = new Date(),
+): Promise<Preferences> {
+  return db.transaction(async (tx) => {
+    const existing = (
+      await tx.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
+    )[0]
+    if (!existing) throw errors.profileRequired()
+    const next = preferencesSchema.parse({ ...existing.preferences, ...patch })
+    await tx
+      .update(profiles)
+      .set({ preferences: next, updatedAt: now })
+      .where(eq(profiles.userId, userId))
+    return next
+  })
 }
 
 export interface SaveProfileResult {

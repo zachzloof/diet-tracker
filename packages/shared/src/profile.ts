@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { isValidTimeZone } from './dates.js'
+import { preferencesSchema } from './preferences.js'
 
 /**
  * Who the person is, as the nutrition engine and the UI both see it. Enum values are
@@ -182,6 +183,8 @@ export const profileSchema = z.object({
   ...profileInputSchema.shape,
   /** When the person agreed to their health data being stored; null for older accounts. */
   healthConsentAt: z.iso.datetime().nullable(),
+  /** Display preferences (D37); set from Settings > Preferences, not onboarding. */
+  preferences: preferencesSchema,
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })

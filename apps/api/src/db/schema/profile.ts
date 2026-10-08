@@ -1,5 +1,6 @@
 import type {
   Overrides,
+  Preferences,
   SafetyFlags,
   StoredPlanExplanation,
   TargetInput,
@@ -53,6 +54,8 @@ export const profiles = pgTable('profiles', {
   recalibrationSnoozedUntil: day('recalibration_snoozed_until'),
   /** When the person gave explicit consent to store health data; null for accounts from before the step. */
   healthConsentAt: timestamptz('health_consent_at'),
+  /** Display preferences (D37). Missing keys read as "on": `preferencesSchema` fills them. */
+  preferences: jsonb('preferences').$type<Partial<Preferences>>().notNull().default({}),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
   updatedAt: timestamptz('updated_at').notNull().defaultNow(),
 })

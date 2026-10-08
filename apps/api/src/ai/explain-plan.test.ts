@@ -1,4 +1,5 @@
 import {
+  DEFAULT_PREFERENCES,
   NO_FLAGS,
   computeTargets,
   planExplanationSchema,
@@ -29,6 +30,7 @@ const finn: Profile = {
   units: 'metric',
   flags: NO_FLAGS,
   healthConsentAt: null,
+  preferences: DEFAULT_PREFERENCES,
   createdAt: '2026-09-25T10:00:00.000Z',
   updatedAt: '2026-09-25T10:00:00.000Z',
 }

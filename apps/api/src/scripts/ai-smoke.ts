@@ -1,4 +1,4 @@
-import { foodEstimateSchema, type Profile } from '@diet-tracker/shared'
+import { DEFAULT_PREFERENCES, foodEstimateSchema, type Profile } from '@diet-tracker/shared'
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
@@ -39,6 +39,7 @@ if (!seed) throw new Error('no seed users')
 const profile: Profile = {
   ...seed.profile,
   healthConsentAt: null,
+  preferences: DEFAULT_PREFERENCES,
   createdAt: '2026-09-26T00:00:00.000Z',
   updatedAt: '2026-09-26T00:00:00.000Z',
 }

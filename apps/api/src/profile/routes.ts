@@ -1,8 +1,10 @@
 import {
   overridesInputSchema,
+  preferencesPatchSchema,
   profileInputSchema,
   type ExplainResponse,
   type OverridesResponse,
+  type PreferencesResponse,
   type ProfileResponse,
   type ProfileSaveResponse,
   type TargetHistoryResponse,
@@ -14,7 +16,7 @@ import { requireAuth } from '../auth/session-middleware.js'
 import { errors } from '../errors.js'
 import { jsonBody, requireJson } from '../middleware/validate.js'
 import type { AppEnv } from '../types.js'
-import { getProfile, saveProfile } from './profile-service.js'
+import { getProfile, saveProfile, updatePreferences } from './profile-service.js'
 import {
   listVersions,
   requireLatestVersion,
@@ -36,6 +38,15 @@ export const profileRoutes = new Hono<AppEnv>()
       profile: result.profile,
       version: toWireVersion(result.version),
       targetsChanged: result.targetsChanged,
+    }
+    return c.json(body, 200)
+  })
+
+  /** Display preferences (D37): any subset of the keys; the rest keep their value. */
+  .patch('/preferences', requireJson, jsonBody(preferencesPatchSchema), async (c) => {
+    const { user } = requireAuth(c)
+    const body: PreferencesResponse = {
+      preferences: await updatePreferences(user.id, c.req.valid('json')),
     }
     return c.json(body, 200)
   })

@@ -2,6 +2,7 @@ import {
   NO_FLAGS,
   apiErrorSchema,
   overridesResponseSchema,
+  preferencesResponseSchema,
   profileResponseSchema,
   profileSaveResponseSchema,
   targetHistoryResponseSchema,
@@ -117,6 +118,55 @@ describe('profile', () => {
     const weights = await db.select().from(weightEntries)
     expect(weights).toHaveLength(1)
     expect(weights[0]?.weightKg).toBe(75)
+  })
+
+  it('preferences default to everything on, patch one key at a time and survive a profile edit', async () => {
+    expect((await send('PUT', '/api/v1/profile', finn)).status).toBe(200)
+    const initial = profileResponseSchema.parse(await (await send('GET', '/api/v1/profile')).json())
+    expect(initial.profile?.preferences).toEqual({
+      water: true,
+      workouts: true,
+      nutrientDetail: 'full',
+    })
+
+    const off = await send('PATCH', '/api/v1/profile/preferences', { water: false })
+    expect(off.status).toBe(200)
+    expect(preferencesResponseSchema.parse(await off.json()).preferences).toEqual({
+      water: false,
+      workouts: true,
+      nutrientDetail: 'full',
+    })
+
+    const macros = await send('PATCH', '/api/v1/profile/preferences', {
+      nutrientDetail: 'macros',
+    })
+    expect(preferencesResponseSchema.parse(await macros.json()).preferences).toEqual({
+      water: false,
+      workouts: true,
+      nutrientDetail: 'macros',
+    })
+
+    // A full profile save (onboarding edit) leaves the preferences alone.
+    expect((await send('PUT', '/api/v1/profile', { ...finn, weightKg: 76 })).status).toBe(200)
+    const after = profileResponseSchema.parse(await (await send('GET', '/api/v1/profile')).json())
+    expect(after.profile?.preferences).toEqual({
+      water: false,
+      workouts: true,
+      nutrientDetail: 'macros',
+    })
+  })
+
+  it('rejects an empty or unknown preferences patch, and needs a profile', async () => {
+    const early = await send('PATCH', '/api/v1/profile/preferences', { water: false })
+    expect(early.status).toBe(409)
+    expect((await errorBody(early)).code).toBe('profile_required')
+
+    expect((await send('PUT', '/api/v1/profile', finn)).status).toBe(200)
+    expect((await send('PATCH', '/api/v1/profile/preferences', {})).status).toBe(400)
+    expect((await send('PATCH', '/api/v1/profile/preferences', { theme: 'dark' })).status).toBe(400)
+    expect(
+      (await send('PATCH', '/api/v1/profile/preferences', { nutrientDetail: 'micros' })).status,
+    ).toBe(400)
   })
 
   it('refuses a first profile without consent to store health data, then records when it was given', async () => {
