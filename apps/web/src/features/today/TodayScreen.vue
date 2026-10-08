@@ -21,6 +21,7 @@ import WeightCard from '@/features/progress/WeightCard.vue'
 import { useRecalibration } from '@/features/progress/useProgress'
 import InstallHint from '@/features/pwa/InstallHint.vue'
 import { useTargets } from '@/features/targets/useTargets'
+import WorkoutCard from '@/features/training/WorkoutCard.vue'
 import { formatDay } from '@/lib/format'
 import { useQueueStore } from '@/stores/queue'
 import { useUiStore } from '@/stores/ui'
@@ -228,6 +229,8 @@ function retry(): void {
       </template>
 
       <WeightCard v-if="isToday" :today="today" />
+
+      <WorkoutCard :day="viewedDay" :is-today="isToday" />
 
       <DayLog
         v-if="foodEntries.length"

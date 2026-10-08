@@ -30,6 +30,8 @@ const PERSISTED_PREFIXES: readonly (readonly string[])[] = [
   ['meals'],
   ['weight'],
   ['recalibration'],
+  ['exercises'],
+  ['workouts'],
 ]
 const PERSIST_KEY = 'dt.query-cache'
 const PERSIST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000

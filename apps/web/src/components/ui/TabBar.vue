@@ -19,7 +19,7 @@ const LEFT: Tab[] = [
 ]
 const RIGHT: Tab[] = [
   { name: 'week', label: 'Week', icon: 'calendar' },
-  { name: 'you', label: 'You', icon: 'user' },
+  { name: 'you', label: 'You', icon: 'user', section: '/workouts' },
 ]
 
 const route = useRoute()

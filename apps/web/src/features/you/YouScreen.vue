@@ -54,6 +54,7 @@ const NAV = computed<NavItem[]>(() => [
     icon: 'trending-up',
   },
   { name: 'foods', label: 'My foods', sub: 'Saved foods for one-tap logging', icon: 'book' },
+  { name: 'workouts', label: 'Workouts', sub: 'Your gym sessions and lifts', icon: 'dumbbell' },
   {
     name: 'settings',
     label: 'Settings',

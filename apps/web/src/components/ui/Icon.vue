@@ -43,6 +43,7 @@ export type IconName =
   | 'trending-up'
   | 'shield'
   | 'utensils'
+  | 'dumbbell'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -90,6 +91,7 @@ const PATHS: Record<IconName, string> = {
   'trending-up': 'M3 17l6-6 4 4 8-8M15 7h6v6',
   shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
   utensils: 'M4 3v6a3 3 0 0 0 6 0V3M7 3v18M20 14V3c-2.5 1-4 3.5-4 7v4zM20 14v7',
+  dumbbell: 'M2 12h2M20 12h2M6 7v10M18 7v10M9 5v14M15 5v14M9 12h6',
   sparkles:
     'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM5 3v3M3.5 4.5h3M19 17v3M17.5 18.5h3',
 }

@@ -76,6 +76,21 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/meals/MealEditorScreen.vue'),
   },
   {
+    path: '/workouts',
+    name: 'workouts',
+    component: () => import('@/features/training/WorkoutsScreen.vue'),
+  },
+  {
+    path: '/workouts/new',
+    name: 'workout-new',
+    component: () => import('@/features/training/WorkoutStartScreen.vue'),
+  },
+  {
+    path: '/workouts/:id',
+    name: 'workout',
+    component: () => import('@/features/training/WorkoutScreen.vue'),
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('@/features/profile/ProfileScreen.vue'),

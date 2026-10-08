@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError } from '@/lib/api'
 import { clearPersistedQueries } from '@/lib/query-client'
+import { useWorkoutDraftStore } from '@/stores/workout-draft'
 import { authApi } from './api'
 
 export const ME_KEY = ['me'] as const
@@ -47,6 +48,7 @@ export function useLogout() {
     onSettled: async () => {
       queryClient.clear()
       clearPersistedQueries()
+      useWorkoutDraftStore().clear()
       queryClient.setQueryData(ME_KEY, null)
       await router.replace({ name: 'login' })
     },

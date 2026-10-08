@@ -7,6 +7,7 @@ import Toast from '@/components/ui/Toast.vue'
 import { useQueueStore } from '@/stores/queue'
 import { useRemindersStore } from '@/stores/reminders'
 import { useUiStore } from '@/stores/ui'
+import { useWorkoutDraftStore } from '@/stores/workout-draft'
 
 // Instantiating the store applies the saved theme before the first paint.
 useUiStore()
@@ -23,9 +24,14 @@ onErrorCaptured((error) => {
 // Reminders run on a timer in this tab; queued writes go out as soon as we are online.
 useRemindersStore().start()
 const queue = useQueueStore()
+const workoutDrafts = useWorkoutDraftStore()
 onMounted(() => {
-  window.addEventListener('online', () => void queue.flush())
+  window.addEventListener('online', () => {
+    void queue.flush()
+    void workoutDrafts.flush()
+  })
   void queue.flush()
+  void workoutDrafts.flush()
 })
 </script>
 
