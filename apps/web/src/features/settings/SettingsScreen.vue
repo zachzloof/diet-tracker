@@ -90,7 +90,7 @@ const preferencesSummary = computed(() => {
     !prefs.value.workouts && 'workouts off',
     prefs.value.nutrientDetail === 'macros' && 'macros only',
   ].filter((item): item is string => typeof item === 'string')
-  return off.length ? off.join(' � ') : 'Water, workouts, nutrient detail'
+  return off.length ? off.join(' · ') : 'Water, workouts, nutrient detail'
 })
 
 const consent = useAiConsentStore()

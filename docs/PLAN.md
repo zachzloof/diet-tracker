@@ -245,6 +245,28 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ---
 
+## Follow-up - Preferences: water, workouts, nutrient detail
+
+**Status:** done (2026-10-08)
+
+**Goal.** Let a person switch off the parts of the app that get in the way: water tracking, the gym features, and the full nutrient suite (keeping energy, protein, carbs, fat and fibre). All on by default; nothing recomputed, nothing deleted (D37).
+
+**Shipped.** `profiles.preferences` (migration 0011), `PATCH /api/v1/profile/preferences`, `preferences` on the profile wire shape, `isTargetShown` / `shownTargetKeys` / `filterGaps` in `packages/shared/src/preferences.ts`. Settings has a Preferences row (its subtitle says what is off) leading to `/settings/preferences`: a water toggle, a workouts toggle and an Everything / Macros only control, each saving on change. Today hides the water card, the Training card, the vitamins grid and the food groups accordingly; Week hides the water and sodium rows and swaps the Nutrients tile for a Protein tile in macros mode; Targets hides Hydration, Limits, Vitamins and Food groups; You hides Workouts; the entry editor offers only fibre under "More nutrients" and the manual food form drops its vitamins and food-group disclosures. Week stats (and so the weekly review's prompt) drop gaps about hidden things.
+
+**Done when.**
+- [x] Settings > Preferences shows three controls, all on for a fresh account, and each change persists across a reload and on the server. *Walked at 390x844 dark with Playwright against Vite and the API as Finn: the row reads "Water, workouts, nutrient detail"; after turning everything off and reloading, "water off · workouts off · macros only"; `GET /profile` returned the saved values; `profile.test.ts` pins the defaults, the patch, the validation and that a full profile save leaves them alone.*
+- [x] Water off: no water card on Today, no Hydration on Targets, no water row or water gap on Week. *All three checked by heading and text; the Training card stayed.*
+- [x] Workouts off: no Training card on Today and no Workouts row under You. *Checked; `/workouts` stays reachable by URL on purpose.*
+- [x] Macros only: Today shows the energy card and the log only; the entry editor's "More nutrients" holds fibre alone; the food form has no vitamins or food-group disclosures; Week shows the Protein tile, energy / protein / carbs / fat / fibre rows and only the fibre gap; Targets shows Macros alone. *Checked; `stats.test.ts` pins that Finn's seeded week keeps its two met days and loses the vitamin, food-group and water gaps while the scores stay.*
+- [x] Everything back on restores every card with the same numbers. *Checked on Today; the server returned the defaults.*
+- [x] Looks right at 360, 390 and 430 wide, dark and light; no horizontal scroll. *Preferences and Today (macros mode) at all three widths.*
+
+**Deferrals.** No real-phone check. The `/workouts` routes and the water quick-add API stay reachable when switched off (a bookmark still works). The weekly review was not regenerated against the real model with preferences off; the prompt builder is covered by its existing unit tests and the gap list it quotes is filtered server-side.
+
+**Decisions it depends on.** D37.
+
+---
+
 ## Ideas after slice 6 (not planned)
 
 - Coach chat: a conversational agent with tools to log food, answer "how am I doing", and propose target changes.

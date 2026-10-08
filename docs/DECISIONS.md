@@ -605,3 +605,16 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **Recommendation.** A. The data is small (a set is one short row), it is the person's own training diary, and D27's reason (not holding more health data than the product uses) does not apply to history the product shows on purpose.
 
 **Status.** `adopted` (2026-10-08), please confirm.
+
+## D37. Display preferences live on the profile and only hide, never recompute (adopted, please confirm)
+
+**Context.** The owner asked for a Preferences page under Settings: switch off water tracking, switch off the gym features, and choose between the full nutrient suite and "macros only" (energy, protein, carbs, fat, fibre). Everything stays on by default; the switches exist for people the full picture is overwhelming.
+
+**Options.**
+- **A. Store the three switches on the profile (`profiles.preferences` JSONB, `PATCH /api/v1/profile/preferences`) and treat them as display-only.** Built. The engine still scores every target, the estimator still fills every nutrient, water quick-adds and workouts are kept; screens hide cards, rows, sections and form fields, and the week's gap list (and so the weekly review) drops gaps about hidden things. A phone and a laptop agree because the server holds the answer; the mirrored profile answers offline.
+- **B. Keep them on the device like the theme.** Simpler, but a second device would show the full app again, and the weekly review could not respect them without sending them on every request.
+- **C. Make "macros only" change the engine** (drop micronutrient and food-group targets from the version, so completeness, gaps and the review never see them). Cleaner on Week, but it turns a display choice into a target version with history, and turning it back on would mean a new version and a rescored past.
+
+**Recommendation.** A. "Day met" never depended on the hidden things (energy, protein and the goal's limits, D31), so hiding loses nothing a person is scored on. Two visible consequences, both on purpose: in macros mode the Week screen's third tile becomes "Protein, days hit" instead of "Nutrients, % of minimums met", and the limits (sodium, saturated fat, added sugar) are hidden too, though a limit can still fail a maintain or lose day; the day-status line names it when it does.
+
+**Status.** `adopted` (2026-10-08), please confirm. Open: whether the manual food form should also drop the packet limits (sugar, saturated fat, sodium) in macros mode; it keeps them today because they are on every label.

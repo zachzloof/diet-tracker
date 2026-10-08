@@ -4,6 +4,13 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Preferences (2026-10-08)
+- Settings now has a Preferences page: turn off water tracking, turn off the gym features, or switch to "Macros only" (calories, protein, carbs, fat and fibre). Everything is on to begin with, each change saves on its own, and nothing you logged is lost: vitamins, minerals, water and workouts are still estimated and kept, just not shown until you turn them back on.
+- Water off hides the water card on Today, the Hydration target and the water row and gap on Week. Workouts off hides the Training card on Today and Workouts under You. Macros only hides the vitamins grid, food groups and limits on Today, the matching sections on Targets, the sodium row on Week (the Nutrients tile becomes "Protein, days hit"), and asks for fibre alone under "More nutrients" when you edit an entry.
+- The Settings row says what is off ("water off · macros only"), and the weekly review no longer mentions things you have hidden.
+- Whether a day is met is unchanged by any of this (D37).
+- API: `profiles.preferences` (migration 0011), `PATCH /api/v1/profile/preferences`, `preferences` on the profile. Web: `apps/web/src/features/settings/PreferencesScreen.vue`, `features/profile/usePreferences.ts`.
+
 ### Gym logging (slice 8, 2026-10-08)
 - A Training card on Today, under Weight: that day's sessions with their time, sets and weight lifted ("Push A · 48 min · 12 sets · 1,308 kg"), or "Rest day so far" with "Log a workout". Past days show their sessions too.
 - The session screen: name it, add exercises from a catalogue of 74 common lifts (or add your own, with what a set records), log each set as kg and reps (seconds and metres for timed and cardio work), tick sets done, mark warm-ups by tapping the set number, add a note per exercise, say how it felt, and finish. Everything saves itself a moment after each change; the header says "Saved", "Saving…" or "Saved on this phone".
