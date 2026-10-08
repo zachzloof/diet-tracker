@@ -76,12 +76,7 @@ const WATER_RATIO = 0.7
 const WATER_DAYS = 4
 const UNLOGGED_DAYS = 3
 
-const LIMIT_KEYS: readonly NutrientKey[] = [
-  'sodium_mg',
-  'saturated_fat_g',
-  'added_sugar_g',
-  'alcohol_std_drinks',
-]
+const LIMIT_KEYS: readonly NutrientKey[] = ['sodium_mg', 'saturated_fat_g', 'added_sugar_g']
 const SCORED_FOOD_GROUPS: readonly FoodGroupKey[] = [
   'vegetables',
   'fruit',

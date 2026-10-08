@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   TARGET_KINDS,
+  isHiddenNutrient,
   type FoodGroupKey,
   type FoodGroupServes,
   type NutrientKey,
@@ -14,14 +15,14 @@ import { targetKeySchema, type TargetEntry, type TargetKey, type Targets } from 
  * section 4). Pure; the API runs it for weekly stats and the browser runs it for the live
  * Today screen, so the two can never disagree.
  *
- * Per-target status from actual / target:
- * - goal (energy): met 0.90 to 1.10, close 0.80 to 1.20, else short or over
+ * Per-target status from actual / target (D34 bands):
+ * - goal (energy, water): met 0.95 to 1.05, close 0.90 to 1.10, else short or over
  * - goal (protein): met >= 0.90, close 0.75 to 0.90, else short; never over
  * - goal (carbs, fat): met 0.80 to 1.20, close 0.65 to 1.35, else short or over
- * - goal (water): met >= 0.90, close 0.70 to 0.90, else short
- * - minimum: met >= 1.00, close 0.75 to 1.00, else short
- * - limit: met <= 1.00, close 1.00 to 1.15, else over
- * - info: not scored
+ * - minimum: met >= 0.95, close 0.90 to 0.95, else short; over at or above `overAbove`
+ *   (the tolerable upper intake level) when the entry carries one
+ * - limit: met <= 1.05, close 1.05 to 1.10, else over
+ * - info, and any hidden nutrient (alcohol): not scored
  *
  * `dayMet` depends on the goal the targets were computed for (`dayMetRule`, D31): energy met
  * or close and protein hit for everyone; which limits can fail the day, and whether close
@@ -76,12 +77,7 @@ export interface DayMetRule {
   summary: string
 }
 
-const ALL_LIMITS: readonly TargetKey[] = [
-  'sodium_mg',
-  'saturated_fat_g',
-  'added_sugar_g',
-  'alcohol_std_drinks',
-]
+const ALL_LIMITS: readonly TargetKey[] = ['sodium_mg', 'saturated_fat_g', 'added_sugar_g']
 
 const DAY_MET_RULES: Readonly<Record<Goal, DayMetRule>> = {
   gain: {
@@ -118,7 +114,7 @@ export function dayMetRule(goal: Goal): DayMetRule {
 export const UNLOGGED_MAX_ENTRIES = 2
 export const UNLOGGED_ENERGY_RATIO = 0.4
 
-/** Boundary values (a day at exactly 80% of energy) land inside the band, not outside it. */
+/** Boundary values (a day at exactly 90% of energy) land inside the band, not outside it. */
 const EPS = 1e-9
 
 interface Band {
@@ -129,13 +125,17 @@ interface Band {
 }
 
 const BANDS: Readonly<Record<'energy' | 'protein' | 'macro' | 'water', Band>> = {
-  energy: { metMin: 0.9, metMax: 1.1, closeMin: 0.8, closeMax: 1.2 },
+  energy: { metMin: 0.95, metMax: 1.05, closeMin: 0.9, closeMax: 1.1 },
   protein: { metMin: 0.9, metMax: Infinity, closeMin: 0.75, closeMax: Infinity },
   macro: { metMin: 0.8, metMax: 1.2, closeMin: 0.65, closeMax: 1.35 },
-  water: { metMin: 0.9, metMax: Infinity, closeMin: 0.7, closeMax: Infinity },
+  water: { metMin: 0.95, metMax: 1.05, closeMin: 0.9, closeMax: 1.1 },
 }
-const MINIMUM_CLOSE = 0.75
-const LIMIT_CLOSE = 1.15
+/** Minimums: met from 95%, close from 90%. */
+const MINIMUM_MET = 0.95
+const MINIMUM_CLOSE = 0.9
+/** Limits: met up to 105%, close up to 110%, over beyond. */
+const LIMIT_MET = 1.05
+const LIMIT_CLOSE = 1.1
 
 function goalBand(key: TargetKey): Band {
   switch (key) {
@@ -161,14 +161,15 @@ function goalStatus(key: TargetKey, ratio: number): TargetStatus {
   return ratio < band.closeMin ? 'short' : 'over'
 }
 
-function minimumStatus(ratio: number): TargetStatus {
-  if (ratio >= 1 - EPS) return 'met'
+function minimumStatus(actual: number, ratio: number, upperLimit: number | null): TargetStatus {
+  if (upperLimit !== null && upperLimit > 0 && actual >= upperLimit - EPS) return 'over'
+  if (ratio >= MINIMUM_MET - EPS) return 'met'
   if (ratio >= MINIMUM_CLOSE - EPS) return 'close'
   return 'short'
 }
 
 function limitStatus(ratio: number): TargetStatus {
-  if (ratio <= 1 + EPS) return 'met'
+  if (ratio <= LIMIT_MET + EPS) return 'met'
   if (ratio <= LIMIT_CLOSE + EPS) return 'close'
   return 'over'
 }
@@ -177,7 +178,7 @@ function limitStatus(ratio: number): TargetStatus {
 export function scoreTarget(entry: TargetEntry, actual: number): TargetScore {
   const target = entry.value
   const base = { key: entry.key, kind: entry.kind, actual, target }
-  if (entry.kind === 'info') {
+  if (entry.kind === 'info' || isHiddenNutrient(entry.key)) {
     return { ...base, ratio: target > 0 ? actual / target : null, status: 'unscored' }
   }
   if (entry.kind === 'limit') {
@@ -198,7 +199,10 @@ export function scoreTarget(entry: TargetEntry, actual: number): TargetScore {
   return {
     ...base,
     ratio,
-    status: entry.kind === 'minimum' ? minimumStatus(ratio) : goalStatus(entry.key, ratio),
+    status:
+      entry.kind === 'minimum'
+        ? minimumStatus(actual, ratio, entry.overAbove)
+        : goalStatus(entry.key, ratio),
   }
 }
 

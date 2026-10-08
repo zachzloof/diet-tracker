@@ -73,7 +73,6 @@ describe('computeTargets golden: Finn', () => {
       saturated_fat_g: 36,
       sodium_mg: 2300,
       water_ml: 3250,
-      alcohol_std_drinks: 0,
       iron_mg: 8,
       calcium_mg: 1000,
       magnesium_mg: 400,
@@ -120,7 +119,11 @@ describe('computeTargets golden: Finn', () => {
     expect(protein.floor).toBe(60)
     expect(entry(targets, 'fat_g').floor).toBe(40)
     expect(entry(targets, 'carbs_g').floor).toBe(50)
-    expect(entry(targets, 'alcohol_std_drinks').overAbove).toBe(2)
+    expect(targetFor(targets, 'alcohol_std_drinks')).toBeUndefined() // hidden, D34
+    expect(entry(targets, 'vitamin_c_mg').overAbove).toBe(2000) // UL
+    expect(entry(targets, 'calcium_mg').overAbove).toBe(2500)
+    expect(entry(targets, 'potassium_mg').overAbove).toBeNull()
+    expect(entry(targets, 'vitamin_c_mg').reason).toMatch(/Over 2000 mg in a day is flagged/)
   })
 
   it('uses the right kinds', () => {

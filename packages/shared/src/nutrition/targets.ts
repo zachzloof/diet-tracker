@@ -25,6 +25,7 @@ import {
   ageBand,
   driFor,
   foodGroupServesFor,
+  upperLimitFor,
 } from './dri.js'
 import {
   FOOD_GROUPS,
@@ -33,6 +34,7 @@ import {
   NUTRIENT_UNITS,
   TARGET_KINDS,
   foodGroupKeySchema,
+  isHiddenNutrient,
   nutrientKeySchema,
   type FoodGroupKey,
   type NutrientKey,
@@ -50,7 +52,7 @@ import {
  */
 
 /** Bumped when the engine's output shape changes; stored versions behind it are recomputed on boot. */
-export const ENGINE_VERSION = 2
+export const ENGINE_VERSION = 3
 
 export const targetInputSchema = z.object({
   sex: sexSchema,
@@ -91,7 +93,10 @@ export const targetEntrySchema = z.object({
   range: z.object({ min: z.number().min(0), max: z.number().min(0) }).nullable(),
   /** Overrides below the floor are refused unless explicitly confirmed. */
   floor: z.number().min(0).nullable(),
-  /** For limits whose target is 0 (alcohol): the amount that counts as "over". */
+  /**
+   * The amount that counts as "over" when the target itself does not say: the tolerable
+   * upper intake level on a `minimum` micronutrient (D34), or the over line of a zero limit.
+   */
   overAbove: z.number().min(0).nullable(),
   reason: z.string(),
   overridden: z.boolean(),
@@ -503,12 +508,15 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
     `${WATER.mlPerKg} ml per kg plus ${WATER.perTrainingHourMl} ml per training hour: ${fmt(waterTraining)} ml on training days, ${fmt(waterRest)} ml on rest days.`,
     { range: { min: 1500, max: WATER.maxMl }, floor: 1000 },
   )
-  add(
-    'alcohol_std_drinks',
-    0,
-    `Zero is the target. ${ALCOHOL_OVER_ABOVE} standard drinks (10 g of alcohol each) in a day counts as over.`,
-    { range: { min: 0, max: ALCOHOL_OVER_ABOVE }, overAbove: ALCOHOL_OVER_ABOVE },
-  )
+  // Alcohol is hidden (D34): logged, never targeted or scored. Kept so it can come back.
+  if (!isHiddenNutrient('alcohol_std_drinks')) {
+    add(
+      'alcohol_std_drinks',
+      0,
+      `Zero is the target. ${ALCOHOL_OVER_ABOVE} standard drinks (10 g of alcohol each) in a day counts as over.`,
+      { range: { min: 0, max: ALCOHOL_OVER_ABOVE }, overAbove: ALCOHOL_OVER_ABOVE },
+    )
+  }
 
   // 8. Micronutrients by sex and age band.
   const who = driLabel(sex, age)
@@ -528,8 +536,12 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
       key === 'iodine_ug'
         ? ' Estimates depend on whether your salt and bread are iodised, so treat this one as rough.'
         : ''
-    add(key, value, `${basis} for ${who}${unspecified}.${vegan}${omega}${iodine}`, {
+    const ul = upperLimitFor(key, age)
+    const upper =
+      ul === null ? '' : ` Over ${fmt(ul)} ${NUTRIENTS[key].unitLabel} in a day is flagged.`
+    add(key, value, `${basis} for ${who}${unspecified}.${vegan}${omega}${iodine}${upper}`, {
       range: { min: roundMicro(value * 0.8), max: roundMicro(value * 2) },
+      overAbove: ul,
     })
   }
 

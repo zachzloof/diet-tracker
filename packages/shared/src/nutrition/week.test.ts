@@ -91,8 +91,8 @@ describe('currentStreak', () => {
 
 describe('summariseTarget and summariseWeek', () => {
   const week: ScoredDay[] = [
-    { day: '2026-09-20', score: met(3000, 150) },
-    { day: '2026-09-21', score: met(2600, 120) }, // energy close, protein close
+    { day: '2026-09-20', score: met(3000, 150) }, // energy close (0.92)
+    { day: '2026-09-21', score: met(2600, 120) }, // energy short (0.80), protein close
     { day: '2026-09-22', score: emptyDayScore() },
     { day: '2026-09-23', score: met(3300, 160) },
     { day: '2026-09-24', score: met(4000, 150) }, // energy over
@@ -103,8 +103,8 @@ describe('summariseTarget and summariseWeek', () => {
   it('summarises one target across the window with a status per day', () => {
     const energy = summariseTarget(week, 'energy_kcal')
     expect(energy.daysLogged).toBe(6)
-    expect(energy.daysMet).toBe(3)
-    expect(energy.statuses).toEqual(['met', 'close', null, 'met', 'over', 'met', 'short'])
+    expect(energy.daysMet).toBe(2)
+    expect(energy.statuses).toEqual(['close', 'short', null, 'met', 'over', 'met', 'short'])
     expect(energy.average).toBeCloseTo((3000 + 2600 + 3300 + 4000 + 3250 + 700) / 6, 6)
     expect(energy.averageRatio).toBeCloseTo(energy.average! / 3250, 6)
     expect(energy.target).toBe(3250)

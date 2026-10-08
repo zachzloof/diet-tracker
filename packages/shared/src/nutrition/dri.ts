@@ -100,6 +100,31 @@ export function driFor(key: MicroKey, sex: Sex, age: number): number {
 export const SODIUM_LIMIT_MG = 2300
 
 /**
+ * Tolerable upper intake levels for adults (NIH Office of Dietary Supplements, from the IOM
+ * DRI reports), nutrients.md section 2. A `minimum` target scores `over` at or above its UL
+ * (D34). Only nutrients whose UL applies to total intake from food are listed: magnesium's
+ * UL (350 mg) and folate's (1000 mcg) are for supplemental forms only; potassium, vitamin
+ * B12, vitamin K and omega-3 have no UL. Vitamin A's UL is for preformed vitamin A
+ * (retinol); the estimate is in RAE, so a carotenoid-heavy day can trip it. Calcium's UL
+ * drops from 2500 to 2000 mg after 50.
+ */
+export const UPPER_LIMIT: Readonly<Partial<Record<MicroKey, BandTable>>> = {
+  calcium_mg: bands(2500, 2500, 2000, 2000),
+  iron_mg: bands(45, 45, 45, 45),
+  zinc_mg: bands(40, 40, 40, 40),
+  iodine_ug: bands(1100, 1100, 1100, 1100),
+  vitamin_a_ug: bands(3000, 3000, 3000, 3000),
+  vitamin_c_mg: bands(2000, 2000, 2000, 2000),
+  vitamin_d_ug: bands(100, 100, 100, 100),
+  vitamin_e_mg: bands(1000, 1000, 1000, 1000),
+}
+
+/** The UL for an adult of this age, or null when none applies to intake from food. */
+export function upperLimitFor(key: MicroKey, age: number): number | null {
+  return UPPER_LIMIT[key]?.[ageBand(age)] ?? null
+}
+
+/**
  * Daily food-group serves (nutrients.md section 3, Australian Dietary Guidelines).
  * Returns null for the info-only groups so the caller can treat them differently.
  */

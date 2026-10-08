@@ -36,15 +36,17 @@ function day(nutrients: Partial<NutrientVector>, entryCount = 3): DayTotals {
 }
 
 describe('scoreTarget', () => {
-  it('scores energy with the goal band: met 90 to 110%, close 80 to 120%', () => {
-    const energy = entry('energy_kcal')
-    expect(scoreTarget(energy, 2925).status).toBe('met') // 0.90
-    expect(scoreTarget(energy, 3575).status).toBe('met') // 1.10
-    expect(scoreTarget(energy, 2600).status).toBe('close') // 0.80 exactly
-    expect(scoreTarget(energy, 3900).status).toBe('close') // 1.20 exactly
-    expect(scoreTarget(energy, 2599).status).toBe('short')
-    expect(scoreTarget(energy, 3901).status).toBe('over')
-    expect(scoreTarget(energy, 2600).ratio).toBeCloseTo(0.8, 10)
+  it('scores energy with the goal band: met 95 to 105%, close 90 to 110% (D34)', () => {
+    const energy = entry('energy_kcal') // 3250
+    expect(scoreTarget(energy, 3087.5).status).toBe('met') // 0.95 exactly
+    expect(scoreTarget(energy, 3412.5).status).toBe('met') // 1.05 exactly
+    expect(scoreTarget(energy, 3087).status).toBe('close')
+    expect(scoreTarget(energy, 3413).status).toBe('close')
+    expect(scoreTarget(energy, 2925).status).toBe('close') // 0.90 exactly
+    expect(scoreTarget(energy, 3575).status).toBe('close') // 1.10 exactly
+    expect(scoreTarget(energy, 2924).status).toBe('short')
+    expect(scoreTarget(energy, 3576).status).toBe('over')
+    expect(scoreTarget(energy, 2925).ratio).toBeCloseTo(0.9, 10)
   })
 
   it('never marks protein over; close from 75%, met from 90%', () => {
@@ -66,40 +68,67 @@ describe('scoreTarget', () => {
     expect(scoreTarget(carbs, 622).status).toBe('over')
   })
 
-  it('scores water as met from 90% and close from 70%, never over', () => {
+  it('scores water with the same band as energy', () => {
     const water = entry('water_ml') // 3250
-    expect(scoreTarget(water, 2925).status).toBe('met')
-    expect(scoreTarget(water, 5000).status).toBe('met')
-    expect(scoreTarget(water, 2275).status).toBe('close')
-    expect(scoreTarget(water, 2274).status).toBe('short')
+    expect(scoreTarget(water, 3100).status).toBe('met') // 0.954
+    expect(scoreTarget(water, 3400).status).toBe('met') // 1.046
+    expect(scoreTarget(water, 2925).status).toBe('close') // 0.90
+    expect(scoreTarget(water, 3575).status).toBe('close') // 1.10
+    expect(scoreTarget(water, 2924).status).toBe('short')
+    expect(scoreTarget(water, 5000).status).toBe('over')
   })
 
-  it('scores minimums: met at or above, close from 75%', () => {
+  it('scores minimums: met from 95%, close from 90%', () => {
     const fibre = entry('fiber_g') // 45
     expect(scoreTarget(fibre, 45).status).toBe('met')
     expect(scoreTarget(fibre, 60).status).toBe('met')
-    expect(scoreTarget(fibre, 33.75).status).toBe('close')
-    expect(scoreTarget(fibre, 33).status).toBe('short')
+    expect(scoreTarget(fibre, 42.75).status).toBe('met') // 0.95 exactly
+    expect(scoreTarget(fibre, 42).status).toBe('close')
+    expect(scoreTarget(fibre, 40.5).status).toBe('close') // 0.90 exactly
+    expect(scoreTarget(fibre, 40).status).toBe('short')
     const vegetables = entry('vegetables') // 6 serves
-    expect(scoreTarget(vegetables, 4.5).status).toBe('close')
-    expect(scoreTarget(vegetables, 4.4).status).toBe('short')
+    expect(scoreTarget(vegetables, 5.7).status).toBe('met')
+    expect(scoreTarget(vegetables, 5.4).status).toBe('close')
+    expect(scoreTarget(vegetables, 5.3).status).toBe('short')
+    // The omega-3 report: 1.55 g shows as "1.6 / 1.6" and must read met, not close.
+    expect(scoreTarget(entry('omega3_g'), 1.55).status).toBe('met')
   })
 
-  it('scores limits: met at or below, close to 115%, over beyond', () => {
+  it('flags a micronutrient over at its tolerable upper intake level', () => {
+    const vitaminC = entry('vitamin_c_mg') // RDA 90, UL 2000
+    expect(vitaminC.overAbove).toBe(2000)
+    expect(scoreTarget(vitaminC, 500).status).toBe('met')
+    expect(scoreTarget(vitaminC, 1999).status).toBe('met')
+    expect(scoreTarget(vitaminC, 2000).status).toBe('over')
+    const calcium = entry('calcium_mg') // UL 2500 under 51
+    expect(scoreTarget(calcium, 2600).status).toBe('over')
+    // No UL from food: never over, however much.
+    const potassium = entry('potassium_mg')
+    expect(potassium.overAbove).toBeNull()
+    expect(scoreTarget(potassium, 20000).status).toBe('met')
+    expect(scoreTarget(entry('magnesium_mg'), 900).status).toBe('met')
+  })
+
+  it('scores limits: met to 105%, close to 110%, over beyond', () => {
     const sodium = entry('sodium_mg') // 2300
     expect(scoreTarget(sodium, 2300).status).toBe('met')
-    expect(scoreTarget(sodium, 2645).status).toBe('close')
-    expect(scoreTarget(sodium, 2646).status).toBe('over')
+    expect(scoreTarget(sodium, 2415).status).toBe('met') // 1.05 exactly
+    expect(scoreTarget(sodium, 2416).status).toBe('close')
+    expect(scoreTarget(sodium, 2530).status).toBe('close') // 1.10 exactly
+    expect(scoreTarget(sodium, 2531).status).toBe('over')
     expect(scoreTarget(sodium, 0).status).toBe('met')
   })
 
-  it('scores a zero limit (alcohol) by its over line: none met, some close, two drinks over', () => {
-    const alcohol = entry('alcohol_std_drinks') // 0, over above 2
-    expect(scoreTarget(alcohol, 0).status).toBe('met')
-    expect(scoreTarget(alcohol, 1).status).toBe('close')
-    expect(scoreTarget(alcohol, 1).ratio).toBe(0.5)
-    expect(scoreTarget(alcohol, 2).status).toBe('over')
-    expect(scoreTarget(alcohol, 4).status).toBe('over')
+  it('gives alcohol no target and no score (hidden, D34)', () => {
+    expect(targetFor(targets, 'alcohol_std_drinks')).toBeUndefined()
+    // A stored version from before D34 still carries the entry: it scores as unscored.
+    const legacy = {
+      ...entry('sodium_mg'),
+      key: 'alcohol_std_drinks' as const,
+      value: 0,
+      overAbove: 2,
+    }
+    expect(scoreTarget(legacy, 3).status).toBe('unscored')
   })
 
   it('leaves info targets unscored', () => {
@@ -113,7 +142,7 @@ describe('scoreTarget', () => {
 describe('evaluateDay', () => {
   it('meets the day when energy is close, protein met and no limit over', () => {
     const score = evaluateDay(
-      day({ energy_kcal: 2700, protein_g: 185, sodium_mg: 1550, fiber_g: 26 }, 4),
+      day({ energy_kcal: 3000, protein_g: 185, sodium_mg: 1550, fiber_g: 26 }, 4),
       targets,
     )
     expect(score.logged).toBe(true)
@@ -161,8 +190,9 @@ describe('evaluateDay', () => {
     const sugary = evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.3 }), lose)
     expect(sugary.scores.added_sugar_g?.status).toBe('over')
     expect(sugary.dayMet).toBe(false)
-    // Within the 15% close band is still met.
+    // Within the 10% close band is still met.
     expect(evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.1 }), lose).dayMet).toBe(true)
+    expect(evaluateDay(day({ ...base, added_sugar_g: sugarLimit * 1.11 }), lose).dayMet).toBe(false)
   })
 
   it('maintain: every limit decides the day, and close protein is enough', () => {
@@ -178,12 +208,7 @@ describe('evaluateDay', () => {
     expect(
       evaluateDay(day({ energy_kcal: energy, protein_g: proteinTarget * 0.7 }), maintain).dayMet,
     ).toBe(false)
-    for (const over of [
-      { sodium_mg: 4200 },
-      { saturated_fat_g: 80 },
-      { added_sugar_g: 150 },
-      { alcohol_std_drinks: 2 },
-    ]) {
+    for (const over of [{ sodium_mg: 4200 }, { saturated_fat_g: 80 }, { added_sugar_g: 150 }]) {
       expect(
         evaluateDay(day({ energy_kcal: energy, protein_g: proteinTarget, ...over }), maintain)
           .dayMet,
@@ -197,13 +222,16 @@ describe('evaluateDay', () => {
     expect(score.dayMet).toBe(false)
   })
 
-  it('gain: alcohol at two standard drinks is over, and the day still stands', () => {
+  it('maintain: alcohol never decides the day and is not in the rule', () => {
+    const maintain = computeTargets({ ...finn, goal: 'maintain', pace: null })
+    const energy = targetFor(maintain, 'energy_kcal')?.value ?? 0
     const score = evaluateDay(
-      day({ energy_kcal: 3250, protein_g: 150, alcohol_std_drinks: 2 }, 3),
-      targets,
+      day({ energy_kcal: energy, protein_g: 200, alcohol_std_drinks: 6 }, 3),
+      maintain,
     )
-    expect(score.scores.alcohol_std_drinks?.status).toBe('over')
+    expect(score.scores.alcohol_std_drinks).toBeUndefined()
     expect(score.dayMet).toBe(true)
+    expect(dayMetRule('maintain').decidingLimits).not.toContain('alcohol_std_drinks')
   })
 
   it('treats fewer than 2 entries under 40% of energy as unlogged, never met', () => {
@@ -234,7 +262,7 @@ describe('evaluateDay', () => {
           energy_kcal: 3000,
           protein_g: 150,
           fiber_g: 45, // met
-          iron_mg: 6.5, // 0.81 close
+          iron_mg: 7.4, // 0.925 close
           calcium_mg: 700, // 0.7 short
           vitamin_c_mg: 90, // met
         },

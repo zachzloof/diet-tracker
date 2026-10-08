@@ -170,7 +170,7 @@ describe('findGaps', () => {
 
   it('does not count a limit that is merely close', () => {
     const gaps = findGaps(
-      week([scored({ sodium_mg: 2600 }), scored({ sodium_mg: 2600 }), scored({ sodium_mg: 2600 })]),
+      week([scored({ sodium_mg: 2500 }), scored({ sodium_mg: 2500 }), scored({ sodium_mg: 2500 })]),
       profile,
     )
     expect(rules(gaps)).toEqual([])

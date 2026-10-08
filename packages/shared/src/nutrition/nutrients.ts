@@ -46,6 +46,22 @@ export const nutrientKeySchema = nutrientVectorSchema.keyof()
 export type NutrientKey = z.infer<typeof nutrientKeySchema>
 export const NUTRIENT_KEYS: readonly NutrientKey[] = nutrientKeySchema.options
 
+/**
+ * Nutrients that are still logged and stored (the vector stays complete) but get no target,
+ * no score and no place in the UI (D34). Alcohol: not the app's business. To bring one back,
+ * remove it from this list and bump `ENGINE_VERSION` so stored target versions recompute.
+ */
+export const HIDDEN_NUTRIENT_KEYS: readonly NutrientKey[] = ['alcohol_std_drinks']
+
+export function isHiddenNutrient(key: string): boolean {
+  return (HIDDEN_NUTRIENT_KEYS as readonly string[]).includes(key)
+}
+
+/** The nutrient keys a person can see: everything but `HIDDEN_NUTRIENT_KEYS`. */
+export const VISIBLE_NUTRIENT_KEYS: readonly NutrientKey[] = NUTRIENT_KEYS.filter(
+  (key) => !isHiddenNutrient(key),
+)
+
 export const NUTRIENT_UNITS = ['kcal', 'g', 'mg', 'ug', 'ml', 'std_drinks'] as const
 export type NutrientUnit = (typeof NUTRIENT_UNITS)[number]
 
