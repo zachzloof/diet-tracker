@@ -6,15 +6,18 @@ import {
   isValidDay,
   savedMealInputSchema,
   updateEntryRequestSchema,
+  updateGroupRequestSchema,
   type CreateEntriesResponse,
   type DayLogResponse,
   type DeleteEntryResponse,
+  type DeleteGroupResponse,
   type EstimateResponse,
   type FoodResponse,
   type FoodsResponse,
   type SavedMealResponse,
   type SavedMealsResponse,
   type UpdateEntryResponse,
+  type UpdateGroupResponse,
 } from '@diet-tracker/shared'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -25,7 +28,14 @@ import { jsonBody, requireJson } from '../middleware/validate.js'
 import { getProfile } from '../profile/profile-service.js'
 import type { AppEnv } from '../types.js'
 import { createFood, deleteFood, listFoods, toWireFood, updateFood } from './foods-service.js'
-import { createEntries, deleteEntry, getDay, updateEntry } from './log-service.js'
+import {
+  createEntries,
+  deleteEntry,
+  deleteGroup,
+  getDay,
+  updateEntry,
+  updateGroup,
+} from './log-service.js'
 import {
   createSavedMeal,
   deleteSavedMeal,
@@ -134,6 +144,23 @@ export const logRoutes = new Hono<AppEnv>()
   .delete('/entries/:id', async (c) => {
     const { user } = requireAuth(c)
     const body: DeleteEntryResponse = await deleteEntry(user.id, idParam(c.req.param('id')))
+    return c.json(body, 200)
+  })
+
+  /** A logged meal: every entry sharing a `groupId`, moved or removed together (D33). */
+  .patch('/groups/:id', requireJson, jsonBody(updateGroupRequestSchema), async (c) => {
+    const { user } = requireAuth(c)
+    const body: UpdateGroupResponse = await updateGroup(
+      user.id,
+      idParam(c.req.param('id')),
+      c.req.valid('json'),
+    )
+    return c.json(body, 200)
+  })
+
+  .delete('/groups/:id', async (c) => {
+    const { user } = requireAuth(c)
+    const body: DeleteGroupResponse = await deleteGroup(user.id, idParam(c.req.param('id')))
     return c.json(body, 200)
   })
 

@@ -258,6 +258,11 @@ describe('saved meals', () => {
     expect(logged.entries.map((e) => e.source)).toEqual(['library', 'library', 'manual'])
     expect(logged.entries.every((e) => e.meal === 'breakfast')).toBe(true)
     expect(logged.foodsSaved).toBe(0)
+    // The ingredients are one logged meal on Today (D33): one group id, the meal's name.
+    const groupIds = new Set(logged.entries.map((e) => e.groupId))
+    expect(groupIds.size).toBe(1)
+    expect([...groupIds][0]).toMatch(/^[0-9a-f-]{36}$/)
+    expect(logged.entries.every((e) => e.groupName === 'Overnight oats')).toBe(true)
     // Today rises by exactly the meal's totals.
     expect(logged.summary.entryCount).toBe(3)
     expect(logged.summary.totals.energy_kcal).toBe(365)

@@ -82,10 +82,20 @@ export const logEntries = pgTable(
     aiCallId: uuid('ai_call_id').references(() => aiCalls.id, { onDelete: 'set null' }),
     assumptions: text('assumptions').array().notNull().default([]),
     confidence: text('confidence').$type<Confidence>(),
+    /**
+     * Ingredients logged together as one meal share a `group_id` and carry the meal's name,
+     * so the day log can show them as one row (D33). No foreign key: the saved meal may be
+     * edited or deleted later and the logged meal must keep its name. Null when logged alone.
+     */
+    groupId: uuid('group_id'),
+    groupName: text('group_name'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
-  (t) => [index('log_entries_user_day_idx').on(t.userId, t.day)],
+  (t) => [
+    index('log_entries_user_day_idx').on(t.userId, t.day),
+    index('log_entries_group_idx').on(t.groupId),
+  ],
 )
 
 /**

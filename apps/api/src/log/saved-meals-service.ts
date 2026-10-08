@@ -179,9 +179,20 @@ export async function deleteSavedMeal(userId: string, id: string): Promise<void>
 }
 
 /** Records that the meal was just logged. Somebody else's id, or a deleted one, does nothing. */
-export async function touchSavedMeal(tx: Tx, userId: string, id: string, at: Date): Promise<void> {
-  await tx
+/**
+ * Marks the meal as used now and returns its name, or null when the id is not one of this
+ * person's meals (deleted, or somebody else's), which logging treats as "no saved meal".
+ */
+export async function touchSavedMeal(
+  tx: Tx,
+  userId: string,
+  id: string,
+  at: Date,
+): Promise<string | null> {
+  const rows = await tx
     .update(savedMeals)
     .set({ lastUsedAt: at })
     .where(and(eq(savedMeals.id, id), eq(savedMeals.userId, userId)))
+    .returning({ name: savedMeals.name })
+  return rows[0]?.name ?? null
 }

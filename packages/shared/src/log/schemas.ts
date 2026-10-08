@@ -167,6 +167,14 @@ export const logEntrySchema = z.object({
   aiCallId: z.uuid().nullable(),
   assumptions: z.array(z.string()),
   confidence: confidenceSchema.nullable(),
+  /**
+   * Set on every ingredient logged together as one meal (a saved meal, or a described meal
+   * kept with "Add to meals"). The day log shows the group as one row under `groupName`
+   * (D33). Null for anything logged on its own, and cleared when an ingredient is moved to
+   * another meal or day on its own.
+   */
+  groupId: z.uuid().nullable(),
+  groupName: z.string().nullable(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })
@@ -186,7 +194,6 @@ export const dayLogResponseSchema = z.object({
   summary: dailySummarySchema,
 })
 export type DayLogResponse = z.infer<typeof dayLogResponseSchema>
-
 
 /**
  * Edit an entry. Send `quantity`, `grams`, `nutrients` and `foodGroups` together to change
@@ -222,6 +229,27 @@ export type UpdateEntryResponse = z.infer<typeof updateEntryResponseSchema>
 
 export const deleteEntryResponseSchema = z.object({ summary: dailySummarySchema })
 export type DeleteEntryResponse = z.infer<typeof deleteEntryResponseSchema>
+
+// --- Logged meal groups --------------------------------------------------------------------
+
+/** Move every entry of a logged meal (`groupId`) to another meal of the day, another day, or both. */
+export const updateGroupRequestSchema = z
+  .object({ meal: mealSchema, day: z.iso.date() })
+  .partial()
+  .refine((fields) => Object.values(fields).some((v) => v !== undefined), {
+    message: 'Nothing to change',
+  })
+export type UpdateGroupRequest = z.infer<typeof updateGroupRequestSchema>
+
+export const updateGroupResponseSchema = z.object({
+  entries: z.array(logEntrySchema),
+  /** Every day touched: one, or two when the meal moved days. */
+  summaries: z.array(dailySummarySchema),
+})
+export type UpdateGroupResponse = z.infer<typeof updateGroupResponseSchema>
+
+export const deleteGroupResponseSchema = z.object({ summaries: z.array(dailySummarySchema) })
+export type DeleteGroupResponse = z.infer<typeof deleteGroupResponseSchema>
 
 // --- Saved meals ---------------------------------------------------------------------------
 

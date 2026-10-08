@@ -10,10 +10,13 @@ import {
   type DailySummary,
   type DayLogResponse,
   type DeleteEntryResponse,
+  type DeleteGroupResponse,
   type LogEntry,
   type LogEntryInput,
   type UpdateEntryRequest,
   type UpdateEntryResponse,
+  type UpdateGroupRequest,
+  type UpdateGroupResponse,
 } from '@diet-tracker/shared'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
@@ -52,6 +55,8 @@ export function toWireEntry(row: LogEntryRow): LogEntry {
     aiCallId: row.aiCallId,
     assumptions: row.assumptions,
     confidence: row.confidence,
+    groupId: row.groupId,
+    groupName: row.groupName,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   })
@@ -182,6 +187,15 @@ export async function createEntries(
       request.entries.flatMap((e) => (e.aiCallId ? [e.aiCallId] : [])),
     )
 
+    // Ingredients logged together as one meal share a group and carry the meal's name, so
+    // the day log can show "Protein oats" as one row (D33). A saved meal id that is not this
+    // person's (deleted, or a stranger's) logs the ingredients ungrouped rather than failing.
+    const savedMealName = request.savedMealId
+      ? await touchSavedMeal(tx, userId, request.savedMealId, now)
+      : null
+    const groupName = request.saveAsMeal?.name ?? savedMealName
+    const groupId = groupName === null ? null : uuidv7()
+
     let foodsSaved = 0
     const rows = []
     for (const entry of request.entries) {
@@ -207,6 +221,8 @@ export async function createEntries(
         aiCallId: entry.aiCallId && aiIds.has(entry.aiCallId) ? entry.aiCallId : null,
         assumptions: entry.assumptions,
         confidence: entry.confidence,
+        groupId: isWaterEntry(entry) ? null : groupId,
+        groupName: isWaterEntry(entry) ? null : groupName,
         createdAt: now,
         updatedAt: now,
       })
@@ -218,7 +234,6 @@ export async function createEntries(
       rows.flatMap((row) => (row.foodId ? [row.foodId] : [])),
       now,
     )
-    if (request.savedMealId) await touchSavedMeal(tx, userId, request.savedMealId, now)
     // "Add to meals": the logged items become a saved meal, one portion as logged, in the same
     // transaction, so a meal never exists without its log and the links to the foods just
     // saved are kept. It counts as used now, so it sits at the top of Meals.
@@ -272,6 +287,9 @@ export async function updateEntry(
 ): Promise<UpdateEntryResponse> {
   return db.transaction(async (tx) => {
     const current = await requireEntry(tx, userId, id)
+    const moved =
+      (patch.meal !== undefined && patch.meal !== current.meal) ||
+      (patch.day !== undefined && patch.day !== current.day)
     let updated = (
       await tx
         .update(logEntries)
@@ -283,6 +301,8 @@ export async function updateEntry(
           ...(patch.foodGroups !== undefined ? { foodGroups: patch.foodGroups } : {}),
           ...(patch.meal !== undefined ? { meal: patch.meal } : {}),
           ...(patch.day !== undefined ? { day: patch.day } : {}),
+          // An ingredient moved on its own leaves the logged meal it was part of.
+          ...(moved ? { groupId: null, groupName: null } : {}),
           updatedAt: now,
         })
         .where(eq(logEntries.id, id))
@@ -320,5 +340,84 @@ export async function deleteEntry(
     await tx.delete(logEntries).where(eq(logEntries.id, id))
     const summary = await recomputeSummary(tx, userId, current.day, now)
     return { summary: toWireSummary(summary, current.day) }
+  })
+}
+
+/** The entries of one logged meal, in log order; "not found" when none of them is this person's. */
+async function requireGroup(tx: Tx, userId: string, groupId: string): Promise<LogEntryRow[]> {
+  const rows = await tx
+    .select()
+    .from(logEntries)
+    .where(and(eq(logEntries.groupId, groupId), eq(logEntries.userId, userId)))
+    .orderBy(asc(logEntries.loggedAt), asc(logEntries.createdAt))
+  if (rows.length === 0) throw errors.notFound()
+  return rows
+}
+
+async function recomputeDays(
+  tx: Tx,
+  userId: string,
+  days: Iterable<string>,
+  now: Date,
+): Promise<DailySummary[]> {
+  const summaries = []
+  for (const day of new Set(days)) summaries.push(await recomputeSummary(tx, userId, day, now))
+  return summaries.map((row) => toWireSummary(row, row.day))
+}
+
+/** Moves every ingredient of a logged meal to another meal of the day, another day, or both. */
+export async function updateGroup(
+  userId: string,
+  groupId: string,
+  patch: UpdateGroupRequest,
+  now: Date = new Date(),
+): Promise<UpdateGroupResponse> {
+  return db.transaction(async (tx) => {
+    const current = await requireGroup(tx, userId, groupId)
+    const updated = await tx
+      .update(logEntries)
+      .set({
+        ...(patch.meal !== undefined ? { meal: patch.meal } : {}),
+        ...(patch.day !== undefined ? { day: patch.day } : {}),
+        updatedAt: now,
+      })
+      .where(and(eq(logEntries.groupId, groupId), eq(logEntries.userId, userId)))
+      .returning()
+    const byId = new Map(updated.map((row) => [row.id, row]))
+    return {
+      // Same order as the day log: the rows as `requireGroup` read them.
+      entries: current.flatMap((row) => {
+        const next = byId.get(row.id)
+        return next ? [toWireEntry(next)] : []
+      }),
+      summaries: await recomputeDays(
+        tx,
+        userId,
+        [...current.map((row) => row.day), ...updated.map((row) => row.day)],
+        now,
+      ),
+    }
+  })
+}
+
+/** Removes a whole logged meal, every ingredient at once. */
+export async function deleteGroup(
+  userId: string,
+  groupId: string,
+  now: Date = new Date(),
+): Promise<DeleteGroupResponse> {
+  return db.transaction(async (tx) => {
+    const current = await requireGroup(tx, userId, groupId)
+    await tx
+      .delete(logEntries)
+      .where(and(eq(logEntries.groupId, groupId), eq(logEntries.userId, userId)))
+    return {
+      summaries: await recomputeDays(
+        tx,
+        userId,
+        current.map((row) => row.day),
+        now,
+      ),
+    }
   })
 }

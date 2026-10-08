@@ -4,6 +4,7 @@ import {
   createEntriesResponseSchema,
   dayLogResponseSchema,
   deleteEntryResponseSchema,
+  deleteGroupResponseSchema,
   emptyFoodGroupServes,
   emptyNutrientVector,
   foodResponseSchema,
@@ -11,6 +12,7 @@ import {
   portionOf,
   savedMealsResponseSchema,
   updateEntryResponseSchema,
+  updateGroupResponseSchema,
   type FoodInput,
   type LogEntryInput,
   type ProfileInput,
@@ -212,6 +214,9 @@ describe('day log', () => {
     expect(meal?.items[0]?.foodId).toBeNull()
     expect(meal?.items[1]?.foodId).toBe(body.entries[1]?.foodId)
     expect(meal?.items[1]?.nutrients.energy_kcal).toBe(230)
+    // The logged items are one meal on Today as well, under the same name (D33).
+    expect(body.entries.every((e) => e.groupName === 'Eggs on toast')).toBe(true)
+    expect(body.entries[0]?.groupId).toBe(body.entries[1]?.groupId)
     // It counts as used now, so it lists first and can be logged again without AI.
     expect(meal?.lastUsedAt).not.toBeNull()
     const listed = savedMealsResponseSchema.parse(await (await send('GET', '/api/v1/meals')).json())
@@ -229,7 +234,98 @@ describe('day log', () => {
       ).json(),
     )
     expect(plain.savedMeal).toBeNull()
+    expect(plain.entries[0]).toMatchObject({ groupId: null, groupName: null })
     expect(await db.select().from(savedMeals)).toHaveLength(1)
+  })
+
+  it('moves and deletes a logged meal as a whole, and lets one ingredient leave it', async () => {
+    const logged = createEntriesResponseSchema.parse(
+      await (
+        await send('POST', '/api/v1/log/entries', {
+          day: DAY,
+          meal: 'breakfast',
+          loggedAt: LOGGED_AT,
+          entries: [eggs, { ...toast, saveToLibrary: false }],
+          saveAsMeal: { name: 'Eggs on toast' },
+        })
+      ).json(),
+    )
+    const groupId = logged.entries[0]!.groupId!
+    const [eggsId, toastId] = logged.entries.map((e) => e.id)
+
+    // The whole meal to lunch on the previous day: both ingredients move, both days re-summed.
+    const moved = await send('PATCH', `/api/v1/log/groups/${groupId}`, {
+      meal: 'lunch',
+      day: '2026-09-25',
+    })
+    expect(moved.status).toBe(200)
+    const movedBody = updateGroupResponseSchema.parse(await moved.json())
+    expect(movedBody.entries.map((e) => [e.id, e.meal, e.day, e.groupId])).toEqual([
+      [eggsId, 'lunch', '2026-09-25', groupId],
+      [toastId, 'lunch', '2026-09-25', groupId],
+    ])
+    const byDay = Object.fromEntries(movedBody.summaries.map((s) => [s.day, s]))
+    expect(byDay[DAY]?.entryCount).toBe(0)
+    expect(byDay['2026-09-25']?.entryCount).toBe(2)
+    expect(byDay['2026-09-25']?.totals.energy_kcal).toBe(540)
+    expect((await send('PATCH', `/api/v1/log/groups/${groupId}`, {})).status).toBe(400)
+
+    // An ingredient moved on its own leaves the meal; a quantity edit does not.
+    const resized = updateEntryResponseSchema.parse(
+      await (
+        await send('PATCH', `/api/v1/log/entries/${toastId}`, {
+          quantity: 1,
+          grams: 40,
+          nutrients: {
+            ...toast.nutrients,
+            energy_kcal: 115,
+            protein_g: 3.5,
+            carbs_g: 14,
+            fat_g: 5,
+          },
+          foodGroups: { ...toast.foodGroups, whole_grains: 1 },
+        })
+      ).json(),
+    )
+    expect(resized.entry).toMatchObject({ groupId, groupName: 'Eggs on toast' })
+    const left = updateEntryResponseSchema.parse(
+      await (await send('PATCH', `/api/v1/log/entries/${toastId}`, { meal: 'snack' })).json(),
+    )
+    expect(left.entry).toMatchObject({ meal: 'snack', groupId: null, groupName: null })
+
+    // Deleting the meal removes what is still in it (the eggs) and nothing else.
+    const deleted = await send('DELETE', `/api/v1/log/groups/${groupId}`)
+    expect(deleted.status).toBe(200)
+    const deletedBody = deleteGroupResponseSchema.parse(await deleted.json())
+    expect(deletedBody.summaries.map((s) => [s.day, s.entryCount, s.totals.energy_kcal])).toEqual([
+      ['2026-09-25', 1, 115],
+    ])
+    const remaining = await db.select().from(logEntries)
+    expect(remaining.map((row) => row.id)).toEqual([toastId])
+    expect((await send('DELETE', `/api/v1/log/groups/${groupId}`)).status).toBe(404)
+
+    // Another person's logged meal is "not found", not touched.
+    const other = await register('tess@example.com')
+    const mine = cookie
+    cookie = other.cookie
+    const second = createEntriesResponseSchema.parse(
+      await (
+        await send('POST', '/api/v1/log/entries', {
+          day: DAY,
+          meal: 'dinner',
+          loggedAt: LOGGED_AT,
+          entries: [eggs, { ...toast, saveToLibrary: false }],
+          saveAsMeal: { name: 'Tess dinner' },
+        })
+      ).json(),
+    )
+    cookie = mine
+    const theirs = second.entries[0]!.groupId!
+    expect((await send('PATCH', `/api/v1/log/groups/${theirs}`, { meal: 'lunch' })).status).toBe(
+      404,
+    )
+    expect((await send('DELETE', `/api/v1/log/groups/${theirs}`)).status).toBe(404)
+    expect(await db.select().from(logEntries)).toHaveLength(3)
   })
 
   it('refuses "Add to meals" with an empty name and logs nothing', async () => {
