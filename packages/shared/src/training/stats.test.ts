@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { Workout, WorkoutSet } from './schemas.js'
 import {
+  bestSet,
   emptyWorkout,
   nextSet,
   repeatWorkout,
   setVolumeKg,
+  summariseWorkouts,
   topSet,
   workoutDurationMin,
   workoutSummary,
@@ -97,6 +99,37 @@ describe('workoutSummary', () => {
   })
 })
 
+describe('summariseWorkouts', () => {
+  it('adds up finished sessions only, counting distinct days', () => {
+    const pushB: Workout = { ...pushA, id: id(), day: '2026-10-08', title: 'Push B' }
+    const open: Workout = { ...pushA, id: id(), day: '2026-10-09', endedAt: null }
+    const legs: Workout = {
+      ...pushA,
+      id: id(),
+      day: '2026-10-10',
+      startedAt: '2026-10-10T07:00:00.000Z',
+      endedAt: '2026-10-10T08:00:00.000Z',
+      exercises: [plank],
+    }
+    expect(summariseWorkouts([pushA, pushB, open, legs])).toEqual({
+      sessions: 3,
+      daysTrained: 2,
+      workingSets: 9,
+      volumeKg: 2615,
+      minutes: 158,
+    })
+  })
+  it('is all zeros with nothing finished', () => {
+    expect(summariseWorkouts([{ ...pushA, endedAt: null }])).toEqual({
+      sessions: 0,
+      daysTrained: 0,
+      workingSets: 0,
+      volumeKg: 0,
+      minutes: 0,
+    })
+  })
+})
+
 describe('topSet', () => {
   it('is the heaviest working set, reps breaking ties', () => {
     expect(topSet(squat.sets)?.weightKg).toBe(102.5)
@@ -107,6 +140,21 @@ describe('topSet', () => {
     expect(
       topSet([set({ weightKg: 60, isWarmup: true }), set({ weightKg: 50, completed: false })]),
     ).toBeNull()
+  })
+})
+
+describe('bestSet', () => {
+  it('is the heaviest set for weight, the most reps, the longest time, the furthest distance', () => {
+    expect(bestSet(squat.sets, 'weight')?.weightKg).toBe(102.5)
+    expect(bestSet(squat.sets, 'reps')?.reps).toBe(5)
+    const timed = [set({ durationS: 45 }), set({ durationS: 70 }), set({ durationS: 60 })]
+    expect(bestSet(timed, 'time')?.durationS).toBe(70)
+    const runs = [set({ distanceM: 5000, durationS: 1500 }), set({ distanceM: 3000 })]
+    expect(bestSet(runs, 'distance')?.distanceM).toBe(5000)
+  })
+  it('ignores warm-ups, undone sets and sets without that measure', () => {
+    expect(bestSet([set({ durationS: 90, isWarmup: true }), set({ reps: 10 })], 'time')).toBeNull()
+    expect(bestSet([set({ reps: 12, completed: false })], 'reps')).toBeNull()
   })
 })
 

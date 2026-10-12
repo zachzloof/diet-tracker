@@ -41,8 +41,23 @@ distance set, or a bodyweight rep with no weight, contributes no volume).
 
 ## Top set
 
-The heaviest working set of a block; reps break a tie. Used by "last time" and, from slice 9,
-by the per-exercise chart.
+The heaviest working set of a block; reps break a tie. Used by "last time" and by the
+per-lift trend.
+
+## Best set by measure
+
+The per-lift trend (Gym > Week > Lifts) plots one working set per session, chosen by the
+exercise's first measure: **weight** uses the top set above; **reps** the most reps; **time**
+the longest; **distance** the furthest. Sets that did not record that measure are skipped;
+null when nothing counts. "Best" on the lift page is the highest of those values over the
+last 20 sessions, "Latest" the most recent session's.
+
+## Week totals
+
+Gym > Week adds up the **finished** sessions in its seven days (an open session has no
+duration and may still change): sessions, distinct days trained, working sets, volume and
+minutes, each by the rules above. "Sessions / planned" uses the training days per week from
+the profile; with none declared the tile shows the count alone.
 
 ## Repeating a session
 
@@ -57,6 +72,9 @@ slice 9 and will be written up here first. Training days feeding water, protein,
 review and recalibration are slice 10 and will be written up in `NUTRITION-MATHS.md`.
 
 ## Change log
+
+- **2026-10-12** (D38): week totals (`summariseWorkouts`) and the best set by measure
+  (`bestSet`) for the gym half's Week and Lifts. No existing rule changed.
 
 - **2026-10-08** (slice 8): first version. Working sets, volume, duration, top set, repeat and
   next-set rules.

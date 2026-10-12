@@ -1,3 +1,4 @@
+import type { ExerciseMeasure } from './enums.js'
 import type { Workout, WorkoutExercise, WorkoutInput, WorkoutSet } from './schemas.js'
 
 /**
@@ -75,6 +76,22 @@ export function topSet(sets: readonly WorkoutSet[]): WorkoutSet | null {
   return best
 }
 
+/**
+ * The best working set of a block for one measure: heaviest for weight (reps break a tie,
+ * as `topSet`), most reps, longest time or furthest distance. Null when nothing was done
+ * or no set recorded that measure. The per-lift trend plots this per session.
+ */
+export function bestSet(sets: readonly WorkoutSet[], measure: ExerciseMeasure): WorkoutSet | null {
+  if (measure === 'weight') return topSet(sets)
+  const key = measure === 'reps' ? 'reps' : measure === 'time' ? 'durationS' : 'distanceM'
+  let best: WorkoutSet | null = null
+  for (const set of sets) {
+    if (!isWorkingSet(set) || set[key] === null) continue
+    if (best === null || (set[key] ?? 0) > (best[key] ?? 0)) best = set
+  }
+  return best
+}
+
 export interface RepeatOptions {
   day: string
   startedAt: string
@@ -122,4 +139,40 @@ export function nextSet(sets: readonly WorkoutSet[], id: string): WorkoutSet {
     isWarmup: false,
     completed: false,
   }
+}
+
+export interface WorkoutsSummary {
+  /** Finished sessions. */
+  sessions: number
+  /** Distinct user-local days with at least one finished session. */
+  daysTrained: number
+  workingSets: number
+  volumeKg: number
+  /** Minutes across finished sessions. */
+  minutes: number
+}
+
+/**
+ * What a range of sessions adds up to (the gym Week tiles). Only finished sessions count;
+ * one still open has no duration and may yet change. Each session's own rules apply:
+ * working sets only, volume from weight × reps.
+ */
+export function summariseWorkouts(
+  workouts: readonly Pick<WorkoutInput, 'day' | 'exercises' | 'startedAt' | 'endedAt'>[],
+): WorkoutsSummary {
+  const days = new Set<string>()
+  let sessions = 0
+  let workingSets = 0
+  let volumeKg = 0
+  let minutes = 0
+  for (const workout of workouts) {
+    if (!workout.endedAt) continue
+    const summary = workoutSummary(workout)
+    sessions += 1
+    days.add(workout.day)
+    workingSets += summary.workingSets
+    volumeKg += summary.volumeKg
+    minutes += summary.durationMin ?? 0
+  }
+  return { sessions, daysTrained: days.size, workingSets, volumeKg, minutes }
 }
