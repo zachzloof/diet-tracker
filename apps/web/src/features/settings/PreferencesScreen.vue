@@ -113,7 +113,7 @@ const DETAIL_OPTIONS: { value: NutrientDetail; label: string }[] = [
           v-model="workouts"
           class="mt-2"
           label="Log workouts"
-          description="The Training card on Today and Workouts under You. Off, Minori is just the food."
+          description="The Food / Gym switch at the top and the gym's own Today, Workouts and Week. Off, Minori is just the food."
           :disabled="save.isPending.value || !ui.online"
         />
       </Card>

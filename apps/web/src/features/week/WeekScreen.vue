@@ -5,9 +5,9 @@ import { RouterLink } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
+import DayStepper from '@/components/ui/DayStepper.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Icon from '@/components/ui/Icon.vue'
-import IconButton from '@/components/ui/IconButton.vue'
 import LineChart from '@/components/ui/LineChart.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import StatTile from '@/components/ui/StatTile.vue'
@@ -92,27 +92,16 @@ const todayIndex = computed(() => {
 
 <template>
   <AppShell title="Week">
-    <template #header-right>
-      <div class="flex items-center">
-        <IconButton label="Previous week" icon="chevron-left" @click="end = addDays(end, -7)" />
-        <button
-          type="button"
-          class="min-w-[6.5rem] text-center text-sm font-semibold text-fg"
-          :disabled="isCurrent"
-          @click="end = today"
-        >
-          {{ rangeLabel }}
-        </button>
-        <IconButton
-          label="Next week"
-          icon="chevron-right"
-          :disabled="isCurrent"
-          @click="end = addDays(end, 7) > today ? today : addDays(end, 7)"
-        />
-      </div>
-    </template>
+    <DayStepper
+      :label="rangeLabel"
+      :is-current="isCurrent"
+      unit="week"
+      @prev="end = addDays(end, -7)"
+      @next="end = addDays(end, 7) > today ? today : addDays(end, 7)"
+      @reset="end = today"
+    />
 
-    <div v-if="week.isLoading.value" class="space-y-4" aria-busy="true">
+    <div v-if="week.isLoading.value" class="mt-2 space-y-4" aria-busy="true">
       <div class="grid grid-cols-3 gap-2">
         <Skeleton class="h-20" rounded="card" />
         <Skeleton class="h-20" rounded="card" />
@@ -123,7 +112,7 @@ const todayIndex = computed(() => {
       <Skeleton class="h-56 w-full" rounded="card" />
     </div>
 
-    <Card v-else-if="week.isError.value">
+    <Card v-else-if="week.isError.value" class="mt-2">
       <h2 class="text-base font-semibold">Couldn't load your week</h2>
       <p class="mt-1 text-sm text-fg-muted">{{ week.error.value?.message }}</p>
       <Button class="mt-4" variant="secondary" @click="week.refetch()">Try again</Button>
@@ -131,7 +120,7 @@ const todayIndex = computed(() => {
 
     <div
       v-else-if="stats && summary"
-      class="space-y-4 transition-opacity"
+      class="mt-2 space-y-4 transition-opacity"
       :class="week.isPlaceholder.value && 'opacity-60'"
     >
       <div class="grid grid-cols-3 gap-2">

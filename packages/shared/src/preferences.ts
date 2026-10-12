@@ -8,7 +8,8 @@ import type { TargetKey } from './nutrition/targets.js'
  * the way. Stored on the profile so a phone and a laptop agree.
  *
  * - `water`: the water card on Today, the hydration target, the water row on Week.
- * - `workouts`: the Training card on Today and Workouts under You. Logged sessions are kept.
+ * - `workouts`: the gym half of the app (the Food / Gym switch and its Today, Workouts and
+ *   Week; D38). Logged sessions are kept.
  * - `nutrientDetail`: `full` is everything; `macros` is energy, protein, carbs, fat and
  *   fibre only (no vitamins, minerals, limits or food groups on screen).
  *

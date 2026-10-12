@@ -68,6 +68,10 @@ export function useExerciseHistory(exerciseId: MaybeRefOrGetter<string | null>, 
   return {
     history: computed(() => query.data.value ?? []),
     last: computed(() => query.data.value?.[0] ?? null),
+    isLoading: query.isPending,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   }
 }
 

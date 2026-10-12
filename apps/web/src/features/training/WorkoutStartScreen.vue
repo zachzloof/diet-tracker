@@ -8,7 +8,7 @@ import {
 } from '@diet-tracker/shared'
 import { v7 as uuidv7 } from 'uuid'
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Icon from '@/components/ui/Icon.vue'
@@ -16,7 +16,7 @@ import Skeleton from '@/components/ui/Skeleton.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { formatDay, formatDayShort } from '@/lib/format'
 import { useWorkoutDraftStore } from '@/stores/workout-draft'
-import { sessionLine, workoutTitle } from './draft'
+import { mergeSessions, sessionLine, workoutTitle } from './draft'
 import { useWorkouts } from './useTraining'
 
 /** Start a session: empty, or a repeat of a recent one with the same exercises and sets. */
@@ -41,6 +41,14 @@ const recent = useWorkouts(
   () => addDays(today.value, -30),
   () => today.value,
 )
+// A session still open today (on the server or on this phone) is probably the one to continue.
+const inProgress = computed(
+  () =>
+    mergeSessions(recent.workouts.value, drafts.pending, today.value).find(
+      (session) => !session.endedAt,
+    ) ?? null,
+)
+
 const templates = computed<Workout[]>(() => {
   const seen = new Set<string>()
   return recent.workouts.value.filter((workout) => {
@@ -70,8 +78,23 @@ function repeat(workout: Workout): void {
 </script>
 
 <template>
-  <AppShell title="New workout" :back="{ name: 'workouts' }">
+  <AppShell title="New workout" :back="{ name: 'gym-today' }">
     <div class="space-y-5">
+      <RouterLink
+        v-if="inProgress"
+        :to="{ name: 'workout', params: { id: inProgress.id } }"
+        class="flex min-h-14 items-center gap-3 rounded-card border border-accent bg-accent/10 px-4 py-3"
+      >
+        <Icon name="dumbbell" :size="22" class="shrink-0 text-accent" />
+        <span class="min-w-0 flex-1">
+          <span class="block text-base font-semibold">
+            Continue {{ workoutTitle(inProgress.title) }}
+          </span>
+          <span class="block truncate text-sm text-fg-muted">Started today and still open</span>
+        </span>
+        <Icon name="chevron-right" :size="18" class="shrink-0 text-fg-muted" />
+      </RouterLink>
+
       <div class="space-y-1.5">
         <label for="workout-day" class="block text-sm font-medium text-fg-muted">Day</label>
         <div class="flex items-center gap-2">

@@ -3,6 +3,8 @@ import { ref, watch } from 'vue'
 import { isNative } from '@/lib/native'
 
 export type ThemePreference = 'system' | 'dark' | 'light'
+/** The two halves of the app (D38): food and the gym. Each has its own tabs. */
+export type AppMode = 'diet' | 'training'
 export type ToastKind = 'info' | 'success' | 'error'
 
 export interface ToastItem {
@@ -12,6 +14,7 @@ export interface ToastItem {
 }
 
 const THEME_KEY = 'dt.theme'
+const MODE_KEY = 'dt.mode'
 const THEME_COLORS = { dark: '#0c0f14', light: '#f7f8fa' } as const
 
 function readTheme(): ThemePreference {
@@ -22,6 +25,17 @@ function readTheme(): ThemePreference {
     // Private mode or blocked storage: fall through to the default.
   }
   return 'system'
+}
+
+/** The remembered half of the app; the router reads it before any store exists. */
+export function readStoredMode(): AppMode {
+  try {
+    const stored = localStorage.getItem(MODE_KEY)
+    if (stored === 'diet' || stored === 'training') return stored
+  } catch {
+    // Private mode or blocked storage: fall through to the default.
+  }
+  return 'diet'
 }
 
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -62,6 +76,22 @@ export const useUiStore = defineStore('ui', () => {
     }
   }
 
+  /**
+   * Which half of the app the person is in. Routes under the gym set it as they open, the
+   * shared screens (You, Settings) read it for their tab bar, and it is remembered so the
+   * bookmark reopens where they left off.
+   */
+  const mode = ref<AppMode>(readStoredMode())
+  function setMode(next: AppMode): void {
+    if (mode.value === next) return
+    mode.value = next
+    try {
+      localStorage.setItem(MODE_KEY, next)
+    } catch {
+      // Ignore: the choice just will not persist.
+    }
+  }
+
   const toasts = ref<ToastItem[]>([])
   let nextToastId = 1
 
@@ -91,6 +121,8 @@ export const useUiStore = defineStore('ui', () => {
   return {
     theme,
     setTheme,
+    mode,
+    setMode,
     toasts,
     toast,
     dismissToast,

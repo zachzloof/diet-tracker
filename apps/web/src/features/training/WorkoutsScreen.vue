@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { MAX_WORKOUTS_RANGE_DAYS, addDays, type Workout } from '@diet-tracker/shared'
+import { MAX_WORKOUTS_RANGE_DAYS, addDays } from '@diet-tracker/shared'
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Icon from '@/components/ui/Icon.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { formatDay } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
 import { useWorkoutDraftStore } from '@/stores/workout-draft'
-import { sessionLine, workoutTitle } from './draft'
+import SessionRows from './SessionRows.vue'
+import { mergeSessions, type SessionSummary } from './draft'
 import { useWorkouts } from './useTraining'
 
 /** The last three months of sessions, newest first, with a way to start another. */
@@ -22,40 +23,17 @@ const { today } = useLocalDay()
 const from = computed(() => addDays(today.value, -(MAX_WORKOUTS_RANGE_DAYS - 1)))
 const workouts = useWorkouts(from, today)
 
-interface Row {
-  id: string
-  title: string
-  line: string
-  local: boolean
-}
 interface DayGroup {
   day: string
-  rows: Row[]
+  rows: SessionSummary[]
 }
 
 const groups = computed<DayGroup[]>(() => {
-  const saved = workouts.workouts.value
-  const local = drafts.pending.filter((draft) => !saved.some((w) => w.id === draft.id))
-  const all: (Pick<Workout, 'id' | 'day' | 'title' | 'startedAt' | 'endedAt' | 'exercises'> & {
-    local: boolean
-  })[] = [
-    ...local.map((draft) => ({ id: draft.id, ...draft.input, local: true })),
-    ...saved.map((workout) => ({ ...workout, local: false })),
-  ]
-  all.sort((a, b) =>
-    a.day === b.day ? b.startedAt.localeCompare(a.startedAt) : b.day.localeCompare(a.day),
-  )
-  const byDay = new Map<string, Row[]>()
-  for (const session of all) {
-    const row: Row = {
-      id: session.id,
-      title: workoutTitle(session.title),
-      line: session.endedAt ? sessionLine(session) : 'In progress',
-      local: session.local,
-    }
+  const byDay = new Map<string, SessionSummary[]>()
+  for (const session of mergeSessions(workouts.workouts.value, drafts.pending)) {
     const list = byDay.get(session.day)
-    if (list) list.push(row)
-    else byDay.set(session.day, [row])
+    if (list) list.push(session)
+    else byDay.set(session.day, [session])
   }
   return [...byDay.entries()].map(([day, rows]) => ({ day, rows }))
 })
@@ -68,11 +46,9 @@ function dayLabel(day: string): string {
 </script>
 
 <template>
-  <AppShell title="Workouts" :back="{ name: 'you' }">
+  <AppShell title="Workouts">
     <template #header-right>
-      <Button variant="ghost" @click="$router.push({ name: 'workout-new' })">
-        <Icon name="plus" :size="20" /> New
-      </Button>
+      <IconButton label="New workout" icon="plus" @click="$router.push({ name: 'workout-new' })" />
     </template>
 
     <Card v-if="workouts.isLoading.value && !ui.online && groups.length === 0">
@@ -116,26 +92,11 @@ function dayLabel(day: string): string {
     <div v-else class="space-y-4">
       <section v-for="group in groups" :key="group.day" :aria-label="dayLabel(group.day)">
         <h2 class="px-1 pb-1 text-sm font-semibold text-fg-muted">{{ dayLabel(group.day) }}</h2>
-        <ul class="divide-y divide-border rounded-card border border-border bg-surface">
-          <li v-for="row in group.rows" :key="row.id">
-            <RouterLink
-              :to="{ name: 'workout', params: { id: row.id } }"
-              class="flex min-h-14 items-center justify-between gap-3 px-3 py-2"
-            >
-              <span class="min-w-0">
-                <span class="block truncate text-base font-medium text-fg">{{ row.title }}</span>
-                <span class="block truncate text-sm text-fg-muted">
-                  {{ row.line }}<template v-if="row.local"> · on this phone</template>
-                </span>
-              </span>
-              <Icon name="chevron-right" :size="20" class="shrink-0 text-fg-muted" />
-            </RouterLink>
-          </li>
-        </ul>
+        <SessionRows :sessions="group.rows" />
       </section>
       <p class="px-2 text-center text-xs text-fg-muted">
-        Showing the last {{ MAX_WORKOUTS_RANGE_DAYS }} days. Older sessions are kept and will have a
-        home when progress charts arrive.
+        Showing the last {{ MAX_WORKOUTS_RANGE_DAYS }} days. Older sessions are kept; each lift's
+        trend under Week reaches further back.
       </p>
     </div>
   </AppShell>

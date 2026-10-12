@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { useAppMode } from '@/features/mode/useAppMode'
+import type { AppMode } from '@/stores/ui'
 import Icon, { type IconName } from './Icon.vue'
 
 const emit = defineEmits<{ add: [] }>()
@@ -8,25 +11,53 @@ interface Tab {
   name: string
   label: string
   icon: IconName
+  /** Other route names that count as this tab (a specific day under Today). */
+  aliases?: string[]
   /** Path prefix of the pushed screens that belong to this tab; the tab stays lit on them. */
   section?: string
 }
 
-// Two tabs either side of the Log button, which sits in the centre under the thumb.
-const LEFT: Tab[] = [
-  { name: 'today', label: 'Today', icon: 'home' },
-  { name: 'meals', label: 'Meals', icon: 'utensils', section: '/meals' },
-]
-const RIGHT: Tab[] = [
-  { name: 'week', label: 'Week', icon: 'calendar' },
-  { name: 'you', label: 'You', icon: 'user', section: '/workouts' },
-]
+interface Layout {
+  /** Two tabs either side of the Log button, which sits in the centre under the thumb. */
+  left: Tab[]
+  right: Tab[]
+  addLabel: string
+}
+
+const YOU: Tab = { name: 'you', label: 'You', icon: 'user' }
+
+// Each half of the app (D38) has its own five slots; You is the same screen in both.
+const LAYOUTS: Readonly<Record<AppMode, Layout>> = {
+  diet: {
+    left: [
+      { name: 'today', label: 'Today', icon: 'home', aliases: ['day'] },
+      { name: 'meals', label: 'Meals', icon: 'utensils', section: '/meals' },
+    ],
+    right: [{ name: 'week', label: 'Week', icon: 'calendar' }, YOU],
+    addLabel: 'Log food',
+  },
+  training: {
+    left: [
+      { name: 'gym-today', label: 'Today', icon: 'home', aliases: ['gym-day'] },
+      { name: 'workouts', label: 'Workouts', icon: 'dumbbell', section: '/workouts' },
+    ],
+    right: [{ name: 'gym-week', label: 'Week', icon: 'calendar', section: '/gym/lifts' }, YOU],
+    addLabel: 'Log a workout',
+  },
+}
+
+const { mode } = useAppMode()
+const layout = computed(() => LAYOUTS[mode.value])
 
 const route = useRoute()
 
 function isActive(tab: Tab): boolean {
   if (route.name === tab.name) return true
-  return tab.section !== undefined && route.path.startsWith(`${tab.section}/`)
+  if (tab.aliases?.some((name) => route.name === name)) return true
+  return (
+    tab.section !== undefined &&
+    (route.path === tab.section || route.path.startsWith(`${tab.section}/`))
+  )
 }
 </script>
 
@@ -38,7 +69,7 @@ function isActive(tab: Tab): boolean {
   >
     <div class="mx-auto grid h-16 max-w-[480px] grid-cols-5">
       <RouterLink
-        v-for="tab in LEFT"
+        v-for="tab in layout.left"
         :key="tab.name"
         :to="{ name: tab.name }"
         class="flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors"
@@ -53,7 +84,7 @@ function isActive(tab: Tab): boolean {
       <button
         type="button"
         class="flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-fg-muted"
-        aria-label="Log food"
+        :aria-label="layout.addLabel"
         @click="emit('add')"
       >
         <span
@@ -66,7 +97,7 @@ function isActive(tab: Tab): boolean {
       </button>
 
       <RouterLink
-        v-for="tab in RIGHT"
+        v-for="tab in layout.right"
         :key="tab.name"
         :to="{ name: tab.name }"
         class="flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors"

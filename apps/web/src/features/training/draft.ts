@@ -3,11 +3,13 @@ import {
   workoutSummary,
   type Exercise,
   type ExerciseMeasure,
+  type Workout,
   type WorkoutExerciseInput,
   type WorkoutInput,
   type WorkoutSet,
 } from '@diet-tracker/shared'
 import { formatNumber } from '@/lib/format'
+import type { WorkoutDraft } from '@/stores/workout-draft'
 
 /** Pure helpers for the session screen and the cards; the maths lives in `@diet-tracker/shared`. */
 
@@ -93,4 +95,35 @@ export function parseNumber(raw: string): number | null {
 
 export function workoutTitle(title: string): string {
   return title.trim() || 'Workout'
+}
+
+/** What a session row needs: a saved session or a draft still on this phone. */
+export type SessionSummary = Pick<
+  Workout,
+  'id' | 'day' | 'title' | 'startedAt' | 'endedAt' | 'exercises'
+> & {
+  /** Not on the server yet (logged offline). */
+  local: boolean
+}
+
+/**
+ * Saved sessions plus the drafts that have not reached the server, newest first. A draft
+ * whose id the server already knows is the same session, so the saved copy wins.
+ */
+export function mergeSessions(
+  saved: readonly Workout[],
+  drafts: readonly WorkoutDraft[],
+  day?: string,
+): SessionSummary[] {
+  const all: SessionSummary[] = [
+    ...drafts
+      .filter((draft) => !saved.some((workout) => workout.id === draft.id))
+      .map((draft) => ({ id: draft.id, ...draft.input, local: true })),
+    ...saved.map((workout) => ({ ...workout, local: false })),
+  ]
+  return all
+    .filter((session) => day === undefined || session.day === day)
+    .sort((a, b) =>
+      a.day === b.day ? b.startedAt.localeCompare(a.startedAt) : b.day.localeCompare(a.day),
+    )
 }

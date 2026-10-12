@@ -5,9 +5,9 @@ import { useRoute } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
+import DayStepper from '@/components/ui/DayStepper.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Icon from '@/components/ui/Icon.vue'
-import IconButton from '@/components/ui/IconButton.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { useSession } from '@/features/auth/useSession'
 import DayLog from '@/features/log/DayLog.vue'
@@ -22,7 +22,6 @@ import { useRecalibration } from '@/features/progress/useProgress'
 import { usePreferences } from '@/features/profile/usePreferences'
 import InstallHint from '@/features/pwa/InstallHint.vue'
 import { useTargets } from '@/features/targets/useTargets'
-import WorkoutCard from '@/features/training/WorkoutCard.vue'
 import { formatDay } from '@/lib/format'
 import { useQueueStore } from '@/stores/queue'
 import { useUiStore } from '@/stores/ui'
@@ -151,31 +150,15 @@ function retry(): void {
 
 <template>
   <AppShell title="Today">
-    <template #header-right>
-      <div class="flex items-center">
-        <IconButton
-          label="Previous day"
-          icon="chevron-left"
-          @click="viewedDay = addDays(viewedDay, -1)"
-        />
-        <button
-          type="button"
-          class="min-h-11 min-w-[5.5rem] text-center text-sm font-semibold text-fg"
-          :disabled="isToday"
-          @click="viewedDay = today"
-        >
-          {{ dayLabel }}
-        </button>
-        <IconButton
-          label="Next day"
-          icon="chevron-right"
-          :disabled="isToday"
-          @click="viewedDay = addDays(viewedDay, 1)"
-        />
-      </div>
-    </template>
+    <DayStepper
+      :label="dayLabel"
+      :is-current="isToday"
+      @prev="viewedDay = addDays(viewedDay, -1)"
+      @next="viewedDay = addDays(viewedDay, 1)"
+      @reset="viewedDay = today"
+    />
 
-    <Card v-if="loading && !ui.online">
+    <Card v-if="loading && !ui.online" class="mt-2">
       <h2 class="flex items-center gap-2 text-base font-semibold">
         <Icon name="wifi-off" :size="20" class="text-fg-muted" /> You're offline
       </h2>
@@ -186,20 +169,20 @@ function retry(): void {
       <Button class="mt-4" variant="secondary" @click="retry">Try again</Button>
     </Card>
 
-    <div v-else-if="loading" class="space-y-4" aria-busy="true">
+    <div v-else-if="loading" class="mt-2 space-y-4" aria-busy="true">
       <Skeleton class="h-7 w-48" />
       <Skeleton class="h-56 w-full" rounded="card" />
       <Skeleton class="h-32 w-full" rounded="card" />
       <Skeleton class="h-40 w-full" rounded="card" />
     </div>
 
-    <Card v-else-if="failed">
+    <Card v-else-if="failed" class="mt-2">
       <h2 class="text-base font-semibold">Couldn't load your day</h2>
       <p class="mt-1 text-sm text-fg-muted">{{ errorMessage }}</p>
       <Button class="mt-4" variant="secondary" @click="retry">Try again</Button>
     </Card>
 
-    <div v-else class="space-y-4">
+    <div v-else class="mt-2 space-y-4">
       <div>
         <p class="text-[28px] leading-tight font-bold">
           {{ isToday ? greeting : formatDay(viewedDay) }}
@@ -237,8 +220,6 @@ function retry(): void {
       </template>
 
       <WeightCard v-if="isToday" :today="today" />
-
-      <WorkoutCard v-if="prefs.workouts" :day="viewedDay" :is-today="isToday" />
 
       <DayLog
         v-if="foodEntries.length"
