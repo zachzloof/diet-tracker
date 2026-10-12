@@ -109,7 +109,8 @@ export const aiCapDetailsSchema = z.object({ cap: z.number().int(), used: z.numb
 
 const entryFields = {
   name: foodName,
-  quantity: z.number().positive('Quantity must be above 0').max(MAX_ENTRY_QUANTITY),
+  /** 0 is allowed: an ingredient left out of a meal this time stays on the list at nothing. */
+  quantity: z.number().min(0, 'Quantity cannot be negative').max(MAX_ENTRY_QUANTITY),
   unit: z.string().trim().min(1).max(30),
   /** Total edible grams for the logged quantity. */
   grams: z.number().min(0).max(MAX_ENTRY_GRAMS),

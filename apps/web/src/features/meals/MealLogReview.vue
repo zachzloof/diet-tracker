@@ -121,8 +121,8 @@ watch(portions, (next) => {
 })
 
 const totals = computed(() => sumPortions(items.value))
-const hasZero = computed(() => items.value.some((item) => !(item.quantity > 0)))
-const canLog = computed(() => items.value.length > 0 && portionsValid.value && !hasZero.value)
+// An ingredient set to 0 is fine: it is quicker than removing it and logs as nothing.
+const canLog = computed(() => items.value.length > 0 && portionsValid.value)
 
 function confirm(): void {
   if (!canLog.value) return
@@ -198,9 +198,6 @@ function confirm(): void {
       :previous-day="previousDay"
     />
 
-    <p v-if="hasZero" class="text-sm text-over" role="alert">
-      An ingredient is set to 0. Give it an amount or remove it.
-    </p>
     <p v-if="error" class="text-sm text-over" role="alert">{{ error }}</p>
     <Button block :loading="saving" :disabled="!canLog" @click="confirm">
       {{ ui.online ? `Add to ${meal}` : `Add to ${meal} (offline)` }}

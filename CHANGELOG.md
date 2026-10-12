@@ -4,6 +4,9 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### An ingredient can be 0 (2026-10-12)
+- Logging a saved meal no longer stops when an ingredient is set to 0. Set anything you left out to 0 and log; it is quicker than removing it and adds nothing to the day. Editing a logged entry to 0 works the same way. Only negative amounts are refused, on the server as well as on the phone.
+
 ### Limits read "close" the moment you pass them (2026-10-08)
 - Sodium, saturated fat and added sugar are "met" (green) only up to the limit itself. One gram over is "close" (orange) up to 5% past the limit, and "over" (red) beyond that. Before, up to 5% over still read met and close ran to 10%.
 - For goals where a limit decides the day (added sugar when losing; all three when maintaining), the day now fails past 5% over rather than 10%. Past days are rescored when you open them; nothing is stored.

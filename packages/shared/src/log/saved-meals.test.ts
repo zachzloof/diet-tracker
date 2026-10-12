@@ -119,11 +119,14 @@ describe('savedMealInputSchema', () => {
     expect(savedMealInputSchema.safeParse({ name: 'Feast', items: tooMany }).success).toBe(false)
   })
 
-  it('refuses a stray nutrient key and a zero quantity', () => {
+  it('refuses a stray nutrient key and a negative quantity, but allows zero', () => {
     const stray = { ...banana, nutrients: { ...banana.nutrients, caffeine_mg: 1 } }
     expect(savedMealInputSchema.safeParse({ name: 'Bad', items: [stray] }).success).toBe(false)
-    const none = { ...banana, quantity: 0 }
-    expect(savedMealInputSchema.safeParse({ name: 'Bad', items: [none] }).success).toBe(false)
+    const negative = { ...banana, quantity: -1 }
+    expect(savedMealInputSchema.safeParse({ name: 'Bad', items: [negative] }).success).toBe(false)
+    const none = { ...banana, quantity: 0, grams: 0 }
+    expect(savedMealInputSchema.safeParse({ name: 'Fine', items: [none] }).success).toBe(true)
+    expect(logEntryInputSchema.safeParse({ ...savedMealEntries([none])[0] }).success).toBe(true)
   })
 })
 

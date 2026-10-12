@@ -85,7 +85,7 @@ const changed = computed(
 )
 
 function save(): void {
-  if (!props.entry || !draft.value || draft.value.quantity <= 0) return
+  if (!props.entry || !draft.value || draft.value.quantity < 0) return
   error.value = null
   const moved = meal.value !== props.entry.meal || day.value !== props.entry.day
   const saving = saveToLibrary.value && props.entry.foodId === null
@@ -194,7 +194,7 @@ function del(): void {
       <div class="space-y-2">
         <Button
           block
-          :disabled="!changed || draft.quantity <= 0 || !ui.online"
+          :disabled="!changed || draft.quantity < 0 || !ui.online"
           :loading="update.isPending.value"
           @click="save"
         >
