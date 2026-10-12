@@ -1,6 +1,6 @@
 # Minori
 
-Free, phone-first nutrition tracker. A person onboards once (body, goals, training, diet), gets personalised daily targets, logs food by typing "I had 4 eggs" (AI estimates the nutrients) or by entering a meal manually, and sees where they stand today and across the week. Friends use it from a home-screen bookmark first; App Store later via Capacitor.
+Free, phone-first nutrition and gym tracker in two halves behind a Food / Gym switch (D38). A person onboards once (body, goals, training, diet), gets personalised daily targets, logs food by typing "I had 4 eggs" (AI estimates the nutrients) or by entering a meal manually, logs gym sessions set by set, and sees where they stand today and across the week in each half. Friends use it from a home-screen bookmark first; App Store later via Capacitor.
 
 ## Where things are
 - `docs/PLAN.md` - development slices: scope, acceptance checks, status. Build one slice per session, only when asked.

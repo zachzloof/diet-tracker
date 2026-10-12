@@ -4,6 +4,19 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Two halves: Food and Gym (2026-10-12)
+- A Food / Gym switch sits in the middle of the header on Today, Meals, Workouts, Week and You. Food is the app as it was; Gym has its own Today, Workouts, Log, Week and the same You. The switch keeps your place: Today goes to the gym's Today, Week to the gym's Week, Meals to Workouts. The bookmark reopens whichever half you used last.
+- Food's Today no longer shows the Training card, and Workouts has moved from You to its own tab in the gym half. The Log button starts a session when you are in the gym.
+- Gym Today: the day's sessions with their time, sets and kg, "Log a workout", and your recent sessions to repeat in one tap. Step back a day with the arrows.
+- Gym Week: sessions against the training days in your profile, working sets, kg lifted and time, a dot on every day you trained (tap one to open it), the week's sessions by day, and Lifts.
+- Lifts: every exercise you have logged, most recent first. Each shows its best and latest set, the best set per session on a line over your last 20 sessions, and each session's top set with a way into it.
+- New workout offers "Continue" when a session started today is still open.
+- The day and week arrows on Today and Week (both halves) now sit just under the header, at the screen's edges, instead of in the header's corner.
+- Preferences > Workouts off hides the switch and the gym half entirely; the gym's pages send you to Today.
+- `docs/TRAINING-MATHS.md`: week totals and the best set by measure.
+- Web: `components/ui/ModeToggle.vue`, `DayStepper.vue`, `features/mode/useAppMode.ts`, `router/mode.ts`, `features/training/TrainingTodayScreen.vue`, `TrainingWeekScreen.vue`, `LiftsScreen.vue`, `LiftScreen.vue`. Shared: `summariseWorkouts`, `bestSet`.
+
+
 ### An ingredient can be 0 (2026-10-12)
 - Logging a saved meal no longer stops when an ingredient is set to 0. Set anything you left out to 0 and log; it is quicker than removing it and adds nothing to the day. Editing a logged entry to 0 works the same way. Only negative amounts are refused, on the server as well as on the phone.
 

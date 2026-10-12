@@ -1,6 +1,6 @@
 # Development plan
 
-The app was planned as five slices. Each slice is one working session, produces something the owner can open on their phone, and ends with a commit on `main`. Slices are started only when the owner asks ("do slice 2"). The `slice` skill carries the working loop. All five were done by 2026-09-26; slice 6 (Meals) was added on the owner's request on 2026-10-01. What remains is real-phone use, the open decisions in `docs/DECISIONS.md`, and the ideas at the bottom.
+The app was planned as five slices. Each slice is one working session, produces something the owner can open on their phone, and ends with a commit on `main`. Slices are started only when the owner asks ("do slice 2"). The `slice` skill carries the working loop. All five were done by 2026-09-26; slice 6 (Meals) was added on the owner's request on 2026-10-01, and on 2026-10-12 the app was split into a food half and a gym half (D38). What remains is real-phone use, the open decisions in `docs/DECISIONS.md`, and the ideas at the bottom.
 
 Two personas run through every slice as seed data, golden tests and manual checks:
 - **Finn**: male, 28, 178 cm, 75 kg, fighter, trains 6x/week, wants a lean gain of 0.25 kg/week.
@@ -264,6 +264,31 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **Deferrals.** No real-phone check. The `/workouts` routes and the water quick-add API stay reachable when switched off (a bookmark still works). The weekly review was not regenerated against the real model with preferences off; the prompt builder is covered by its existing unit tests and the gap list it quotes is filtered server-side.
 
 **Decisions it depends on.** D37.
+
+---
+
+## Follow-up - Two halves: Food and Gym (D38)
+
+**Status:** done with deferrals (2026-10-12)
+
+**Goal.** Split the app into a food half and a gym half that share one account and the You tab but nothing else on screen. A Food / Gym switch in the middle of the header on every root screen flips between them; each half has its own five tabs (Today, Meals or Workouts, Log, Week, You). Food's Today no longer shows training; the gym gets its own Today, Week and a per-lift trend. The two connect later through insights (slice 10); for now the ask is an easy logging system and a way to see gym progress.
+
+**Shipped.** `ui.mode` (`dt.mode` in localStorage) with `useAppMode` reading it through the workouts preference; `ModeToggle` centred in `AppShell`'s header on root screens (the header is a three-column grid; the Today and Week day steppers moved from the header into the body as `DayStepper` so the switch fits at 360 wide); `TabBar` with a layout per half (the Log button starts a session in the gym half); routes `/gym`, `/gym/day/:day`, `/gym/week`, `/gym/lifts`, `/gym/lifts/:id` plus the existing `/workouts*`, all `meta.mode = 'training'`, mirrored by the food routes with `meta.mode = 'diet'`; the router sets the mode as a half's screen opens, sends gym routes to Today while workouts are off, and reopens `/` in the gym when that is where the person left off. Gym Today: the day's sessions, "Log a workout", four recent sessions to repeat in one tap, the offline line. Gym Week: sessions against the profile's training days, sets, kg lifted and time, a seven-day strip of trained days, the week's sessions by day, and Lifts. Lifts: every exercise used, most recent first; a lift shows its best and latest set, the best set per session on a line (last 20 sessions) and each session's top set. The Training card left food's Today; Workouts left You (it is a tab) and the start screen offers "Continue" for a session still open today. Shared: `summariseWorkouts` and `bestSet` with tests, written up in `docs/TRAINING-MATHS.md`.
+
+**Done when.**
+- [x] Food's Today has no Training card and food's tabs are Today, Meals, Log, Week, You; the Food / Gym switch sits centred in the header. *Walked with Playwright at 390x844 dark, 360x780 light and 430x932 dark against Vite and the API as Finn: no "Training" heading, the tab labels as listed, the switch's centre within 0 px of the viewport centre on Today, Week and Workouts at every width, no title clipped.*
+- [x] Tapping Gym from Today lands on the gym's Today with tabs Today, Workouts, Log, Week, You; tapping Food from You stays on You and swaps the tabs. *Checked at all three widths.*
+- [x] Gym Today shows the day's sessions and repeats a recent one in a tap; after Finish the day reads its sessions, sets and kg. *Four seeded sessions; "Repeat a recent session" listed Legs A and Legs B; the repeat opened a session with the squat and its sets, two ticked and finished; gym Today then read "1 session · 2 sets · 1,025 kg" with the Legs A row.*
+- [x] Gym Week shows sessions / planned, sets, kg lifted, a strip with a dot per trained day and the week's sessions by day. *Tiles read "4 / 6 planned", "11, 4 days trained", "4,948 kg, 2 h 24 min"; four trained days dotted; sessions grouped under Today, Yesterday and dates.*
+- [x] Lifts lists the exercises used and a lift shows best, latest, a trend line and its sessions. *Barbell back squat: best 105 kg (11 Oct), latest 105 kg (12 Oct), a five-point line, five session rows with their top set.*
+- [x] The Log button starts a session in the gym half; a session left open today shows as "Continue" on the start screen. *Checked.*
+- [x] The bookmark (`/`) reopens in the gym after the gym was used last. *After switching to Gym on Week, a load of `/` landed on `/gym`.*
+- [x] Workouts off in Preferences hides the switch, shows food's tabs and sends `/gym` to Today. *Checked.*
+- [x] Looks right at 360, 390 and 430 wide, dark and light; no horizontal scroll; no console errors. *All three widths, every screen above.*
+
+**Deferrals.** No real-phone check (headless only). The day stepper moving into the body costs 44 px of vertical space on Today and Week, both halves; worth judging on a phone. The lift trend plots the last 20 sessions only (`MAX_EXERCISE_HISTORY`) and knows no personal records or estimated one-rep max (slice 9). The gym half has no history calendar and no AI review. The Food / Gym labels are a first guess at the words.
+
+**Decisions it depends on.** D38 (the split itself, the switch's placement and what is shared), D35, D37.
 
 ---
 

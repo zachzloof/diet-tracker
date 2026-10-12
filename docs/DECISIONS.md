@@ -618,3 +618,20 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **Recommendation.** A. "Day met" never depended on the hidden things (energy, protein and the goal's limits, D31), so hiding loses nothing a person is scored on. Two visible consequences, both on purpose: in macros mode the Week screen's third tile becomes "Protein, days hit" instead of "Nutrients, % of minimums met", and the limits (sodium, saturated fat, added sugar) are hidden too, though a limit can still fail a maintain or lose day; the day-status line names it when it does.
 
 **Status.** `adopted` (2026-10-08), please confirm. Open: whether the manual food form should also drop the packet limits (sugar, saturated fat, sodium) in macros mode; it keeps them today because they are on every label.
+
+## D38. Two halves, Food and Gym, behind a switch in the header (adopted, please confirm)
+
+**Context.** After a few days with slice 8 the owner asked for the app to be split: the food half as it was, and a gym half with the same five-tab shape (Today, Workouts, Log, Week, You), reached by a switch in the middle of the header. Data and interactions stay separate for now ("later we can connect them with insights"); You is shared; the gym can still be switched off in Preferences (D37). D35 had put training on a card on food's Today and a list under You, and left the tab question open until real use. This is the answer.
+
+**Options considered.**
+- **Placement of the switch.** (A) A two-segment pill (Food / Gym) centred in the header of every root screen; pushed screens (a session, a meal, settings) have no switch and a back button instead. (B) The switch as the title itself at the left. (C) A sixth tab. A is built: it is what was asked, and it reads as "which app am I in" rather than "which screen". The cost is header width: the day and week arrows that lived at the top right of Today and Week would not fit beside a centred switch at 360 px, so they moved into the body as a stepper row under the header (arrows at the screen's edges, closer to a thumb than the top-right corner was).
+- **What the switch does.** (A) Flips the tab bar and lands on the mirror screen: Today to gym Today, Week to gym Week, Meals to Workouts; on a shared screen (You) it only flips the tabs. (B) Always go to the other half's Today. A is built; it keeps the person's place.
+- **Where the mode lives.** (A) On the device (`localStorage`), set by every route that belongs to a half (`meta.mode`), read by the tab bar and the header; the bookmark `/` reopens in the gym when that is where the person left. (B) On the profile, like the display preferences. A is built: which half you are in is a place, not a setting; a phone and a laptop can be in different halves without confusion. The *availability* of the gym half stays on the profile (D37's `workouts`), and the router sends gym routes to Today while it is off.
+- **Routes.** (A) The gym half has its own paths (`/gym`, `/gym/day/:day`, `/gym/week`, `/gym/lifts/:id`) beside `/workouts*`, so links and history work as usual. (B) One path with the mode deciding the screen. A is built; the back button and deep links stay honest.
+- **Gym Week's contents.** Sessions against the profile's `trainingDaysPerWeek`, working sets, kg lifted and time, a seven-day strip of trained days, the week's sessions, and Lifts (the first per-exercise progress: best and latest set and the best set per session on a line). Personal records and an estimated one-rep max stay in slice 9; the gym half has no AI review.
+
+**Rules.** Five tabs per half; You is one screen for both. Food's Today never shows training and gym's Today never shows food until slice 10 decides what crosses. Everything a half shows comes from that half's queries; nothing in the nutrition engine or the training maths changed for this.
+
+**Recommendation.** As built. Judge the stepper-in-the-body change and the words "Food" and "Gym" on a phone.
+
+**Status.** `adopted` (2026-10-12), please confirm.
