@@ -4,6 +4,10 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Dark by default (2026-10-12)
+- Minori opens in the dark theme unless you have chosen Light or System under Settings > Preferences. Before, it followed the phone's setting, so a phone set to light got the light theme. Anyone who already picked a theme keeps it.
+- The theme is applied before the first paint, so there is no flash of the other theme while the app loads.
+
 ### Two halves: Food and Gym (2026-10-12)
 - A Food / Gym switch sits in the middle of the header on Today, Meals, Workouts, Week and You. Food is the app as it was; Gym has its own Today, Workouts, Log, Week and the same You. The switch keeps your place: Today goes to the gym's Today, Week to the gym's Week, Meals to Workouts. The bookmark reopens whichever half you used last.
 - Food's Today no longer shows the Training card, and Workouts has moved from You to its own tab in the gym half. The Log button starts a session when you are in the gym.

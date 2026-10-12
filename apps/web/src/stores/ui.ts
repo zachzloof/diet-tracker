@@ -24,7 +24,7 @@ function readTheme(): ThemePreference {
   } catch {
     // Private mode or blocked storage: fall through to the default.
   }
-  return 'system'
+  return 'dark'
 }
 
 /** The remembered half of the app; the router reads it before any store exists. */
@@ -40,11 +40,15 @@ export function readStoredMode(): AppMode {
 
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
 
+/**
+ * The stylesheet only knows dark (the base) and <html data-theme="light">, so "system" is
+ * resolved here and re-resolved when the phone's setting changes. index.html runs the same
+ * logic inline before the first paint so a light-theme user never sees a dark flash.
+ */
 function applyTheme(theme: ThemePreference): void {
   const root = document.documentElement
-  if (theme === 'system') delete root.dataset.theme
-  else root.dataset.theme = theme
   const effective = theme === 'system' ? (darkQuery.matches ? 'dark' : 'light') : theme
+  root.dataset.theme = effective
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', THEME_COLORS[effective])

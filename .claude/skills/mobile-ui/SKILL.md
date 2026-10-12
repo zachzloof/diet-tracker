@@ -6,7 +6,7 @@ description: Design system and screen conventions for the diet-tracker Vue app -
 # Mobile UI
 
 ## Intent
-It has to look like something people would pay for, and it has to be usable one-handed on a phone while holding a fork. Bold numbers, calm surfaces, one accent, instant feedback. Dark is the design lead; light must be just as finished because it follows the system setting.
+It has to look like something people would pay for, and it has to be usable one-handed on a phone while holding a fork. Bold numbers, calm surfaces, one accent, instant feedback. Dark is the design lead and the default for a fresh install; light must be just as finished because Settings offers it (Dark / Light / System).
 
 ## App shell
 - `100dvh` layout, content scrolls, header and bottom bar fixed. Padding uses `env(safe-area-inset-*)` so the iPhone home indicator and notch never cover anything. `viewport-fit=cover` in the meta tag.
@@ -24,7 +24,7 @@ It has to look like something people would pay for, and it has to be usable one-
 - Type: system font stack (`-apple-system, Inter, Segoe UI, Roboto`) with `font-variant-numeric: tabular-nums` on every number. Scale: 12 / 14 / 16 / 20 / 28 / 44 (hero). Body 16 px minimum, which also stops iOS zooming inputs.
 - Radius 16 px cards, 12 px controls, full for chips. Shadows only in light mode; dark mode uses surface steps.
 - Spacing on a 4 px grid; screen gutter 16 px.
-- Both themes defined on `:root` with `prefers-color-scheme` and a `data-theme` override from Settings.
+- Dark is the `:root` base; light is `:root[data-theme='light']`. The CSS never reads `prefers-color-scheme`: `stores/ui.ts` (and an inline script in `index.html`, before first paint) resolve the saved preference, default `dark`, to `data-theme="dark|light"`.
 
 ## Components (`apps/web/src/components/ui/`)
 Build these once in slice 1 and reuse: `AppShell`, `TabBar`, `Sheet`, `Button` (primary, secondary, ghost, destructive; 48 px tall), `IconButton`, `Card`, `Input` (with label, helper, error, right-slot unit), `NumberField` (`inputmode="decimal"`, unit suffix, stepper), `Select` (native on mobile, it is better than any custom one), `SegmentedControl`, `ModeToggle`, `DayStepper`, `Toggle`, `Chip`, `ProgressBar` (macro bars), `Ring` (SVG, animated stroke), `StatTile`, `Skeleton`, `EmptyState`, `Toast`, `OfflineBanner`, `LineChart` (single series with an optional secondary trend line, a target hairline, `domain="auto"` for series that should not start at zero, `labelEvery` for dense axes), `ErrorScreen` (the error boundary's fallback, mounted from `App.vue`).
