@@ -1,5 +1,6 @@
 import {
   DEFAULT_MEASURES,
+  tonnageParts,
   workoutSummary,
   type Exercise,
   type ExerciseMeasure,
@@ -42,6 +43,12 @@ export function formatDuration(minutes: number): string {
 
 export function formatVolume(kg: number): string {
   return `${formatNumber(Math.round(kg), 0)} kg`
+}
+
+/** "999 kg", "1.3 t", "12 t": the week's tonnage, in tonnes from 1,000 kg (`tonnageParts`). */
+export function formatTonnage(kg: number): string {
+  const parts = tonnageParts(kg)
+  return `${formatNumber(parts.value, parts.decimals)} ${parts.unit}`
 }
 
 export function formatSeconds(seconds: number): string {

@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { addDays, summariseWorkouts } from '@diet-tracker/shared'
+import {
+  MEASURE_ORDER,
+  addDays,
+  compareWeeks,
+  summariseWorkouts,
+  tonnageParts,
+  type ExerciseMeasure,
+} from '@diet-tracker/shared'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
@@ -17,13 +24,15 @@ import { useUiStore } from '@/stores/ui'
 import { useWorkoutDraftStore } from '@/stores/workout-draft'
 import SessionRows from './SessionRows.vue'
 import TrainingDayStrip from './TrainingDayStrip.vue'
+import WeekInsightsCard from './WeekInsightsCard.vue'
 import { formatDuration, mergeSessions } from './draft'
-import { useWorkouts } from './useTraining'
+import { useExercises, useWorkouts } from './useTraining'
 
 /**
- * The gym half's Week (D38): sessions, sets and weight lifted over the last seven days
- * against the training days declared in the profile, a tappable day strip, the week's
- * sessions by day, and the way to each lift's trend. Steps back a week at a time.
+ * The gym half's Week (D38): sessions, sets and tonnage over the last seven days against
+ * the training days declared in the profile, a tappable day strip, week-on-week insights
+ * from the seven days before, the week's sessions by day, and the way to each lift's trend.
+ * Steps back a week at a time.
  */
 const ui = useUiStore()
 const router = useRouter()
@@ -49,7 +58,38 @@ const inWindow = computed(() =>
   sessions.value.filter((session) => session.day >= start.value && session.day <= end.value),
 )
 const totals = computed(() => summariseWorkouts(inWindow.value))
+const lifted = computed(() => tonnageParts(totals.value.volumeKg))
 const planned = computed(() => profile.value?.trainingDaysPerWeek ?? 0)
+
+// The seven days before the window, for "week on week".
+const previousStart = computed(() => addDays(start.value, -7))
+const previousEnd = computed(() => addDays(start.value, -1))
+const previous = useWorkouts(previousStart, previousEnd)
+const previousInWindow = computed(() =>
+  mergeSessions(previous.workouts.value, drafts.pending).filter(
+    (session) => session.day >= previousStart.value && session.day <= previousEnd.value,
+  ),
+)
+const exercises = useExercises()
+/** The exercise's first declared measure in `MEASURE_ORDER`, as the lift page charts it. */
+function measureOf(exerciseId: string | null): ExerciseMeasure | null {
+  const exercise = exerciseId
+    ? exercises.exercises.value.find((candidate) => candidate.id === exerciseId)
+    : undefined
+  if (!exercise) return null
+  return MEASURE_ORDER.find((measure) => exercise.measures.includes(measure)) ?? null
+}
+const comparison = computed(() =>
+  previous.hasData.value
+    ? compareWeeks(inWindow.value, previousInWindow.value, { measureOf })
+    : null,
+)
+const previousLoading = computed(() => previous.isLoading.value && !previous.hasData.value)
+const previousError = computed(() =>
+  previous.isError.value && !previous.hasData.value
+    ? (previous.error.value?.message ?? 'Something went wrong.')
+    : null,
+)
 
 const days = computed(() =>
   Array.from({ length: 7 }, (_, i) => {
@@ -134,13 +174,22 @@ const failed = computed(() => workouts.isError.value && !workouts.hasData.value)
         />
         <StatTile
           label="Lifted"
-          :value="formatNumber(Math.round(totals.volumeKg), 0)"
-          unit="kg"
+          :value="formatNumber(lifted.value, lifted.decimals)"
+          :unit="lifted.unit"
           :sub="totals.minutes > 0 ? formatDuration(totals.minutes) : 'working sets'"
         />
       </div>
 
       <TrainingDayStrip :days="days" :today="today" />
+
+      <WeekInsightsCard
+        v-if="totals.sessions > 0"
+        :comparison="comparison"
+        :loading="previousLoading"
+        :error="previousError"
+        :is-current="isCurrent"
+        @retry="previous.refetch()"
+      />
 
       <Card v-if="inWindow.length === 0" :padded="false">
         <EmptyState

@@ -4,6 +4,11 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Gym Week: tonnes and week on week (2026-10-13)
+- The Lifted tile on Gym > Week reads in tonnes once the week passes 1,000 kg ("1.3 t", "12 t"), so a heavy week no longer spills out of its tile at 360 wide. Session rows keep kg.
+- A "Week on week" card under the day strip compares the seven days shown with the seven before: the biggest gain leads (the exercise whose best set rose the most, with this week's set against last week's), then lifted, sets and sessions with their change, then the other exercises that moved with "+2.5 kg" style chips, then what was new this week and what was missed. Each exercise opens its trend. With no sessions the week before it says so; stepping back a week compares that week with the one before it.
+- `docs/TRAINING-MATHS.md`: the tonnes rule and the week-on-week rules. Shared: `compareWeeks`, `biggestGain`, `biggestDrop`, `tonnageParts`. Web: `features/training/WeekInsightsCard.vue`.
+
 ### Dark by default (2026-10-12)
 - Minori opens in the dark theme unless you have chosen Light or System under Settings > Preferences. Before, it followed the phone's setting, so a phone set to light got the light theme. Anyone who already picked a theme keeps it.
 - The theme is applied before the first paint, so there is no flash of the other theme while the app loads.

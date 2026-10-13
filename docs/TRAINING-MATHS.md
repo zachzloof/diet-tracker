@@ -35,6 +35,11 @@ distance set, or a bodyweight rep with no weight, contributes no volume).
 
 `session volume = sum of set volumes`, shown rounded to the kilogram ("1,308 kg").
 
+A week's volume (the Lifted tile and the week-on-week card) reads in **tonnes from 1,000 kg**:
+"999 kg", then "1.3 t" (one decimal under 10 t), then "12 t" (whole tonnes). Rounding happens
+on the kilograms first, so 999.6 kg is "1 t". Session rows and the session screen stay in kg;
+a single session rarely passes a few thousand.
+
 ## Duration
 
 `minutes = round((finish − start) / 60 s)`, never below 0; null while the session is open.
@@ -59,6 +64,33 @@ duration and may still change): sessions, distinct days trained, working sets, v
 minutes, each by the rules above. "Sessions / planned" uses the training days per week from
 the profile; with none declared the tile shows the count alone.
 
+## Week on week
+
+Gym > Week compares its seven days with the seven before them (`compareWeeks`). Both sides
+use the week-total rules above: finished sessions only, working sets only.
+
+- **Totals.** Volume, working sets and sessions for each week; the volume change is
+  `(this − previous) / previous`, undefined (shown as "nothing lifted last week") when the
+  previous week lifted nothing.
+- **One measure per exercise.** An exercise is compared on its first declared measure in the
+  order weight, reps, time, distance (the same choice as the lift page's chart). A deleted
+  custom exercise, which has no declaration, is compared on the first of those its sets
+  recorded, and is matched between weeks by name (case-insensitive).
+- **Best of the week.** For each exercise, the best working set of each week on that measure
+  (`bestSet` per session, the highest across the week's sessions), plus its working sets,
+  volume and session count that week.
+- **Change.** `delta = this week's best − previous week's best` in the measure's unit;
+  `delta % = delta / previous best`, undefined when the previous best was 0 (such a gain
+  ranks above every measured one). Exercises done in both weeks are ordered by the relative
+  gain, then the absolute gain, so the **biggest gain** is the first with a positive delta and
+  the **biggest drop** the last with a negative one.
+- **New and missed.** Exercises done this week but not the previous one, and the reverse,
+  are listed separately, most volume first.
+
+The card leads with the biggest gain (its best set this week against the previous week's),
+then the three totals with their change, then up to four other exercises by the size of their
+move, then "New this week" and "Not this week". Nothing here feeds a target.
+
 ## Repeating a session
 
 A repeat copies the title, the exercises and every set (weight, reps, time, distance, warm-up
@@ -67,11 +99,15 @@ chosen. "Add set" copies the previous set of the block, not done and not a warm-
 
 ## Not yet
 
-Estimated one-rep max, personal records, weekly tonnage and the per-exercise trend arrive in
-slice 9 and will be written up here first. Training days feeding water, protein, the weekly
+Estimated one-rep max and personal records across all time arrive in slice 9 and will be
+written up here first (the week-on-week card only looks one week back). Training days feeding water, protein, the weekly
 review and recalibration are slice 10 and will be written up in `NUTRITION-MATHS.md`.
 
 ## Change log
+
+- **2026-10-13**: week on week (`compareWeeks`, `biggestGain`, `biggestDrop`) for the gym
+  Week's insights card, and the week's volume read in tonnes from 1,000 kg (`tonnageParts`).
+  No existing rule changed.
 
 - **2026-10-12** (D38): week totals (`summariseWorkouts`) and the best set by measure
   (`bestSet`) for the gym half's Week and Lifts. No existing rule changed.
