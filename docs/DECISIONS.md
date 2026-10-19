@@ -635,3 +635,18 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **Recommendation.** As built. Judge the stepper-in-the-body change and the words "Food" and "Gym" on a phone.
 
 **Status.** `adopted` (2026-10-12), please confirm.
+
+## D39. "Best" is the most lifted in one set by default, the heaviest weight by preference (adopted, please confirm)
+
+**Context.** Mid-session the app shows what you did last time beside each set. The owner asked for a Last / Best switch like the Food / Gym pill, placed once on the session rather than per exercise, and noticed that the gym Week's week-on-week card ranked lifts by the weight on the bar: 30 kg × 15 after 35 kg × 10 read as "−5 kg" when 100 kg more was lifted in that set, and a 40 kg single would have "won". The owner's view: total weight lifted in the set matters more, with a Preferences setting for people who want the heaviest weight, defaulting to total.
+
+**Options considered.**
+- **What "best" ranks on.** (A) Kilograms lifted in one set (weight × reps) by default, the heaviest weight as a preference on the profile (`preferences.bestBy`, D37's pattern), one rule for every place that says "best": the session's Best column, the week-on-week card and the lift page. Built. (B) Always the heaviest weight (as it was). Favours singles and reads a lighter, longer set as a drop. (C) Always kg lifted. Hides a real strength gain for anyone training in low reps (5 × 5 at 100 then 102.5 is "+12.5 kg" by volume but the point is the bar). (D) Estimated one-rep max. Better than both for strength, but it is a formula with assumptions and arrives with the personal records of slice 9 as its own number, not as the definition of "best".
+- **Where the Last / Best switch lives.** (A) Centred in the session screen's header, the same pill as Food / Gym, one choice for the whole session, remembered on the device (`dt.set-reference`, a view like the half you are in, D38) and "Last" to begin with. Built: it is what was asked ("like the one in our nav") and it stays in reach while the sets scroll. The header on a pushed screen keeps the title's words and nudges the pill rather than clipping, and the save status loses its words under 400 px wide. (B) Per exercise block. Rejected by the owner. (C) A setting in Preferences. Too far from the moment it is used.
+- **What "best for that set" means.** (A) The best working set at the same position (set 3 against your best third set) across the last 20 sessions, warm-ups and unticked sets excluded. Built: it matches how "Last" already lines up set by set and gives a target per set. (B) The single best set of the exercise on every row. Simpler, but the same number three times tells you less.
+
+**Rule.** The metric is the exercise's measure (weight, reps, time, distance, first declared), except a lift compared on weight that records reps, which is ranked on kg lifted in one set by default or the heaviest weight by preference. Written up in `docs/TRAINING-MATHS.md` ("What best means").
+
+**Recommendation.** A throughout. The preference is worth having: volume favours high-rep sets, so a strength block (threes and fives) is better judged on the bar. Default to kg lifted as asked.
+
+**Status.** `adopted` (2026-10-19), please confirm. Open: whether the week-on-week card should show both numbers (the set and its kg lifted) is answered with "450 kg (30 kg × 15)"; whether estimated one-rep max should become a third option is a slice 9 question.

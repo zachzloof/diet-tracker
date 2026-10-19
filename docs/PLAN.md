@@ -292,6 +292,29 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ---
 
+## Follow-up - Last / Best on a session, and what "best" means (D39)
+
+**Status:** done (2026-10-19)
+
+**Goal.** A Last / Best switch on the session screen (once, not per exercise) that turns the "last time" column into "your best for that set"; "best" meaning the most weight lifted in one set (weight × reps) by default, with a Preferences setting for the heaviest weight; and the gym Week's week-on-week card ranking and labelling lifts the same way, so 30 kg × 15 after 35 kg × 10 reads as a gain of 100 kg, not a drop of 5 kg.
+
+**Shipped.** Shared: `BEST_BASES` / `bestBy` on the preferences, `bestSetBy` (one ranking with tie-breaks), `bestSetAt`, `liftMetric`, `primaryMeasure`, `setMetricValue`, `compareWeeks({ basis })` with `metric` on every lift. Web: `PillToggle` (also behind `ModeToggle`), `AppShell`'s `header-centre` slot for pushed screens, `ui.setReference` remembered on the device, the session screen's pill, `ExerciseBlock` fetching 20 sessions and choosing the reference per position, `SetRow` taking any reference, the Week card and screen passing the basis and labelling in the metric ("450 kg (30 kg × 15)", "+100 kg"), the lift page's tiles and chart on the same basis, a Best set card under Preferences and the Settings row's summary. Written up in `docs/TRAINING-MATHS.md` and D39.
+
+**Done when.**
+- [x] A session shows a Last / Best pill in its header; Last shows last time's set at each position, Best the best at each position over past sessions by weight × reps; tapping either copies it in; the choice survives a reload. *Walked with Playwright at 390x844 dark, 360x780 light and 430x932 dark against Vite (:5174) and the API as Finn, with three seeded bench sessions (35×10/35×10/35×8, 35×10/37.5×8/35×8, 30×15/30×12/30×10): Last read "30 kg × 15 / 30 kg × 12 / 30 kg × 10" with "Last time 17 Oct · 3 sets"; Best read the same three (450, 360 and 300 kg beat 350, 350 and 280) with "Best of your last 3 sessions · weight × reps"; tapping set 1's Best filled 30 and 15; Best was still selected after a reload.*
+- [x] Settings > Preferences > Best set switched to Heaviest weight changes the Best column, the Week card and the Settings row. *Best then read "35 kg × 10 / 37.5 kg × 8 / 35 kg × 8" with "· heaviest"; the Week card showed bench "30 kg × 15, from 37.5 kg × 8" with "−7.5 kg" and the squat as the biggest gain at "+5 kg"; the Settings row read "best by weight".*
+- [x] Gym Week by default leads with bench "+100 kg". *"Biggest gain: Barbell bench press, 450 kg (30 kg × 15), from 350 kg (35 kg × 10) last week, +100 kg"; squat "525 kg (105 kg × 5), from 500 kg (100 kg × 5), +25 kg".*
+- [x] The lift page follows the preference. *Best tile "450 kg" with "30 kg × 15 · 17 Oct" and the note "kg lifted in one set, weight × reps" under the chart heading.*
+- [x] Header: the pill is centred and the title is not clipped at 360, 390 and 430; the save status keeps its icon everywhere and its words from 400 px. *Pill centre offset 0 px at 390 and 430, 8 px right of centre at 360 (the title keeps its words and the pill nudges); "Workout" unclipped at all three; status 14 px wide (icon) at 360 and 390, "Saved" at 430.*
+- [x] No horizontal scroll, no console errors, at all three widths, dark and light. *Checked on the session (Last and Best), Preferences, Week and the lift page.*
+- [x] Tests: `stats.test.ts` (ranking, tie-breaks, best at a position, the metric rule), `insights.test.ts` (both bases, a weight-only exercise), `preferences.test.ts`, `draft.test.ts` (labels), `profile.test.ts` (the patch and its validation against Postgres).
+
+**Deferrals.** No real-phone check (headless only). Best at a position lines up by raw position, so a warm-up logged as set 1 one week and not the next shifts the comparison by one row (the same holds for Last). The exercise picker and the Workouts list do not say which basis is in force; the lift page and the Week card do. Estimated one-rep max as a third basis waits for slice 9.
+
+**Decisions it depends on.** D39, D37, D38.
+
+---
+
 ## Ideas after slice 6 (not planned)
 
 - Coach chat: a conversational agent with tools to log food, answer "how am I doing", and propose target changes.

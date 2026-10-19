@@ -4,6 +4,14 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Last / Best on a session, and what "best" means (2026-10-19)
+- A Last / Best pill sits in the middle of a session's header. Last shows, beside each set, what you did at that position last time (as before). Best shows your best at that position over your last 20 sessions with that exercise; tap it to copy it in. The choice is remembered on your phone.
+- "Best" now means the most weight lifted in one set (weight × reps), so 30 kg × 15 (450 kg) beats 35 kg × 10 (350 kg). Settings > Preferences has a Best set control to switch to the heaviest weight instead. Exercises measured in reps, time or distance are unaffected.
+- Gym Week's week on week compares lifts the same way: "450 kg (30 kg × 15), from 350 kg (35 kg × 10) last week" with "+100 kg" chips, where before the chip said "−5 kg" for that pair. Under Heaviest weight the card reads as it did.
+- A lift's page follows the preference too: its Best and Latest tiles read in kg lifted with the set underneath, and the chart plots the best set per session on the same basis, with a line under the heading saying which.
+- Settings' Preferences row mentions the best set and says "best by weight" when that is chosen.
+- API: `preferences.bestBy` (`volume` by default, or `weight`) on the profile and the preferences patch; no migration (the JSONB fills the default). Shared: `bestSetBy`, `bestSetAt`, `liftMetric`, `primaryMeasure`, `setMetricValue`; `compareWeeks` takes a `basis` and reports each lift's `metric`. Web: `PillToggle` (the Food / Gym switch now uses it), a `header-centre` slot on pushed screens, `ui.setReference`.
+
 ### Where an item's numbers came from (2026-10-19)
 - Tap a logged item and the sheet now says how it was logged: "AI estimate · Confident", "Entered manually" or "From My foods". When the AI read the numbers from a product page, a "Label read from tesco.com" row opens that page.
 - The product page is now kept. Before, it was shown on the review card and then dropped; now it is stored on the logged entry and on the food saved to My foods, so it can be checked later. Logging a saved food from My foods carries its link onto the entry.

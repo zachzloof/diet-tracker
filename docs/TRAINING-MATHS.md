@@ -44,16 +44,47 @@ a single session rarely passes a few thousand.
 
 `minutes = round((finish − start) / 60 s)`, never below 0; null while the session is open.
 
-## Top set
+## What "best" means (D39)
 
-The heaviest working set of a block; reps break a tie. Used by "last time" and by the
-per-lift trend.
+Every place that ranks sets ranks them on one **metric**. An exercise's **measure** is its
+first declared one in the order weight, reps, time, distance (a deleted custom exercise uses
+the first its sets recorded). The metric is that measure, except for a lift compared on
+weight that records reps, where **Settings > Preferences > Best set** decides:
 
-## Best set by measure
+| Preference | Metric | A set's value |
+|---|---|---|
+| Weight × reps (the default) | `volume` | kilograms lifted in that one set, `weight × reps` |
+| Heaviest weight | `weight` | the weight on the bar |
 
-The per-lift trend (Gym > Week > Lifts) plots one working set per session, chosen by the
-exercise's first measure: **weight** uses the top set above; **reps** the most reps; **time**
-the longest; **distance** the furthest. Sets that did not record that measure are skipped;
+So 30 kg × 15 (450 kg) beats 35 kg × 10 (350 kg) by default, and 35 kg × 10 beats it under
+"Heaviest weight". An exercise with weight but no reps (a farmer carry) ranks on weight either
+way; reps, time and distance exercises are untouched by the preference.
+
+**Ranking (`bestSetBy`).** Only working sets with a value on the metric count. The highest
+value wins; ties on kilograms lifted go to the heavier set, then to more reps; ties on weight
+go to more reps; otherwise the earlier set wins. The old "top set" (heaviest, reps break a
+tie) is this ranking on `weight`.
+
+## Last and Best beside a set
+
+A session shows one greyed set beside each of yours, chosen by the Last / Best switch in the
+header (remembered on the phone, "Last" to begin with):
+
+- **Last**: the set at the same position in the most recent earlier session with this
+  exercise, done or not, so a plan copied forward is still shown.
+- **Best**: the best working set at that position across the last 20 sessions with this
+  exercise (`bestSetAt`), by the metric above. Set 3's best is compared with set 3; a session
+  with fewer sets has no candidate for the later positions, and a warm-up or an unticked set
+  at that position never counts.
+
+The session being edited is never its own reference. Tapping the greyed set copies it into
+the row.
+
+## Best set per session
+
+The per-lift trend (Gym > Week > Lifts) plots one working set per session, the best on the
+metric above: kilograms lifted or the heaviest weight for a lift (by the preference), the
+most reps, the longest time, the furthest distance. Sets that did not record it are skipped;
 null when nothing counts. "Best" on the lift page is the highest of those values over the
 last 20 sessions, "Latest" the most recent session's.
 
@@ -72,18 +103,22 @@ use the week-total rules above: finished sessions only, working sets only.
 - **Totals.** Volume, working sets and sessions for each week; the volume change is
   `(this − previous) / previous`, undefined (shown as "nothing lifted last week") when the
   previous week lifted nothing.
-- **One measure per exercise.** An exercise is compared on its first declared measure in the
-  order weight, reps, time, distance (the same choice as the lift page's chart). A deleted
-  custom exercise, which has no declaration, is compared on the first of those its sets
-  recorded, and is matched between weeks by name (case-insensitive).
-- **Best of the week.** For each exercise, the best working set of each week on that measure
-  (`bestSet` per session, the highest across the week's sessions), plus its working sets,
-  volume and session count that week.
-- **Change.** `delta = this week's best − previous week's best` in the measure's unit;
-  `delta % = delta / previous best`, undefined when the previous best was 0 (such a gain
-  ranks above every measured one). Exercises done in both weeks are ordered by the relative
-  gain, then the absolute gain, so the **biggest gain** is the first with a positive delta and
-  the **biggest drop** the last with a negative one.
+- **One metric per exercise.** An exercise is compared on its measure (first declared in the
+  order weight, reps, time, distance, the same choice as the lift page's chart), turned into
+  a metric by the rule in "What best means": kilograms lifted in one set for a lift by
+  default, the heaviest weight under that preference. A deleted custom exercise, which has
+  no declaration, is compared on the first measure its sets recorded, and is matched between
+  weeks by name (case-insensitive).
+- **Best of the week.** For each exercise, the best working set of each week on that metric
+  (`bestSetBy` over the week's sets), plus its working sets, volume and session count that
+  week.
+- **Change.** `delta = this week's best − previous week's best` in the metric's unit (kg
+  lifted, kg on the bar, reps, seconds or metres); `delta % = delta / previous best`,
+  undefined when the previous best was 0 (such a gain ranks above every measured one).
+  Exercises done in both weeks are ordered by the relative gain, then the absolute gain, so
+  the **biggest gain** is the first with a positive delta and the **biggest drop** the last
+  with a negative one. With the default, 30 kg × 15 after a week of 35 kg × 10 reads
+  "+100 kg" (450 from 350); under "Heaviest weight" it reads "−5 kg".
 - **New and missed.** Exercises done this week but not the previous one, and the reverse,
   are listed separately, most volume first.
 
@@ -104,6 +139,15 @@ written up here first (the week-on-week card only looks one week back). Training
 review and recalibration are slice 10 and will be written up in `NUTRITION-MATHS.md`.
 
 ## Change log
+
+- **2026-10-19** (D39): what "best" means. A lift that records reps is ranked on the
+  kilograms lifted in one set (weight × reps) by default, or on the heaviest weight by the
+  new Best set preference (`bestBy`); other exercises keep their measure. Applies to the new
+  Last / Best column on a session (`bestSetAt`), the week-on-week card (`compareWeeks` takes
+  a `basis`; its deltas are in the metric's unit) and the lift page. `bestSetBy` with its
+  tie-breaks replaces the separate top-set and best-set rankings (`topSet` and `bestSet`
+  remain as names for it). **Rule change:** week-on-week deltas for lifts were in kg on the
+  bar; by default they are now kg lifted in one set.
 
 - **2026-10-13**: week on week (`compareWeeks`, `biggestGain`, `biggestDrop`) for the gym
   Week's insights card, and the week's volume read in tonnes from 1,000 kg (`tonnageParts`).
