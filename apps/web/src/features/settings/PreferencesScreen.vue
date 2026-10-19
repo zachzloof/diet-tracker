@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import {
+  BEST_BASIS_LABELS,
+  bestBasisSchema,
   nutrientDetailSchema,
+  type BestBasis,
   type NutrientDetail,
   type PreferencesPatch,
 } from '@diet-tracker/shared'
@@ -55,6 +58,17 @@ const nutrientDetail = computed({
 const DETAIL_OPTIONS: { value: NutrientDetail; label: string }[] = [
   { value: 'full', label: 'Everything' },
   { value: 'macros', label: 'Macros only' },
+]
+const bestBy = computed({
+  get: (): string => prefs.value.bestBy,
+  set: (value: string) => {
+    const parsed = bestBasisSchema.safeParse(value)
+    if (parsed.success && parsed.data !== prefs.value.bestBy) patch({ bestBy: parsed.data })
+  },
+})
+const BEST_OPTIONS: { value: BestBasis; label: string }[] = [
+  { value: 'volume', label: BEST_BASIS_LABELS.volume },
+  { value: 'weight', label: BEST_BASIS_LABELS.weight },
 ]
 </script>
 
@@ -116,6 +130,27 @@ const DETAIL_OPTIONS: { value: NutrientDetail; label: string }[] = [
           description="The Food / Gym switch at the top and the gym's own Today, Workouts and Week. Off, Minori is just the food."
           :disabled="save.isPending.value || !ui.online"
         />
+      </Card>
+
+      <Card v-if="workouts">
+        <h2 class="flex items-center gap-2 text-base font-semibold">
+          <Icon name="trending-up" :size="20" class="text-accent" />
+          Best set
+        </h2>
+        <p class="mt-1 mb-3 text-sm text-fg-muted">
+          What counts as your best set of a lift: the Best column on a session, the week on week on
+          Gym Week, and each lift's page.
+        </p>
+        <SegmentedControl v-model="bestBy" label="Best set" :options="BEST_OPTIONS" />
+        <p class="mt-3 text-sm text-fg-muted">
+          <template v-if="bestBy === 'weight'">
+            The heaviest weight you used, reps breaking a tie. 40 kg × 1 beats 30 kg × 15.
+          </template>
+          <template v-else>
+            The most you lifted in one set, weight × reps. 30 kg × 15 (450 kg) beats 35 kg × 10 (350
+            kg). Exercises without reps are unaffected.
+          </template>
+        </p>
       </Card>
 
       <Card>

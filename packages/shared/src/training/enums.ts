@@ -69,3 +69,17 @@ export const MUSCLE_GROUP_LABELS: Readonly<Record<MuscleGroup, string>> = {
 export const EXERCISE_MEASURES = ['weight', 'reps', 'time', 'distance'] as const
 export const exerciseMeasureSchema = z.enum(EXERCISE_MEASURES)
 export type ExerciseMeasure = z.infer<typeof exerciseMeasureSchema>
+
+/**
+ * What "best" means for a lift that records weight and reps (D39): `volume` is the most
+ * kilograms lifted in one set (weight × reps); `weight` is the heaviest weight on the bar.
+ * A display preference, `volume` by default; exercises without reps are unaffected.
+ */
+export const BEST_BASES = ['volume', 'weight'] as const
+export const bestBasisSchema = z.enum(BEST_BASES)
+export type BestBasis = z.infer<typeof bestBasisSchema>
+
+export const BEST_BASIS_LABELS: Readonly<Record<BestBasis, string>> = {
+  volume: 'Weight × reps',
+  weight: 'Heaviest weight',
+}

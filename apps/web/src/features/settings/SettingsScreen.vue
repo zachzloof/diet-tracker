@@ -89,8 +89,9 @@ const preferencesSummary = computed(() => {
     !prefs.value.water && 'water off',
     !prefs.value.workouts && 'workouts off',
     prefs.value.nutrientDetail === 'macros' && 'macros only',
+    prefs.value.workouts && prefs.value.bestBy === 'weight' && 'best by weight',
   ].filter((item): item is string => typeof item === 'string')
-  return off.length ? off.join(' · ') : 'Water, workouts, nutrient detail'
+  return off.length ? off.join(' · ') : 'Water, workouts, nutrient detail, best set'
 })
 
 const consent = useAiConsentStore()

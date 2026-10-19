@@ -1,6 +1,14 @@
 import type { WorkoutSet } from '@diet-tracker/shared'
 import { describe, expect, it } from 'vitest'
-import { formatDuration, parseNumber, sessionLine, setLabel } from './draft'
+import {
+  formatDuration,
+  formatMetricValue,
+  metricDeltaLabel,
+  metricSetLabel,
+  parseNumber,
+  sessionLine,
+  setLabel,
+} from './draft'
 
 function set(partial: Partial<WorkoutSet>): WorkoutSet {
   return {
@@ -26,6 +34,25 @@ describe('setLabel', () => {
       '2.5 km in 12 min',
     )
     expect(setLabel(set({}), ['weight', 'reps'])).toBe('')
+  })
+})
+
+describe('metric labels', () => {
+  it('lead with the kilograms lifted when a set is ranked on volume', () => {
+    expect(metricSetLabel(set({ weightKg: 30, reps: 15 }), 'volume')).toBe('450 kg (30 kg × 15)')
+    expect(metricSetLabel(set({ weightKg: 30, reps: 15 }), 'weight')).toBe('30 kg × 15')
+    expect(metricSetLabel(set({ weightKg: 24, distanceM: 40 }), 'volume')).toBe('24 kg')
+    expect(metricSetLabel(set({ durationS: 75 }), 'time')).toBe('1 min 15 s')
+  })
+  it('format a value and a change in the metric', () => {
+    expect(formatMetricValue(450, 'volume')).toBe('450 kg')
+    expect(formatMetricValue(102.5, 'weight')).toBe('102.5 kg')
+    expect(formatMetricValue(1, 'reps')).toBe('1 rep')
+    expect(metricDeltaLabel(100, 'volume')).toBe('+100 kg')
+    expect(metricDeltaLabel(-2.5, 'weight')).toBe('−2.5 kg')
+    expect(metricDeltaLabel(0, 'reps')).toBe('0 reps')
+    expect(metricDeltaLabel(15, 'time')).toBe('+15 s')
+    expect(metricDeltaLabel(200, 'distance')).toBe('+200 m')
   })
 })
 

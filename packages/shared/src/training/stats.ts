@@ -1,5 +1,8 @@
-import type { ExerciseMeasure } from './enums.js'
+import type { BestBasis, ExerciseMeasure } from './enums.js'
 import type { Workout, WorkoutExercise, WorkoutInput, WorkoutSet } from './schemas.js'
+
+/** The order a lift is compared in: weight for a lift, else reps, time, distance. */
+export const MEASURE_ORDER: readonly ExerciseMeasure[] = ['weight', 'reps', 'time', 'distance']
 
 /**
  * The first training maths (docs/TRAINING-MATHS.md): what a session adds up to. Pure and
@@ -60,36 +63,123 @@ export function workoutSummary(
   }
 }
 
-/** The best working set of a block by weight, then reps; null when nothing was done. */
-export function topSet(sets: readonly WorkoutSet[]): WorkoutSet | null {
+/** The measures a block can be ranked on, plus the kilograms lifted in one set. */
+export type SetMetric = ExerciseMeasure | 'volume'
+
+/** The value of a set on one measure; null when the set did not record it. */
+export function setMeasureValue(set: WorkoutSet, measure: ExerciseMeasure): number | null {
+  switch (measure) {
+    case 'weight':
+      return set.weightKg
+    case 'reps':
+      return set.reps
+    case 'time':
+      return set.durationS
+    case 'distance':
+      return set.distanceM
+  }
+}
+
+/**
+ * The value of a set on a metric: a measure's value, or for `volume` the kilograms lifted in
+ * the set (weight × reps), null when either is missing. Working or not is not checked here.
+ */
+export function setMetricValue(set: WorkoutSet, metric: SetMetric): number | null {
+  if (metric !== 'volume') return setMeasureValue(set, metric)
+  if (set.weightKg === null || set.reps === null) return null
+  return set.weightKg * set.reps
+}
+
+/** The exercise's first measure in `MEASURE_ORDER` (weight, reps, time, distance); null with none. */
+export function primaryMeasure(measures: readonly ExerciseMeasure[]): ExerciseMeasure | null {
+  return MEASURE_ORDER.find((measure) => measures.includes(measure)) ?? null
+}
+
+/**
+ * What a lift is ranked on (D39): kilograms lifted in one set when the exercise is compared
+ * on weight, records reps and the basis is `volume`; otherwise the measure itself. So a
+ * farmer carry (weight and distance) ranks by weight under either basis.
+ */
+export function liftMetric(
+  measure: ExerciseMeasure,
+  basis: BestBasis,
+  recordsReps: boolean,
+): SetMetric {
+  return measure === 'weight' && basis === 'volume' && recordsReps ? 'volume' : measure
+}
+
+/** Ties on the metric break on these, in order; the earlier set wins a full tie. */
+const TIE_BREAKS: Readonly<Record<SetMetric, readonly SetMetric[]>> = {
+  volume: ['weight', 'reps'],
+  weight: ['reps'],
+  reps: [],
+  time: [],
+  distance: [],
+}
+
+/**
+ * The best working set by a metric; null when nothing was done or no set recorded it. Ties
+ * on kilograms lifted go to the heavier set, then the one with more reps; ties on weight go
+ * to more reps; the earlier set wins otherwise.
+ */
+export function bestSetBy(sets: readonly WorkoutSet[], metric: SetMetric): WorkoutSet | null {
   let best: WorkoutSet | null = null
+  let bestValue = 0
   for (const set of sets) {
     if (!isWorkingSet(set)) continue
+    const value = setMetricValue(set, metric)
+    if (value === null) continue
     if (
       best === null ||
-      (set.weightKg ?? 0) > (best.weightKg ?? 0) ||
-      ((set.weightKg ?? 0) === (best.weightKg ?? 0) && (set.reps ?? 0) > (best.reps ?? 0))
+      value > bestValue ||
+      (value === bestValue && beatsOnTies(set, best, metric))
     ) {
       best = set
+      bestValue = value
     }
   }
   return best
 }
 
+function beatsOnTies(candidate: WorkoutSet, holder: WorkoutSet, metric: SetMetric): boolean {
+  for (const tie of TIE_BREAKS[metric]) {
+    const a = setMetricValue(candidate, tie) ?? 0
+    const b = setMetricValue(holder, tie) ?? 0
+    if (a !== b) return a > b
+  }
+  return false
+}
+
+/** The heaviest working set of a block, reps breaking a tie; null when nothing was done. */
+export function topSet(sets: readonly WorkoutSet[]): WorkoutSet | null {
+  return bestSetBy(sets, 'weight')
+}
+
 /**
  * The best working set of a block for one measure: heaviest for weight (reps break a tie,
  * as `topSet`), most reps, longest time or furthest distance. Null when nothing was done
- * or no set recorded that measure. The per-lift trend plots this per session.
+ * or no set recorded that measure.
  */
 export function bestSet(sets: readonly WorkoutSet[], measure: ExerciseMeasure): WorkoutSet | null {
-  if (measure === 'weight') return topSet(sets)
-  const key = measure === 'reps' ? 'reps' : measure === 'time' ? 'durationS' : 'distanceM'
-  let best: WorkoutSet | null = null
-  for (const set of sets) {
-    if (!isWorkingSet(set) || set[key] === null) continue
-    if (best === null || (set[key] ?? 0) > (best[key] ?? 0)) best = set
+  return bestSetBy(sets, measure)
+}
+
+/**
+ * The best working set at one position across past sessions, by a metric: the "Best" column
+ * of the session screen reads set 3's best against set 3. A session with fewer sets has no
+ * candidate; a warm-up or an unticked set at that position never counts.
+ */
+export function bestSetAt(
+  history: readonly { sets: readonly WorkoutSet[] }[],
+  index: number,
+  metric: SetMetric,
+): WorkoutSet | null {
+  const candidates: WorkoutSet[] = []
+  for (const entry of history) {
+    const set = entry.sets[index]
+    if (set) candidates.push(set)
   }
-  return best
+  return bestSetBy(candidates, metric)
 }
 
 export interface RepeatOptions {

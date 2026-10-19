@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 import type { Workout, WorkoutSet } from './schemas.js'
 import {
   bestSet,
+  bestSetAt,
+  bestSetBy,
   emptyWorkout,
+  liftMetric,
+  primaryMeasure,
+  setMetricValue,
   nextSet,
   repeatWorkout,
   setVolumeKg,
@@ -155,6 +160,78 @@ describe('bestSet', () => {
   it('ignores warm-ups, undone sets and sets without that measure', () => {
     expect(bestSet([set({ durationS: 90, isWarmup: true }), set({ reps: 10 })], 'time')).toBeNull()
     expect(bestSet([set({ reps: 12, completed: false })], 'reps')).toBeNull()
+  })
+})
+
+describe('bestSetBy', () => {
+  it('ranks on kilograms lifted in one set: heavier breaks a tie, then more reps', () => {
+    // 100 × 5 = 500 beats 102.5 × 3 = 307.5; the first of two equal sets wins.
+    expect(bestSetBy(squat.sets, 'volume')).toBe(squat.sets[1])
+    const tie = [set({ weightKg: 50, reps: 10 }), set({ weightKg: 100, reps: 5 })]
+    expect(bestSetBy(tie, 'volume')?.weightKg).toBe(100)
+    const sameBar = [set({ weightKg: 80, reps: 6 }), set({ weightKg: 80, reps: 8 })]
+    expect(bestSetBy(sameBar, 'volume')?.reps).toBe(8)
+    // A set without reps has no volume; by weight it still counts.
+    const carry = [set({ weightKg: 24, distanceM: 40 }), set({ weightKg: 28, distanceM: 30 })]
+    expect(bestSetBy(carry, 'volume')).toBeNull()
+    expect(bestSetBy(carry, 'weight')?.weightKg).toBe(28)
+  })
+  it('matches topSet and bestSet on their measures', () => {
+    expect(bestSetBy(squat.sets, 'weight')).toBe(topSet(squat.sets))
+    expect(bestSetBy(squat.sets, 'reps')).toBe(bestSet(squat.sets, 'reps'))
+    expect(bestSetBy(plank.sets, 'time')).toBe(plank.sets[0])
+  })
+})
+
+describe('setMetricValue', () => {
+  it('is weight × reps for volume and the measure otherwise', () => {
+    expect(setMetricValue(set({ weightKg: 30, reps: 15 }), 'volume')).toBe(450)
+    expect(setMetricValue(set({ weightKg: 30 }), 'volume')).toBeNull()
+    expect(setMetricValue(set({ reps: 15 }), 'volume')).toBeNull()
+    expect(setMetricValue(set({ weightKg: 30, reps: 15 }), 'weight')).toBe(30)
+    expect(setMetricValue(set({ durationS: 60 }), 'time')).toBe(60)
+  })
+})
+
+describe('liftMetric and primaryMeasure', () => {
+  it('ranks weight-and-reps lifts on volume by default and on weight when asked', () => {
+    expect(liftMetric('weight', 'volume', true)).toBe('volume')
+    expect(liftMetric('weight', 'weight', true)).toBe('weight')
+    expect(liftMetric('weight', 'volume', false)).toBe('weight')
+    expect(liftMetric('reps', 'volume', true)).toBe('reps')
+    expect(liftMetric('time', 'volume', false)).toBe('time')
+  })
+  it('takes the first declared measure in weight, reps, time, distance order', () => {
+    expect(primaryMeasure(['reps', 'weight'])).toBe('weight')
+    expect(primaryMeasure(['distance', 'time'])).toBe('time')
+    expect(primaryMeasure([])).toBeNull()
+  })
+})
+
+describe('bestSetAt', () => {
+  const sessions = [
+    { sets: [set({ weightKg: 35, reps: 10 }), set({ weightKg: 35, reps: 8 })] },
+    { sets: [set({ weightKg: 30, reps: 15 }), set({ weightKg: 40, reps: 1 }), set({ reps: 5 })] },
+    {
+      sets: [
+        set({ weightKg: 50, reps: 10, isWarmup: true }),
+        set({ weightKg: 45, reps: 8, completed: false }),
+      ],
+    },
+  ]
+  it('is the best working set at that position across the sessions, by the metric', () => {
+    // 30 × 15 = 450 beats 35 × 10 = 350; by weight 35 wins; the warm-up 50 never counts.
+    expect(bestSetAt(sessions, 0, 'volume')).toBe(sessions[1]?.sets[0])
+    expect(bestSetAt(sessions, 0, 'weight')).toBe(sessions[0]?.sets[0])
+    // 40 × 1 = 40 loses to 35 × 8 = 280 but wins on weight; the unticked 45 never counts.
+    expect(bestSetAt(sessions, 1, 'volume')).toBe(sessions[0]?.sets[1])
+    expect(bestSetAt(sessions, 1, 'weight')).toBe(sessions[1]?.sets[1])
+  })
+  it('is null when no session reached that position with a working set on the metric', () => {
+    expect(bestSetAt(sessions, 2, 'volume')).toBeNull()
+    expect(bestSetAt(sessions, 2, 'reps')?.reps).toBe(5)
+    expect(bestSetAt(sessions, 3, 'volume')).toBeNull()
+    expect(bestSetAt([], 0, 'volume')).toBeNull()
   })
 })
 

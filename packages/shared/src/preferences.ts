@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { Gap } from './nutrition/gaps.js'
 import type { TargetKey } from './nutrition/targets.js'
+import { bestBasisSchema } from './training/enums.js'
 
 /**
  * Display preferences (D37): what the app shows, never what it computes. Every feature is
@@ -12,6 +13,9 @@ import type { TargetKey } from './nutrition/targets.js'
  *   Week; D38). Logged sessions are kept.
  * - `nutrientDetail`: `full` is everything; `macros` is energy, protein, carbs, fat and
  *   fibre only (no vitamins, minerals, limits or food groups on screen).
+ * - `bestBy`: what "best set" means for a lift (D39): `volume`, the most kilograms lifted in
+ *   one set (weight × reps), or `weight`, the heaviest weight. Read by the session screen's
+ *   Best column, the gym Week's week-on-week card and the lift page.
  *
  * Nothing here changes a target, a day verdict or a stored estimate: the engine still
  * scores every nutrient, and turning a feature back on shows what was there all along.
@@ -25,6 +29,7 @@ export const preferencesSchema = z.object({
   water: z.boolean().default(true),
   workouts: z.boolean().default(true),
   nutrientDetail: nutrientDetailSchema.default('full'),
+  bestBy: bestBasisSchema.default('volume'),
 })
 export type Preferences = z.output<typeof preferencesSchema>
 
@@ -36,6 +41,7 @@ export const preferencesPatchSchema = z
     water: z.boolean().optional(),
     workouts: z.boolean().optional(),
     nutrientDetail: nutrientDetailSchema.optional(),
+    bestBy: bestBasisSchema.optional(),
   })
   .refine((value) => Object.keys(value).length > 0, 'Nothing to change')
 export type PreferencesPatch = z.infer<typeof preferencesPatchSchema>

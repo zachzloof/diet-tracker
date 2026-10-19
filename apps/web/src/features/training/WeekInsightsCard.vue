@@ -2,10 +2,8 @@
 import {
   biggestDrop,
   biggestGain,
-  type ExerciseMeasure,
   type LiftChange,
   type WeekComparison,
-  type WorkoutSet,
 } from '@diet-tracker/shared'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -14,13 +12,13 @@ import Card from '@/components/ui/Card.vue'
 import Chip, { type ChipTone } from '@/components/ui/Chip.vue'
 import Icon from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
-import { formatNumber } from '@/lib/format'
-import { formatDistance, formatSeconds, formatTonnage, setLabel } from './draft'
+import { formatTonnage, metricDeltaLabel, metricSetLabel } from './draft'
 
 /**
  * "Week on week": this week's finished sessions against the previous seven days, from
  * `compareWeeks` (docs/TRAINING-MATHS.md). The biggest gain leads; then the totals and the
- * other lifts that moved; then what was new or missed. Each lift opens its trend.
+ * other lifts that moved; then what was new or missed. Each lift opens its trend. A lift's
+ * numbers are in the metric it was ranked on: kg lifted in one set by default (D39).
  */
 const props = defineProps<{
   comparison: WeekComparison | null
@@ -51,31 +49,8 @@ const hiddenCount = computed(() =>
 )
 const previousEmpty = computed(() => (props.comparison?.previous.sessions ?? 0) === 0)
 
-/** The best set in words for the measure it was chosen on: "105 kg × 5", "75 s", "5 km in 30 min". */
-function bestLabel(set: WorkoutSet, measure: ExerciseMeasure): string {
-  const measures: Record<ExerciseMeasure, ExerciseMeasure[]> = {
-    weight: ['weight', 'reps'],
-    reps: ['reps'],
-    time: ['distance', 'time'],
-    distance: ['distance', 'time'],
-  }
-  return setLabel(set, measures[measure])
-}
-
-/** "+2.5 kg", "−2 reps", "+15 s", "+200 m"; the unit the lift is compared on. */
 function deltaLabel(lift: LiftChange): string {
-  const sign = lift.delta > 0 ? '+' : lift.delta < 0 ? '−' : ''
-  const size = Math.abs(lift.delta)
-  switch (lift.measure) {
-    case 'weight':
-      return `${sign}${formatNumber(size, 2)} kg`
-    case 'reps':
-      return `${sign}${formatNumber(size, 0)} ${size === 1 ? 'rep' : 'reps'}`
-    case 'time':
-      return `${sign}${formatSeconds(Math.round(size))}`
-    case 'distance':
-      return `${sign}${formatDistance(size)}`
-  }
+  return metricDeltaLabel(lift.delta, lift.metric)
 }
 
 function deltaTone(lift: LiftChange): ChipTone {
@@ -168,8 +143,8 @@ function liftRoute(exerciseId: string | null) {
                 gain.exerciseName
               }}</span>
               <span class="block text-sm text-fg-muted">
-                {{ bestLabel(gain.current.best, gain.measure) }}, from
-                {{ bestLabel(gain.previous.best, gain.measure) }} {{ before }}
+                {{ metricSetLabel(gain.current.best, gain.metric) }}, from
+                {{ metricSetLabel(gain.previous.best, gain.metric) }} {{ before }}
               </span>
             </span>
             <span class="flex shrink-0 items-center gap-1">
@@ -213,8 +188,8 @@ function liftRoute(exerciseId: string | null) {
                   lift.exerciseName
                 }}</span>
                 <span class="block truncate text-xs text-fg-muted">
-                  {{ bestLabel(lift.current.best, lift.measure) }}, from
-                  {{ bestLabel(lift.previous.best, lift.measure) }}
+                  {{ metricSetLabel(lift.current.best, lift.metric) }}, from
+                  {{ metricSetLabel(lift.previous.best, lift.metric) }}
                 </span>
               </span>
               <Chip :tone="deltaTone(lift)" class="shrink-0"
@@ -239,7 +214,7 @@ function liftRoute(exerciseId: string | null) {
             v-for="(lift, i) in comparison.onlyLastWeek"
             :key="lift.exerciseId ?? lift.exerciseName"
             >{{ i > 0 ? ', ' : '' }}{{ lift.exerciseName }} ({{
-              bestLabel(lift.previous.best, lift.measure)
+              metricSetLabel(lift.previous.best, lift.metric)
             }})</template
           >.
         </p>

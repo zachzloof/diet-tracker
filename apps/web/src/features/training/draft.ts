@@ -1,9 +1,11 @@
 import {
   DEFAULT_MEASURES,
+  setMetricValue,
   tonnageParts,
   workoutSummary,
   type Exercise,
   type ExerciseMeasure,
+  type SetMetric,
   type Workout,
   type WorkoutExerciseInput,
   type WorkoutInput,
@@ -78,6 +80,48 @@ export function setLabel(set: WorkoutSet, measures: readonly ExerciseMeasure[]):
     parts.push(parts.length && measures.includes('distance') ? `in ${time}` : time)
   }
   return parts.join(' ')
+}
+
+/** The measures a set label shows for the metric a lift is ranked on. */
+const METRIC_MEASURES: Readonly<Record<SetMetric, readonly ExerciseMeasure[]>> = {
+  volume: ['weight', 'reps'],
+  weight: ['weight', 'reps'],
+  reps: ['reps'],
+  time: ['distance', 'time'],
+  distance: ['distance', 'time'],
+}
+
+/**
+ * A set in the metric it was ranked on (D39): "450 kg (30 kg × 15)" for kg lifted in a set,
+ * else `setLabel` on the measures that go with the metric: "105 kg × 5", "75 s", "5 km in 30 min".
+ */
+export function metricSetLabel(set: WorkoutSet, metric: SetMetric): string {
+  const label = setLabel(set, METRIC_MEASURES[metric])
+  if (metric !== 'volume') return label
+  const volume = setMetricValue(set, 'volume')
+  return volume === null ? label : `${formatNumber(volume, 0)} kg (${label})`
+}
+
+/** "450 kg", "12 reps", "1 min 15 s", "5 km": a value in a metric. */
+export function formatMetricValue(value: number, metric: SetMetric): string {
+  switch (metric) {
+    case 'volume':
+      return `${formatNumber(value, 0)} kg`
+    case 'weight':
+      return `${formatNumber(value, 2)} kg`
+    case 'reps':
+      return `${formatNumber(value, 0)} ${value === 1 ? 'rep' : 'reps'}`
+    case 'time':
+      return formatSeconds(Math.round(value))
+    case 'distance':
+      return formatDistance(value)
+  }
+}
+
+/** "+100 kg", "−2 reps", "+15 s", "+200 m": a change in a metric, with its sign. */
+export function metricDeltaLabel(delta: number, metric: SetMetric): string {
+  const sign = delta > 0 ? '+' : delta < 0 ? '−' : ''
+  return `${sign}${formatMetricValue(Math.abs(delta), metric)}`
 }
 
 /** "48 min · 12 sets · 1,308 kg" for a session card; the parts that apply, in that order. */

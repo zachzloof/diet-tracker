@@ -16,13 +16,14 @@ import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import Icon from '@/components/ui/Icon.vue'
+import PillToggle, { type PillOption } from '@/components/ui/PillToggle.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import Textarea from '@/components/ui/Textarea.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { ApiError } from '@/lib/api'
 import { formatDay, formatMealTime } from '@/lib/format'
-import { useUiStore } from '@/stores/ui'
+import { useUiStore, type SetReference } from '@/stores/ui'
 import { useWorkoutDraftStore } from '@/stores/workout-draft'
 import ExerciseBlock from './ExerciseBlock.vue'
 import ExercisePicker from './ExercisePicker.vue'
@@ -32,7 +33,9 @@ import { useDeleteWorkout, useExercises, useWorkout } from './useTraining'
 /**
  * The session screen (D35). The document lives in the draft store and saves itself a moment
  * after every change; the header says where it stands. Opening a session that is not on this
- * phone fetches it once and seeds the draft from the server copy.
+ * phone fetches it once and seeds the draft from the server copy. The Last / Best pill in the
+ * header decides what the greyed column beside each set shows (D39); it is remembered on the
+ * device.
  */
 const route = useRoute()
 const router = useRouter()
@@ -73,6 +76,17 @@ const statusLabel = computed(() => {
 function change(fn: (input: WorkoutInput) => WorkoutInput): void {
   drafts.update(id.value, fn)
 }
+
+const REFERENCE_OPTIONS: readonly PillOption[] = [
+  { value: 'last', label: 'Last' },
+  { value: 'best', label: 'Best' },
+]
+const reference = computed({
+  get: (): SetReference => ui.setReference,
+  set: (value: string) => {
+    if (value === 'last' || value === 'best') ui.chooseSetReference(value)
+  },
+})
 
 const finished = computed(() => input.value?.endedAt !== null)
 const summary = computed(() => (input.value ? workoutSummary(input.value) : null))
@@ -200,7 +214,16 @@ const failed = computed(() => !input.value && remote.isError.value)
 
 <template>
   <AppShell :title="input ? workoutTitle(input.title) : 'Workout'" :back="{ name: 'workouts' }">
+    <template #header-centre>
+      <PillToggle
+        v-if="input"
+        v-model="reference"
+        label="Beside each set, show"
+        :options="REFERENCE_OPTIONS"
+      />
+    </template>
     <template #header-right>
+      <!-- Under 400 px the pill needs the room, so the words go to screen readers only. -->
       <span
         v-if="input"
         class="flex items-center gap-1 text-xs"
@@ -211,7 +234,7 @@ const failed = computed(() => !input.value && remote.isError.value)
           :name="status === 'saved' ? 'check' : status === 'error' ? 'alert' : 'clock'"
           :size="14"
         />
-        {{ statusLabel }}
+        <span class="max-[399px]:sr-only">{{ statusLabel }}</span>
       </span>
     </template>
 
@@ -276,6 +299,7 @@ const failed = computed(() => !input.value && remote.isError.value)
         :block="block"
         :measures="blockMeasures(block, exercises.exercises.value)"
         :workout-id="id"
+        :reference="reference"
         @update="updateBlock"
         @remove="removeBlock(block.id)"
       />
@@ -284,8 +308,8 @@ const failed = computed(() => !input.value && remote.isError.value)
         v-if="input.exercises.length === 0"
         class="rounded-card border border-dashed border-border p-4 text-sm text-fg-muted"
       >
-        Add an exercise, then log each set as you go. What you did last time sits beside every set;
-        tap it to copy it.
+        Add an exercise, then log each set as you go. What you did last time sits beside every set,
+        or your best for that set with the switch at the top; tap it to copy it.
       </p>
 
       <Button

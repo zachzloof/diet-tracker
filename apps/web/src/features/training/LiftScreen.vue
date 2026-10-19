@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import {
   MAX_EXERCISE_HISTORY,
-  bestSet,
+  bestSetBy,
+  liftMetric,
+  primaryMeasure,
+  setMetricValue,
   type ExerciseHistoryEntry,
   type ExerciseMeasure,
+  type SetMetric,
   type WorkoutSet,
 } from '@diet-tracker/shared'
 import { computed } from 'vue'
@@ -15,18 +19,21 @@ import Icon from '@/components/ui/Icon.vue'
 import LineChart from '@/components/ui/LineChart.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import StatTile from '@/components/ui/StatTile.vue'
-import { formatDayShort, formatNumber } from '@/lib/format'
+import { usePreferences } from '@/features/profile/usePreferences'
+import { formatDayShort } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
-import { formatDistance, formatSeconds, setLabel, workoutTitle } from './draft'
+import { formatMetricValue, setLabel, workoutTitle } from './draft'
 import { useExerciseHistory, useExercises } from './useTraining'
 
 /**
- * One exercise over its last sessions: the best working set per session on a line (kg for
- * lifts, reps, seconds or metres otherwise), the best and the latest, and each session's
- * top set with a way into it. The maths is `bestSet` (docs/TRAINING-MATHS.md).
+ * One exercise over its last sessions: the best working set per session on a line, the best
+ * and the latest, and each session's best set with a way into it. A lift is ranked on the kg
+ * lifted in one set or the heaviest weight as Preferences says (D39); other exercises on
+ * reps, seconds or metres. The maths is `bestSetBy` (docs/TRAINING-MATHS.md).
  */
 const route = useRoute()
 const ui = useUiStore()
+const prefs = usePreferences()
 const id = computed(() => (typeof route.params.id === 'string' ? route.params.id : ''))
 
 const exercises = useExercises()
@@ -36,14 +43,24 @@ const exercise = computed(
 const measures = computed<readonly ExerciseMeasure[]>(
   () => exercise.value?.measures ?? ['weight', 'reps'],
 )
-/** The measure on the chart: weight for a lift, else reps, time or distance. */
-const measure = computed<ExerciseMeasure>(() => {
-  const order: ExerciseMeasure[] = ['weight', 'reps', 'time', 'distance']
-  return order.find((candidate) => measures.value.includes(candidate)) ?? 'weight'
-})
-const unit = computed(
-  () => ({ weight: 'kg', reps: 'reps', time: 's', distance: 'm' })[measure.value],
+/** What the chart and the tiles rank on: kg lifted or kg on the bar for a lift, else reps, time, distance. */
+const metric = computed<SetMetric>(() =>
+  liftMetric(
+    primaryMeasure(measures.value) ?? 'weight',
+    prefs.value.bestBy,
+    measures.value.includes('reps'),
+  ),
 )
+const unit = computed(
+  () => ({ volume: 'kg', weight: 'kg', reps: 'reps', time: 's', distance: 'm' })[metric.value],
+)
+const METRIC_NOTES: Readonly<Record<SetMetric, string>> = {
+  volume: 'kg lifted in one set, weight × reps',
+  weight: 'heaviest weight',
+  reps: 'most reps',
+  time: 'longest',
+  distance: 'furthest',
+}
 
 const history = useExerciseHistory(id, MAX_EXERCISE_HISTORY)
 
@@ -53,22 +70,12 @@ interface Point {
   value: number | null
 }
 function valueOf(set: WorkoutSet | null): number | null {
-  if (!set) return null
-  switch (measure.value) {
-    case 'weight':
-      return set.weightKg
-    case 'reps':
-      return set.reps
-    case 'time':
-      return set.durationS
-    default:
-      return set.distanceM
-  }
+  return set ? setMetricValue(set, metric.value) : null
 }
 // Oldest first for the chart; the API answers newest first.
 const points = computed<Point[]>(() =>
   [...history.history.value].reverse().map((entry) => {
-    const best = bestSet(entry.sets, measure.value)
+    const best = bestSetBy(entry.sets, metric.value)
     return { entry, best, value: valueOf(best) }
   }),
 )
@@ -83,10 +90,16 @@ const best = computed(() =>
 )
 
 function formatValue(value: number | null): string {
-  if (value === null) return '–'
-  if (measure.value === 'time') return formatSeconds(value)
-  if (measure.value === 'distance') return formatDistance(value)
-  return `${formatNumber(value, 2)} ${unit.value}`
+  return value === null ? '–' : formatMetricValue(value, metric.value)
+}
+
+/** Under a tile: the set itself when the value is kg lifted, then the day. */
+function tileSub(point: Point | null): string | undefined {
+  if (!point) return undefined
+  const day = formatDayShort(point.entry.day)
+  return metric.value === 'volume' && point.best
+    ? `${setLabel(point.best, measures.value)} · ${day}`
+    : day
 }
 
 const loading = computed(() => exercises.isLoading.value || history.isLoading.value)
@@ -128,15 +141,11 @@ const loading = computed(() => exercises.isLoading.value || history.isLoading.va
 
     <div v-else class="space-y-4">
       <div class="grid grid-cols-2 gap-2">
-        <StatTile
-          label="Best"
-          :value="formatValue(best?.value ?? null)"
-          :sub="best ? formatDayShort(best.entry.day) : undefined"
-        />
+        <StatTile label="Best" :value="formatValue(best?.value ?? null)" :sub="tileSub(best)" />
         <StatTile
           label="Latest"
           :value="formatValue(latest?.value ?? null)"
-          :sub="latest ? formatDayShort(latest.entry.day) : undefined"
+          :sub="tileSub(latest)"
         />
       </div>
 
@@ -145,6 +154,7 @@ const loading = computed(() => exercises.isLoading.value || history.isLoading.va
           <Icon name="trending-up" :size="20" class="text-accent" />
           Best set per session
         </h2>
+        <p class="mt-0.5 text-xs text-fg-muted">{{ METRIC_NOTES[metric] }}</p>
         <LineChart
           class="mt-2"
           :points="chartPoints"
@@ -153,7 +163,7 @@ const loading = computed(() => exercises.isLoading.value || history.isLoading.va
           :unit="unit"
           domain="auto"
           :label-every="points.length > 8 ? 3 : 1"
-          :decimals="measure === 'weight' ? 1 : 0"
+          :decimals="metric === 'weight' ? 1 : 0"
           empty-label="no working set"
         />
       </Card>

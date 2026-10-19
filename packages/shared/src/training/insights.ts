@@ -1,6 +1,16 @@
-import type { ExerciseMeasure } from './enums.js'
+import type { BestBasis, ExerciseMeasure } from './enums.js'
 import type { WorkoutInput, WorkoutSet } from './schemas.js'
-import { bestSet, isWorkingSet, summariseWorkouts, type WorkoutsSummary } from './stats.js'
+import {
+  MEASURE_ORDER,
+  bestSetBy,
+  isWorkingSet,
+  liftMetric,
+  setMeasureValue,
+  setMetricValue,
+  summariseWorkouts,
+  type SetMetric,
+  type WorkoutsSummary,
+} from './stats.js'
 
 /**
  * Week on week (docs/TRAINING-MATHS.md): what moved between this week's sessions and the
@@ -10,22 +20,7 @@ import { bestSet, isWorkingSet, summariseWorkouts, type WorkoutsSummary } from '
 
 type WeekWorkout = Pick<WorkoutInput, 'day' | 'exercises' | 'startedAt' | 'endedAt'>
 
-/** The measure an exercise is compared on: weight for a lift, else reps, time, distance. */
-export const MEASURE_ORDER: readonly ExerciseMeasure[] = ['weight', 'reps', 'time', 'distance']
-
-/** The value of a set on one measure; null when the set did not record it. */
-export function setMeasureValue(set: WorkoutSet, measure: ExerciseMeasure): number | null {
-  switch (measure) {
-    case 'weight':
-      return set.weightKg
-    case 'reps':
-      return set.reps
-    case 'time':
-      return set.durationS
-    case 'distance':
-      return set.distanceM
-  }
-}
+export { MEASURE_ORDER, setMeasureValue }
 
 /**
  * Infers the measure to compare a block on from what its sets recorded, in `MEASURE_ORDER`.
@@ -43,8 +38,9 @@ export function inferMeasure(
 }
 
 export interface LiftWeek {
-  /** The best working set of the week on the measure. */
+  /** The best working set of the week on the metric. */
   best: WorkoutSet
+  /** That set's value on the metric: kg lifted or kg on the bar, reps, seconds or metres. */
   value: number
   /** Working sets across the week's sessions. */
   sets: number
@@ -58,9 +54,11 @@ export interface LiftChange {
   exerciseId: string | null
   exerciseName: string
   measure: ExerciseMeasure
+  /** What the weeks were ranked on: `volume` (kg lifted in one set) or the measure itself. */
+  metric: SetMetric
   current: LiftWeek
   previous: LiftWeek
-  /** `current.value − previous.value` in the measure's unit. */
+  /** `current.value − previous.value` in the metric's unit. */
   delta: number
   /** `delta / previous.value`; null when the previous best was 0. */
   deltaPct: number | null
@@ -70,6 +68,7 @@ export interface LiftOnlyThisWeek {
   exerciseId: string | null
   exerciseName: string
   measure: ExerciseMeasure
+  metric: SetMetric
   current: LiftWeek
 }
 
@@ -77,6 +76,7 @@ export interface LiftOnlyLastWeek {
   exerciseId: string | null
   exerciseName: string
   measure: ExerciseMeasure
+  metric: SetMetric
   previous: LiftWeek
 }
 
@@ -99,6 +99,11 @@ export interface CompareWeeksOptions {
    * recorded. The screens answer from the exercise catalogue's declared measures.
    */
   measureOf?: (exerciseId: string | null, exerciseName: string) => ExerciseMeasure | null
+  /**
+   * What "best" means for an exercise compared on weight that records reps (D39): the most
+   * kilograms lifted in one set (`volume`, the default) or the heaviest weight (`weight`).
+   */
+  basis?: BestBasis
 }
 
 interface Bucket {
@@ -134,27 +139,27 @@ function bucket(workouts: readonly WeekWorkout[]): Map<string, Bucket> {
   return out
 }
 
-function liftWeek(entry: Bucket, measure: ExerciseMeasure): LiftWeek | null {
-  let best: WorkoutSet | null = null
+/** Whether any set in these buckets recorded reps, which decides if `volume` applies. */
+function recordsReps(buckets: readonly Bucket[]): boolean {
+  return buckets.some((entry) =>
+    entry.blocks.some((block) => block.sets.some((set) => set.reps !== null)),
+  )
+}
+
+function liftWeek(entry: Bucket, metric: SetMetric): LiftWeek | null {
+  const all = entry.blocks.flatMap((block) => block.sets)
+  const best = bestSetBy(all, metric)
+  if (!best) return null
   let sets = 0
   let volumeKg = 0
-  for (const block of entry.blocks) {
-    const candidate = bestSet(block.sets, measure)
-    if (candidate) {
-      const value = setMeasureValue(candidate, measure) ?? 0
-      const bestValue = best ? (setMeasureValue(best, measure) ?? 0) : -1
-      if (value > bestValue) best = candidate
-    }
-    for (const set of block.sets) {
-      if (!isWorkingSet(set)) continue
-      sets += 1
-      volumeKg += (set.weightKg ?? 0) * (set.reps ?? 0)
-    }
+  for (const set of all) {
+    if (!isWorkingSet(set)) continue
+    sets += 1
+    volumeKg += (set.weightKg ?? 0) * (set.reps ?? 0)
   }
-  if (!best) return null
   return {
     best,
-    value: setMeasureValue(best, measure) ?? 0,
+    value: setMetricValue(best, metric) ?? 0,
     sets,
     volumeKg,
     sessions: entry.sessions.size,
@@ -168,14 +173,17 @@ function pct(current: number, previous: number): number | null {
 /**
  * This week's finished sessions against the previous week's. Totals follow `summariseWorkouts`.
  * Each exercise is compared on one measure (its declared first measure, else what its sets
- * recorded) by the best working set of each week: biggest relative gain first, ties by the
- * absolute gain, then drops. Exercises done in only one of the weeks are listed separately.
+ * recorded); a lift compared on weight that records reps is ranked on the kilograms lifted
+ * in one set under the `volume` basis (the default) and on the heaviest weight under
+ * `weight`. The best working set of each week decides: biggest relative gain first, ties by
+ * the absolute gain, then drops. Exercises done in only one of the weeks are listed separately.
  */
 export function compareWeeks(
   current: readonly WeekWorkout[],
   previous: readonly WeekWorkout[],
   options: CompareWeeksOptions = {},
 ): WeekComparison {
+  const basis = options.basis ?? 'volume'
   const currentTotals = summariseWorkouts(current)
   const previousTotals = summariseWorkouts(previous)
   const now = bucket(current)
@@ -184,6 +192,8 @@ export function compareWeeks(
   const measureFor = (entry: Bucket, other?: Bucket): ExerciseMeasure | null =>
     options.measureOf?.(entry.exerciseId, entry.exerciseName) ??
     inferMeasure(other ? [...entry.blocks, ...other.blocks] : entry.blocks)
+  const metricFor = (measure: ExerciseMeasure, buckets: readonly Bucket[]): SetMetric =>
+    liftMetric(measure, basis, recordsReps(buckets))
 
   const lifts: LiftChange[] = []
   const onlyThisWeek: LiftOnlyThisWeek[] = []
@@ -193,10 +203,16 @@ export function compareWeeks(
     const before = then.get(key)
     const measure = measureFor(entry, before)
     if (!measure) continue
-    const thisWeek = liftWeek(entry, measure)
+    const metric = metricFor(measure, before ? [entry, before] : [entry])
+    const thisWeek = liftWeek(entry, metric)
     if (!thisWeek) continue
-    const lastWeek = before ? liftWeek(before, measure) : null
-    const id = { exerciseId: entry.exerciseId, exerciseName: entry.exerciseName, measure }
+    const lastWeek = before ? liftWeek(before, metric) : null
+    const id = {
+      exerciseId: entry.exerciseId,
+      exerciseName: entry.exerciseName,
+      measure,
+      metric,
+    }
     if (lastWeek) {
       lifts.push({
         ...id,
@@ -213,12 +229,14 @@ export function compareWeeks(
     if (now.has(key)) continue
     const measure = measureFor(entry)
     if (!measure) continue
-    const lastWeek = liftWeek(entry, measure)
+    const metric = metricFor(measure, [entry])
+    const lastWeek = liftWeek(entry, metric)
     if (!lastWeek) continue
     onlyLastWeek.push({
       exerciseId: entry.exerciseId,
       exerciseName: entry.exerciseName,
       measure,
+      metric,
       previous: lastWeek,
     })
   }

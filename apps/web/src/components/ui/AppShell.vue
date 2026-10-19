@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 import { useRouter, type RouteLocationRaw } from 'vue-router'
 import QuickAddSheet from '@/features/log/QuickAddSheet.vue'
 import { useAppMode } from '@/features/mode/useAppMode'
@@ -17,7 +17,11 @@ const props = defineProps<{
 const router = useRouter()
 const ui = useUiStore()
 const { mode, available } = useAppMode()
+const slots = useSlots()
 const showSwitch = computed(() => !props.back && available.value)
+/** A pushed screen may put its own pill in the middle (a session's Last / Best). */
+const showCentre = computed(() => Boolean(props.back && slots['header-centre']))
+const threeColumns = computed(() => showSwitch.value || showCentre.value)
 
 function goBack(): void {
   if (!props.back) return
@@ -43,22 +47,31 @@ function add(): void {
     >
       <!--
         A grid keeps the switch centred while both sides fit and nudges it, rather than
-        truncating the title, on a narrow phone. Pushed screens have no switch and two columns.
+        truncating the title, on a narrow phone. A pushed screen that fills the centre slot
+        keeps its title's words too (capped at 10 rem, since a person typed it) and pads both
+        sides alike so the pill is centred whenever there is room.
       -->
       <div
         class="mx-auto grid h-14 max-w-[480px] items-center gap-x-2"
         :class="[
-          back ? 'pr-4 pl-1' : 'px-4',
-          showSwitch ? 'grid-cols-[1fr_auto_1fr]' : 'grid-cols-[1fr_auto]',
+          back ? (showCentre ? 'px-1' : 'pr-4 pl-1') : 'px-4',
+          showCentre
+            ? 'grid-cols-[minmax(max-content,1fr)_auto_minmax(0,1fr)]'
+            : threeColumns
+              ? 'grid-cols-[1fr_auto_1fr]'
+              : 'grid-cols-[1fr_auto]',
         ]"
       >
-        <div class="flex items-center gap-1" :class="!showSwitch && 'min-w-0'">
+        <div class="flex items-center gap-1" :class="!threeColumns && 'min-w-0'">
           <IconButton v-if="back" label="Back" icon="chevron-left" @click="goBack" />
-          <h1 class="truncate text-xl font-semibold">{{ title }}</h1>
+          <h1 class="truncate text-xl font-semibold" :class="showCentre && 'max-w-[10rem]'">
+            {{ title }}
+          </h1>
         </div>
-        <!-- Root screens carry the Food / Gym switch in the middle (D38); pushed screens do not. -->
+        <!-- Root screens carry the Food / Gym switch in the middle (D38); a pushed screen may fill it. -->
         <ModeToggle v-if="showSwitch" />
-        <div class="flex items-center justify-end">
+        <slot v-else-if="showCentre" name="header-centre" />
+        <div class="flex items-center justify-end" :class="showCentre && 'pr-3'">
           <slot name="header-right" />
         </div>
       </div>

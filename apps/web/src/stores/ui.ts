@@ -5,6 +5,8 @@ import { isNative } from '@/lib/native'
 export type ThemePreference = 'system' | 'dark' | 'light'
 /** The two halves of the app (D38): food and the gym. Each has its own tabs. */
 export type AppMode = 'diet' | 'training'
+/** What sits beside each set on a session (D39): last time's set or the best at that position. */
+export type SetReference = 'last' | 'best'
 export type ToastKind = 'info' | 'success' | 'error'
 
 export interface ToastItem {
@@ -15,6 +17,7 @@ export interface ToastItem {
 
 const THEME_KEY = 'dt.theme'
 const MODE_KEY = 'dt.mode'
+const SET_REFERENCE_KEY = 'dt.set-reference'
 const THEME_COLORS = { dark: '#0c0f14', light: '#f7f8fa' } as const
 
 function readTheme(): ThemePreference {
@@ -36,6 +39,16 @@ export function readStoredMode(): AppMode {
     // Private mode or blocked storage: fall through to the default.
   }
   return 'diet'
+}
+
+function readSetReference(): SetReference {
+  try {
+    const stored = localStorage.getItem(SET_REFERENCE_KEY)
+    if (stored === 'last' || stored === 'best') return stored
+  } catch {
+    // Private mode or blocked storage: fall through to the default.
+  }
+  return 'last'
 }
 
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -96,6 +109,21 @@ export const useUiStore = defineStore('ui', () => {
     }
   }
 
+  /**
+   * The Last / Best switch on a session: which set the greyed column shows beside each of
+   * yours. A view, not a setting, so it stays on the device like the half you are in.
+   */
+  const setReference = ref<SetReference>(readSetReference())
+  function chooseSetReference(next: SetReference): void {
+    if (setReference.value === next) return
+    setReference.value = next
+    try {
+      localStorage.setItem(SET_REFERENCE_KEY, next)
+    } catch {
+      // Ignore: the choice just will not persist.
+    }
+  }
+
   const toasts = ref<ToastItem[]>([])
   let nextToastId = 1
 
@@ -127,6 +155,8 @@ export const useUiStore = defineStore('ui', () => {
     setTheme,
     mode,
     setMode,
+    setReference,
+    chooseSetReference,
     toasts,
     toast,
     dismissToast,

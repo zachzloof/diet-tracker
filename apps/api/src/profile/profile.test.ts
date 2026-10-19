@@ -127,6 +127,7 @@ describe('profile', () => {
       water: true,
       workouts: true,
       nutrientDetail: 'full',
+      bestBy: 'volume',
     })
 
     const off = await send('PATCH', '/api/v1/profile/preferences', { water: false })
@@ -135,6 +136,7 @@ describe('profile', () => {
       water: false,
       workouts: true,
       nutrientDetail: 'full',
+      bestBy: 'volume',
     })
 
     const macros = await send('PATCH', '/api/v1/profile/preferences', {
@@ -144,7 +146,11 @@ describe('profile', () => {
       water: false,
       workouts: true,
       nutrientDetail: 'macros',
+      bestBy: 'volume',
     })
+
+    const heaviest = await send('PATCH', '/api/v1/profile/preferences', { bestBy: 'weight' })
+    expect(preferencesResponseSchema.parse(await heaviest.json()).preferences.bestBy).toBe('weight')
 
     // A full profile save (onboarding edit) leaves the preferences alone.
     expect((await send('PUT', '/api/v1/profile', { ...finn, weightKg: 76 })).status).toBe(200)
@@ -153,6 +159,7 @@ describe('profile', () => {
       water: false,
       workouts: true,
       nutrientDetail: 'macros',
+      bestBy: 'weight',
     })
   })
 
@@ -164,6 +171,9 @@ describe('profile', () => {
     expect((await send('PUT', '/api/v1/profile', finn)).status).toBe(200)
     expect((await send('PATCH', '/api/v1/profile/preferences', {})).status).toBe(400)
     expect((await send('PATCH', '/api/v1/profile/preferences', { theme: 'dark' })).status).toBe(400)
+    expect(
+      (await send('PATCH', '/api/v1/profile/preferences', { bestBy: 'heaviest' })).status,
+    ).toBe(400)
     expect(
       (await send('PATCH', '/api/v1/profile/preferences', { nutrientDetail: 'micros' })).status,
     ).toBe(400)

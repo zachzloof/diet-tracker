@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import {
+  MAX_EXERCISE_HISTORY,
   MAX_SETS_PER_EXERCISE,
+  bestSetAt,
+  liftMetric,
   nextSet,
+  primaryMeasure,
   type ExerciseMeasure,
+  type SetMetric,
   type WorkoutExerciseInput,
   type WorkoutSet,
 } from '@diet-tracker/shared'
@@ -11,26 +16,66 @@ import { computed, ref } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
+import { usePreferences } from '@/features/profile/usePreferences'
 import { formatDayShort } from '@/lib/format'
+import type { SetReference } from '@/stores/ui'
 import SetRow from './SetRow.vue'
 import { useExerciseHistory } from './useTraining'
 
-/** One exercise in the session: its sets, "last time" beside each, add and remove, a note. */
+/**
+ * One exercise in the session: its sets with a reference beside each (the matching set from
+ * last time, or the best at that position over the last 20 sessions, by the Last / Best
+ * switch in the header), add and remove, a note.
+ */
 const props = defineProps<{
   block: WorkoutExerciseInput
   measures: readonly ExerciseMeasure[]
-  /** The session being edited, so "last time" skips it. */
+  /** The session being edited, so the reference column skips it. */
   workoutId: string
+  reference: SetReference
 }>()
 
 const emit = defineEmits<{ update: [block: WorkoutExerciseInput]; remove: [] }>()
 
-// Two sessions back when this one is already the newest on the server (it saves as you go).
-const history = useExerciseHistory(() => props.block.exerciseId, 2)
-const previous = computed(
-  () => history.history.value.find((entry) => entry.workoutId !== props.workoutId) ?? null,
+const prefs = usePreferences()
+
+// This session is already the newest on the server (it saves as you go), so it is left out.
+const history = useExerciseHistory(() => props.block.exerciseId, MAX_EXERCISE_HISTORY)
+const others = computed(() =>
+  history.history.value.filter((entry) => entry.workoutId !== props.workoutId),
 )
-const previousSet = (index: number): WorkoutSet | null => previous.value?.sets[index] ?? null
+const previous = computed(() => others.value[0] ?? null)
+
+/** What "best" ranks on for this exercise (D39): kg lifted in a set, else its first measure. */
+const metric = computed<SetMetric>(() =>
+  liftMetric(
+    primaryMeasure(props.measures) ?? 'weight',
+    prefs.value.bestBy,
+    props.measures.includes('reps'),
+  ),
+)
+const METRIC_WORDS: Readonly<Record<SetMetric, string>> = {
+  volume: 'weight × reps',
+  weight: 'heaviest',
+  reps: 'most reps',
+  time: 'longest',
+  distance: 'furthest',
+}
+
+function referenceSet(index: number): WorkoutSet | null {
+  if (props.reference === 'best') return bestSetAt(others.value, index, metric.value)
+  return previous.value?.sets[index] ?? null
+}
+
+const referenceLine = computed(() => {
+  if (!previous.value) return ''
+  if (props.reference === 'best') {
+    const n = others.value.length
+    return `Best of your last ${n} ${n === 1 ? 'session' : 'sessions'} · ${METRIC_WORDS[metric.value]}`
+  }
+  const n = previous.value.sets.length
+  return `Last time ${formatDayShort(previous.value.day)} · ${n} ${n === 1 ? 'set' : 'sets'}`
+})
 
 const noteOpen = ref(props.block.notes.length > 0)
 const removeArmed = ref(false)
@@ -98,10 +143,7 @@ function remove(): void {
         </button>
       </div>
     </div>
-    <p v-if="previous" class="mt-0.5 text-xs text-fg-muted">
-      Last time {{ formatDayShort(previous.day) }} · {{ previous.sets.length }}
-      {{ previous.sets.length === 1 ? 'set' : 'sets' }}
-    </p>
+    <p v-if="referenceLine" class="mt-0.5 text-xs text-fg-muted">{{ referenceLine }}</p>
 
     <div
       v-if="block.sets.length"
@@ -109,7 +151,7 @@ function remove(): void {
       aria-hidden="true"
     >
       <span class="w-8 text-center">Set</span>
-      <span class="w-14">Last</span>
+      <span class="w-14">{{ reference === 'best' ? 'Best' : 'Last' }}</span>
       <span v-for="measure in measures" :key="measure" class="flex-1 text-center">
         {{
           measure === 'weight'
@@ -131,7 +173,8 @@ function remove(): void {
         :set="set"
         :index="index"
         :measures="measures"
-        :previous="previousSet(index)"
+        :reference="referenceSet(index)"
+        :reference-kind="reference"
         @update="updateSet"
       />
     </div>

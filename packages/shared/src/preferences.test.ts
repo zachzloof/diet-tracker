@@ -12,8 +12,18 @@ import {
   type Preferences,
 } from './preferences.js'
 
-const macrosOnly: Preferences = { water: true, workouts: true, nutrientDetail: 'macros' }
-const noWater: Preferences = { water: false, workouts: true, nutrientDetail: 'full' }
+const macrosOnly: Preferences = {
+  water: true,
+  workouts: true,
+  nutrientDetail: 'macros',
+  bestBy: 'volume',
+}
+const noWater: Preferences = {
+  water: false,
+  workouts: true,
+  nutrientDetail: 'full',
+  bestBy: 'volume',
+}
 
 function gap(rule: Gap['rule'], key: Gap['key']): Gap {
   return {
@@ -36,6 +46,7 @@ describe('preferencesSchema', () => {
       water: true,
       workouts: true,
       nutrientDetail: 'full',
+      bestBy: 'volume',
     })
     expect(DEFAULT_PREFERENCES).toEqual(preferencesSchema.parse({}))
   })
@@ -45,8 +56,12 @@ describe('preferencesSchema', () => {
       water: false,
       workouts: true,
       nutrientDetail: 'full',
+      bestBy: 'volume',
     })
+    expect(preferencesSchema.parse({ bestBy: 'weight' }).bestBy).toBe('weight')
     expect(preferencesPatchSchema.safeParse({ nutrientDetail: 'macros' }).success).toBe(true)
+    expect(preferencesPatchSchema.safeParse({ bestBy: 'weight' }).success).toBe(true)
+    expect(preferencesPatchSchema.safeParse({ bestBy: 'heaviest' }).success).toBe(false)
     expect(preferencesPatchSchema.safeParse({}).success).toBe(false)
     expect(preferencesPatchSchema.safeParse({ theme: 'dark' }).success).toBe(false)
     expect(preferencesPatchSchema.safeParse({ nutrientDetail: 'micros' }).success).toBe(false)

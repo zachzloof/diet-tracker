@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import {
-  MEASURE_ORDER,
   addDays,
   compareWeeks,
+  primaryMeasure,
   summariseWorkouts,
   tonnageParts,
   type ExerciseMeasure,
@@ -18,6 +18,7 @@ import Icon from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import StatTile from '@/components/ui/StatTile.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
+import { usePreferences } from '@/features/profile/usePreferences'
 import { useProfile } from '@/features/profile/useProfile'
 import { formatDay, formatDayShort, formatNumber } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
@@ -39,6 +40,7 @@ const router = useRouter()
 const drafts = useWorkoutDraftStore()
 const { today } = useLocalDay()
 const { profile } = useProfile()
+const prefs = usePreferences()
 
 const end = ref(today.value)
 watch(today, (next, previous) => {
@@ -71,17 +73,20 @@ const previousInWindow = computed(() =>
   ),
 )
 const exercises = useExercises()
-/** The exercise's first declared measure in `MEASURE_ORDER`, as the lift page charts it. */
+/** The exercise's first declared measure, as the lift page charts it. */
 function measureOf(exerciseId: string | null): ExerciseMeasure | null {
   const exercise = exerciseId
     ? exercises.exercises.value.find((candidate) => candidate.id === exerciseId)
     : undefined
-  if (!exercise) return null
-  return MEASURE_ORDER.find((measure) => exercise.measures.includes(measure)) ?? null
+  return exercise ? primaryMeasure(exercise.measures) : null
 }
+// "Best" follows Settings > Preferences (D39): kg lifted in one set, or the heaviest weight.
 const comparison = computed(() =>
   previous.hasData.value
-    ? compareWeeks(inWindow.value, previousInWindow.value, { measureOf })
+    ? compareWeeks(inWindow.value, previousInWindow.value, {
+        measureOf,
+        basis: prefs.value.bestBy,
+      })
     : null,
 )
 const previousLoading = computed(() => previous.isLoading.value && !previous.hasData.value)

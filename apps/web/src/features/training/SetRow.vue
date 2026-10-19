@@ -2,19 +2,22 @@
 import type { ExerciseMeasure, WorkoutSet } from '@diet-tracker/shared'
 import { computed, ref, watch } from 'vue'
 import Icon from '@/components/ui/Icon.vue'
+import type { SetReference } from '@/stores/ui'
 import { parseNumber, setLabel } from './draft'
 
 /**
  * One set, built for a thumb between sets: the number pill toggles warm-up, the greyed
- * "last time" fills the row from the previous session, the inputs take kg and reps (or
- * seconds and metres), and the tick marks it done. Every change saves a moment later.
+ * reference (last time's set, or your best at this position) fills the row when tapped, the
+ * inputs take kg and reps (or seconds and metres), and the tick marks it done. Every change
+ * saves a moment later.
  */
 const props = defineProps<{
   set: WorkoutSet
   index: number
   measures: readonly ExerciseMeasure[]
-  /** The matching set from the last session with this exercise, if any. */
-  previous: WorkoutSet | null
+  /** The set shown beside this one: last time's at this position, or the best, if any. */
+  reference: WorkoutSet | null
+  referenceKind: SetReference
 }>()
 
 const emit = defineEmits<{ update: [set: WorkoutSet] }>()
@@ -68,18 +71,19 @@ function toggleWarmup(): void {
   emit('update', { ...props.set, isWarmup: !props.set.isWarmup })
 }
 
-const previousLabel = computed(() =>
-  props.previous ? setLabel(props.previous, props.measures) : '',
+const referenceLabel = computed(() =>
+  props.reference ? setLabel(props.reference, props.measures) : '',
 )
+const referenceWord = computed(() => (props.referenceKind === 'best' ? 'Best' : 'Last time'))
 
-function fillFromPrevious(): void {
-  if (!props.previous) return
+function fillFromReference(): void {
+  if (!props.reference) return
   emit('update', {
     ...props.set,
-    weightKg: props.previous.weightKg,
-    reps: props.previous.reps,
-    durationS: props.previous.durationS,
-    distanceM: props.previous.distanceM,
+    weightKg: props.reference.weightKg,
+    reps: props.reference.reps,
+    durationS: props.reference.durationS,
+    distanceM: props.reference.distanceM,
   })
 }
 
@@ -109,11 +113,13 @@ const inputId = (key: string) => `set-${props.set.id}-${key}`
     <button
       type="button"
       class="min-h-9 w-14 shrink-0 text-left text-[11px] leading-tight text-fg-muted tabular-nums disabled:opacity-60"
-      :disabled="!previous"
-      :aria-label="previous ? `Last time ${previousLabel}. Tap to use it` : 'No earlier set'"
-      @click="fillFromPrevious"
+      :disabled="!reference"
+      :aria-label="
+        reference ? `${referenceWord} ${referenceLabel}. Tap to use it` : 'No earlier set'
+      "
+      @click="fillFromReference"
     >
-      {{ previousLabel || '–' }}
+      {{ referenceLabel || '–' }}
     </button>
 
     <label v-for="field in fields" :key="field.key" class="relative min-w-0 flex-1">
@@ -125,7 +131,9 @@ const inputId = (key: string) => `set-${props.set.id}-${key}`
         :inputmode="field.inputmode"
         autocomplete="off"
         enterkeyhint="next"
-        :placeholder="previous && previous[field.key] !== null ? String(previous[field.key]) : '–'"
+        :placeholder="
+          reference && reference[field.key] !== null ? String(reference[field.key]) : '–'
+        "
         class="h-11 w-full rounded-control border border-border bg-surface-2 pr-6 pl-1 text-center text-base text-fg tabular-nums outline-none placeholder:text-fg-muted/50 focus:border-accent focus:ring-2 focus:ring-accent/30"
         @input="commit(field, ($event.target as HTMLInputElement).value)"
       />

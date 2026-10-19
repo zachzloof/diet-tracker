@@ -93,21 +93,56 @@ describe('compareWeeks', () => {
     expect(comparison.volumeChangePct).toBeCloseTo((990 - 2107.5) / 2107.5)
   })
 
-  it('compares each exercise done in both weeks on its measure, biggest relative gain first', () => {
+  it('ranks a lift on the kilograms lifted in one set by default, biggest relative gain first', () => {
     expect(comparison.lifts.map((lift) => lift.exerciseName)).toEqual([
+      'Plank',
+      'Barbell bench press',
+      'Barbell back squat',
+    ])
+    const [plank, bench, squat] = comparison.lifts
+    expect(plank).toMatchObject({ measure: 'time', metric: 'time', delta: 15, deltaPct: 0.25 })
+    // 77.5 kg × 6 = 465 kg beats 80 kg × 5 = 400 kg: lighter on the bar, more lifted.
+    expect(bench).toMatchObject({ measure: 'weight', metric: 'volume', delta: 65 })
+    expect(bench?.deltaPct).toBeCloseTo(65 / 400)
+    expect(bench?.current.best).toMatchObject({ weightKg: 77.5, reps: 6 })
+    expect(bench?.previous.best).toMatchObject({ weightKg: 80, reps: 5 })
+    // 105 × 5 = 525 against the best of 100 × 5 (500) and 102.5 × 3 (307.5).
+    expect(squat).toMatchObject({ measure: 'weight', metric: 'volume', delta: 25, deltaPct: 0.05 })
+    expect(squat?.current).toMatchObject({ value: 525, sets: 1, volumeKg: 525, sessions: 1 })
+    expect(squat?.previous).toMatchObject({ value: 500, sets: 3, volumeKg: 1307.5, sessions: 2 })
+    expect(squat?.previous.best).toMatchObject({ weightKg: 100, reps: 5 })
+  })
+
+  it('ranks a lift on the heaviest weight under the weight basis', () => {
+    const byWeight = compareWeeks(thisWeek, lastWeek, { basis: 'weight' })
+    expect(byWeight.lifts.map((lift) => lift.exerciseName)).toEqual([
       'Plank',
       'Barbell back squat',
       'Barbell bench press',
     ])
-    const [plank, squat, bench] = comparison.lifts
-    expect(plank).toMatchObject({ measure: 'time', delta: 15, deltaPct: 0.25 })
-    expect(squat).toMatchObject({ measure: 'weight', delta: 2.5 })
+    const [, squat, bench] = byWeight.lifts
+    expect(squat).toMatchObject({ measure: 'weight', metric: 'weight', delta: 2.5 })
     expect(squat?.deltaPct).toBeCloseTo(2.5 / 102.5)
     expect(squat?.current).toMatchObject({ value: 105, sets: 1, volumeKg: 525, sessions: 1 })
     expect(squat?.previous).toMatchObject({ value: 102.5, sets: 3, volumeKg: 1307.5, sessions: 2 })
-    // A heavier set with fewer reps is still the week's best on weight.
-    expect(bench).toMatchObject({ measure: 'weight', delta: -2.5 })
+    // A heavier set with fewer reps is the week's best on weight.
+    expect(bench).toMatchObject({ metric: 'weight', delta: -2.5 })
     expect(bench?.current.best.reps).toBe(6)
+    expect(biggestDrop(byWeight)?.exerciseName).toBe('Barbell bench press')
+  })
+
+  it('keeps the measure itself for a weight exercise with no reps, whatever the basis', () => {
+    const before = [
+      session('2026-10-01', [block(null, 'Farmer carry', [set({ weightKg: 24, distanceM: 40 })])]),
+    ]
+    const after = [
+      session('2026-10-08', [block(null, 'Farmer carry', [set({ weightKg: 28, distanceM: 30 })])]),
+    ]
+    expect(compareWeeks(after, before).lifts[0]).toMatchObject({
+      measure: 'weight',
+      metric: 'weight',
+      delta: 4,
+    })
   })
 
   it('lists exercises done in only one of the weeks', () => {
@@ -124,10 +159,17 @@ describe('compareWeeks', () => {
 
   it('picks the biggest gain and the biggest drop', () => {
     expect(biggestGain(comparison)?.exerciseName).toBe('Plank')
-    expect(biggestDrop(comparison)?.exerciseName).toBe('Barbell bench press')
-    const allUp = compareWeeks([thisWeek[1]!], [lastWeek[1]!])
-    expect(biggestGain(allUp)?.exerciseName).toBe('Plank')
-    expect(biggestDrop(allUp)).toBeNull()
+    expect(biggestDrop(comparison)).toBeNull()
+    const lighter = compareWeeks(
+      [
+        session('2026-10-08', [
+          block(BENCH, 'Barbell bench press', [set({ weightKg: 70, reps: 5 })]),
+        ]),
+      ],
+      lastWeek,
+    )
+    expect(biggestGain(lighter)).toBeNull()
+    expect(biggestDrop(lighter)).toMatchObject({ exerciseName: 'Barbell bench press', delta: -50 })
   })
 
   it('uses the declared measure when the screen knows the exercise', () => {
@@ -155,7 +197,7 @@ describe('compareWeeks', () => {
     ]
     const result = compareWeeks(after, before)
     expect(result.volumeChangePct).toBeNull()
-    expect(result.lifts[0]).toMatchObject({ delta: 20, deltaPct: null })
+    expect(result.lifts[0]).toMatchObject({ metric: 'volume', delta: 200, deltaPct: null })
   })
 
   it('is empty on both sides with nothing finished', () => {
