@@ -21,6 +21,7 @@ import { LEGAL_CONTACT_EMAIL } from '@/features/legal/legal'
 import { formatGrams, formatKcal, formatNumber, formatQuantity } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
 import ItemEditor from './ItemEditor.vue'
+import SourceLink from './SourceLink.vue'
 import MealDayPicker from './MealDayPicker.vue'
 import { applyItemEdit, snapshotItem, type EditableItem, type ItemEdit } from './item-edit'
 import { MAX_MEAL_NAME_LENGTH, suggestMealName } from './meal-name'
@@ -150,14 +151,6 @@ function brandLine(item: ReviewItem): string | null {
   return item.name.toLowerCase().includes(item.brand.toLowerCase()) ? null : item.brand
 }
 
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '')
-  } catch {
-    return 'the web'
-  }
-}
-
 function edit(item: ReviewItem, change: ItemEdit): void {
   const result = applyItemEdit(item.base, item, change)
   Object.assign(item, result.item, { base: result.base, edited: true })
@@ -192,6 +185,7 @@ function confirm(): void {
       assumptions: item.assumptions,
       confidence: item.confidence,
       brand: item.brand,
+      sourceUrl: item.sourceUrl,
       saveToLibrary: item.save && item.matchedFoodId === null,
     })),
   })
@@ -290,17 +284,7 @@ function confirm(): void {
         <div v-if="item.expanded" class="space-y-3 px-4 pb-4">
           <ItemEditor :item="item" :unit="item.unit" @edit="edit(item, $event)" />
 
-          <a
-            v-if="item.sourceUrl"
-            :href="item.sourceUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex min-h-11 items-center gap-2 text-sm font-semibold text-accent"
-          >
-            <Icon name="globe" :size="16" class="shrink-0" />
-            <span class="min-w-0 truncate">Label read from {{ hostOf(item.sourceUrl) }}</span>
-            <Icon name="share" :size="14" class="shrink-0" />
-          </a>
+          <SourceLink v-if="item.sourceUrl" :url="item.sourceUrl" />
 
           <ul v-if="item.assumptions.length" class="space-y-1">
             <li

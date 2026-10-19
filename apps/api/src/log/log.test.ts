@@ -62,6 +62,7 @@ const eggs: LogEntryInput = {
   assumptions: ['assumed large eggs (50 g each)'],
   confidence: 'high',
   brand: null,
+  sourceUrl: null,
   saveToLibrary: false,
 }
 
@@ -78,12 +79,14 @@ const toast: LogEntryInput = {
   assumptions: [],
   confidence: 'medium',
   brand: 'Hovis',
+  sourceUrl: null,
   saveToLibrary: true,
 }
 
 const oats: FoodInput = {
   name: 'Rolled oats',
   brand: null,
+  sourceUrl: null,
   basis: 'per_100g',
   servingGrams: null,
   servingLabel: null,
@@ -599,6 +602,62 @@ describe('foods library', () => {
       nutrients: { ...oats.nutrients, caffeine_mg: 80 },
     })
     expect(stray.status).toBe(400)
+  })
+})
+
+describe('source links', () => {
+  const page = 'https://www.tesco.com/groceries/en-GB/products/254656543'
+
+  it('keeps the product page on the entry and on the food saved from it', async () => {
+    const created = createEntriesResponseSchema.parse(
+      await (
+        await send('POST', '/api/v1/log/entries', {
+          day: DAY,
+          meal: 'lunch',
+          loggedAt: LOGGED_AT,
+          entries: [{ ...toast, brand: 'Tesco', sourceUrl: page, saveToLibrary: true }],
+        })
+      ).json(),
+    )
+    expect(created.entries[0]?.sourceUrl).toBe(page)
+    const library = foodsResponseSchema.parse(await (await send('GET', '/api/v1/foods')).json())
+    const food = library.foods[0]!
+    expect(food.sourceUrl).toBe(page)
+
+    // Logged again from My foods without a link of its own, the entry inherits the food's.
+    const again = createEntriesResponseSchema.parse(
+      await (
+        await send('POST', '/api/v1/log/entries', {
+          day: DAY,
+          meal: 'dinner',
+          loggedAt: LOGGED_AT,
+          entries: [{ ...eggs, source: 'library', foodId: food.id, confidence: null }],
+        })
+      ).json(),
+    )
+    expect(again.entries[0]?.sourceUrl).toBe(page)
+
+    // A manual edit of the food keeps the link; the form carries it unchanged.
+    const edited = foodResponseSchema.parse(
+      await (
+        await send('PATCH', `/api/v1/foods/${food.id}`, { ...oats, sourceUrl: food.sourceUrl })
+      ).json(),
+    ).food
+    expect(edited.sourceUrl).toBe(page)
+  })
+
+  it('refuses anything that is not an absolute http(s) link', async () => {
+    const res = await send('POST', '/api/v1/log/entries', {
+      day: DAY,
+      meal: 'lunch',
+      loggedAt: LOGGED_AT,
+      entries: [{ ...eggs, sourceUrl: 'javascript:alert(1)' }],
+    })
+    expect(res.status).toBe(400)
+    const manual = await send('POST', '/api/v1/foods', { ...oats, sourceUrl: 'tesco.com' })
+    expect(manual.status).toBe(400)
+    const none = foodResponseSchema.parse(await (await send('POST', '/api/v1/foods', oats)).json())
+    expect(none.food.sourceUrl).toBeNull()
   })
 })
 

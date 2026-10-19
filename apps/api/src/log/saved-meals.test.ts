@@ -56,6 +56,7 @@ const finn: ProfileInput = {
 const oats: FoodInput = {
   name: 'Rolled oats',
   brand: null,
+  sourceUrl: null,
   basis: 'per_100g',
   servingGrams: null,
   servingLabel: null,
@@ -66,6 +67,7 @@ const oats: FoodInput = {
 const milk: FoodInput = {
   name: 'Skim milk',
   brand: null,
+  sourceUrl: null,
   basis: 'per_100g',
   servingGrams: null,
   servingLabel: null,

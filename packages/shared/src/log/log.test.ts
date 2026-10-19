@@ -6,6 +6,7 @@ import {
   createEntriesRequestSchema,
   estimateRequestSchema,
   foodInputSchema,
+  sourceUrlSchema,
   updateEntryRequestSchema,
 } from './schemas.js'
 
@@ -132,6 +133,47 @@ describe('createEntriesRequestSchema and updateEntryRequestSchema', () => {
     expect(
       updateEntryRequestSchema.safeParse({ saveToLibrary: false, meal: 'dinner' }).success,
     ).toBe(true)
+  })
+})
+
+describe('sourceUrlSchema', () => {
+  it('keeps an absolute http(s) product page and nothing else', () => {
+    const page = 'https://www.tesco.com/groceries/en-GB/products/254656543'
+    expect(sourceUrlSchema.parse(page)).toBe(page)
+    expect(sourceUrlSchema.parse(null)).toBeNull()
+    const bad = [
+      'tesco.com',
+      'ftp://x.test/a',
+      'javascript:alert(1)',
+      `https://x.test/${'a'.repeat(2000)}`,
+    ]
+    for (const value of bad) {
+      expect(sourceUrlSchema.safeParse(value).success, value.slice(0, 40)).toBe(false)
+    }
+  })
+
+  it('defaults to null on the input shapes', () => {
+    const parsed = createEntriesRequestSchema.parse({
+      day: '2026-09-26',
+      meal: 'lunch',
+      loggedAt: '2026-09-26T12:00:00.000Z',
+      entries: [
+        {
+          name: 'Egg',
+          quantity: 1,
+          unit: 'egg',
+          grams: 50,
+          nutrients: emptyNutrientVector(),
+          foodGroups: emptyFoodGroupServes(),
+          source: 'manual',
+          foodId: null,
+          aiCallId: null,
+          assumptions: [],
+          confidence: null,
+        },
+      ],
+    })
+    expect(parsed.entries[0]?.sourceUrl).toBeNull()
   })
 })
 

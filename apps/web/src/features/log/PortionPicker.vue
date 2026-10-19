@@ -97,6 +97,7 @@ function confirm(): void {
       foodId: props.food.id,
       aiCallId: null,
       brand: props.food.brand,
+      sourceUrl: props.food.sourceUrl,
       assumptions: [],
       confidence: null,
       saveToLibrary: false,

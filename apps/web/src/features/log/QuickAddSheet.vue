@@ -189,6 +189,7 @@ async function submitManual(): Promise<void> {
     assumptions: [],
     confidence: null,
     brand: food.brand,
+    sourceUrl: food.sourceUrl,
     saveToLibrary: false,
   }
   log({ day: manualDay.value, meal: manualMeal.value, entries: [entry] })

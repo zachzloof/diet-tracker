@@ -17,6 +17,7 @@ function entry(overrides: Partial<LogEntry> & { name: string; kcal?: number }): 
     nutrients: { ...emptyNutrientVector(), energy_kcal: kcal, protein_g: 10 },
     foodGroups: emptyFoodGroupServes(),
     source: 'library',
+    sourceUrl: null,
     foodId: null,
     aiCallId: null,
     assumptions: [],

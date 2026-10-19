@@ -2,11 +2,12 @@
 import { MEAL_LABELS, type LogEntry } from '@diet-tracker/shared'
 import { computed } from 'vue'
 import Card from '@/components/ui/Card.vue'
-import Icon, { type IconName } from '@/components/ui/Icon.vue'
+import Icon from '@/components/ui/Icon.vue'
 import { ingredientCount } from '@/features/meals/meal-items'
 import { formatGrams, formatKcal, formatQuantity } from '@/lib/format'
 import { useQueueStore } from '@/stores/queue'
 import { mealSections, type GroupRow } from './day-groups'
+import { ENTRY_SOURCE_ICON, ENTRY_SOURCE_LABEL } from './source'
 
 /**
  * The day's food entries grouped by meal, each with a kcal subtotal. Ingredients logged
@@ -25,16 +26,6 @@ function groupQueued(group: GroupRow): boolean {
   return group.entries.some((entry) => queue.has(entry.id))
 }
 
-const SOURCE_ICON: Record<LogEntry['source'], IconName> = {
-  ai: 'sparkles',
-  library: 'book',
-  manual: 'pencil',
-}
-const SOURCE_LABEL: Record<LogEntry['source'], string> = {
-  ai: 'AI estimate',
-  library: 'From My foods',
-  manual: 'Entered manually',
-}
 const CONFIDENCE_DOT: Record<NonNullable<LogEntry['confidence']>, string> = {
   high: 'bg-met',
   medium: 'bg-close',
@@ -132,10 +123,10 @@ const CONFIDENCE_DOT: Record<NonNullable<LogEntry['confidence']>, string> = {
             >
               <span
                 class="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg-muted"
-                :title="SOURCE_LABEL[row.entry.source]"
+                :title="ENTRY_SOURCE_LABEL[row.entry.source]"
                 aria-hidden="true"
               >
-                <Icon :name="SOURCE_ICON[row.entry.source]" :size="16" />
+                <Icon :name="ENTRY_SOURCE_ICON[row.entry.source]" :size="16" />
               </span>
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-base text-fg">{{ row.entry.name }}</span>

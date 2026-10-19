@@ -47,6 +47,7 @@ export function savedMealEntries(items: readonly SavedMealItem[], portions = 1):
       assumptions: [],
       confidence: null,
       brand: null,
+      sourceUrl: null,
       saveToLibrary: false,
     }
   })

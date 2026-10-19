@@ -30,7 +30,7 @@ import {
 } from '../db/schema/index.js'
 import { errors } from '../errors.js'
 import type { Tx } from '../profile/targets-service.js'
-import { createFood, ownedFoodIds, touchFoods } from './foods-service.js'
+import { createFood, ownedFoods, touchFoods } from './foods-service.js'
 import { createSavedMeal, touchSavedMeal } from './saved-meals-service.js'
 
 /**
@@ -51,6 +51,7 @@ export function toWireEntry(row: LogEntryRow): LogEntry {
     nutrients: row.nutrients,
     foodGroups: row.foodGroups,
     source: row.source,
+    sourceUrl: row.sourceUrl,
     foodId: row.foodId,
     aiCallId: row.aiCallId,
     assumptions: row.assumptions,
@@ -140,7 +141,15 @@ async function saveEntryAsFood(
   userId: string,
   entry: Pick<
     LogEntryInput,
-    'name' | 'brand' | 'quantity' | 'unit' | 'grams' | 'nutrients' | 'foodGroups' | 'source'
+    | 'name'
+    | 'brand'
+    | 'sourceUrl'
+    | 'quantity'
+    | 'unit'
+    | 'grams'
+    | 'nutrients'
+    | 'foodGroups'
+    | 'source'
   >,
   now: Date,
 ): Promise<string> {
@@ -154,6 +163,7 @@ async function saveEntryAsFood(
       servingLabel: `${trimNumber(entry.quantity)} ${entry.unit}`,
       nutrients: entry.nutrients,
       foodGroups: entry.foodGroups,
+      sourceUrl: entry.sourceUrl,
     },
     { source: entry.source === 'ai' ? 'ai' : 'manual', verified: true, now },
     tx,
@@ -173,7 +183,7 @@ export async function createEntries(
   const loggedAt = new Date(request.loggedAt)
   return db.transaction(async (tx) => {
     const wantedFoodIds = request.entries.flatMap((e) => (e.foodId ? [e.foodId] : []))
-    const owned = await ownedFoodIds(tx, userId, wantedFoodIds)
+    const owned = await ownedFoods(tx, userId, wantedFoodIds)
     const missing = wantedFoodIds.filter((id) => !owned.has(id))
     if (missing.length > 0) {
       throw errors.validation({
@@ -217,6 +227,8 @@ export async function createEntries(
         nutrients: entry.nutrients,
         foodGroups: entry.foodGroups,
         source: entry.source,
+        // An entry logged from My foods carries the food's label link unless it brought its own.
+        sourceUrl: entry.sourceUrl ?? (foodId ? (owned.get(foodId)?.sourceUrl ?? null) : null),
         foodId,
         aiCallId: entry.aiCallId && aiIds.has(entry.aiCallId) ? entry.aiCallId : null,
         assumptions: entry.assumptions,

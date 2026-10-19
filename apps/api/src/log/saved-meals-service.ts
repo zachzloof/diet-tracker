@@ -16,7 +16,7 @@ import {
 } from '../db/schema/index.js'
 import { errors } from '../errors.js'
 import type { Tx } from '../profile/targets-service.js'
-import { ownedFoodIds } from './foods-service.js'
+import { ownedFoods } from './foods-service.js'
 
 /**
  * Saved meals: named sets of ingredients logged in one go. Ingredients are snapshots, like
@@ -83,7 +83,7 @@ async function itemRows(
   mealId: string,
   input: SavedMealInput,
 ): Promise<NewSavedMealItemRow[]> {
-  const owned = await ownedFoodIds(
+  const owned = await ownedFoods(
     tx,
     userId,
     input.items.flatMap((item) => (item.foodId ? [item.foodId] : [])),

@@ -25,6 +25,7 @@ export function toWireFood(row: FoodRow): Food {
     nutrients: row.nutrients,
     foodGroups: row.foodGroups,
     source: row.source,
+    sourceUrl: row.sourceUrl,
     verified: row.verified,
     lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
@@ -97,6 +98,7 @@ export async function createFood(
       nutrients: input.nutrients,
       foodGroups: input.foodGroups,
       source: options.source,
+      sourceUrl: input.sourceUrl,
       verified: options.verified,
       lastUsedAt: null,
       createdAt: now,
@@ -120,6 +122,7 @@ export async function updateFood(userId: string, id: string, input: FoodInput): 
       servingLabel: input.servingLabel,
       nutrients: input.nutrients,
       foodGroups: input.foodGroups,
+      sourceUrl: input.sourceUrl,
       verified: true,
       updatedAt: new Date(),
     })
@@ -148,14 +151,21 @@ export async function touchFoods(tx: Tx, userId: string, ids: string[], at: Date
     .where(and(eq(foods.userId, userId), inArray(foods.id, ids)))
 }
 
-/** Which of `ids` the user actually owns; anything else is rejected upstream. */
-export async function ownedFoodIds(tx: Tx, userId: string, ids: string[]): Promise<Set<string>> {
-  if (ids.length === 0) return new Set()
+/**
+ * Which of `ids` the user actually owns, with each food's source link so an entry logged
+ * from the library can carry it; anything not in the map is rejected upstream.
+ */
+export async function ownedFoods(
+  tx: Tx,
+  userId: string,
+  ids: string[],
+): Promise<Map<string, { sourceUrl: string | null }>> {
+  if (ids.length === 0) return new Map()
   const rows = await tx
-    .select({ id: foods.id })
+    .select({ id: foods.id, sourceUrl: foods.sourceUrl })
     .from(foods)
     .where(and(ownedBy(userId), inArray(foods.id, ids)))
-  return new Set(rows.map((row) => row.id))
+  return new Map(rows.map((row) => [row.id, { sourceUrl: row.sourceUrl }]))
 }
 
 const STOP_WORDS = new Set([

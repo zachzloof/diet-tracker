@@ -30,6 +30,8 @@ export interface FoodFormState {
   servingLabel: string
   nutrients: Record<NutrientKey, number | null>
   foodGroups: Record<FoodGroupKey, number | null>
+  /** Not edited in the form; carried so saving an edit keeps the food's label link. */
+  sourceUrl: string | null
 }
 
 export const LABEL_NUTRIENTS: readonly NutrientKey[] = [
@@ -61,6 +63,7 @@ export function emptyFoodForm(food?: Food | null): FoodFormState {
     servingLabel: food?.servingLabel ?? '',
     nutrients,
     foodGroups,
+    sourceUrl: food?.sourceUrl ?? null,
   }
 }
 
@@ -81,6 +84,7 @@ export function parseFoodForm(form: FoodFormState): FoodFormResult {
     servingLabel: form.servingLabel.trim() === '' ? null : form.servingLabel,
     nutrients,
     foodGroups,
+    sourceUrl: form.sourceUrl,
   })
   if (result.success) return { ok: true, data: result.data }
   return { ok: false, fieldErrors: toValidationDetails(result.error).fieldErrors }

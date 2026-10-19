@@ -626,6 +626,7 @@ export function entryFor(email: string, key: string): LogEntryInput {
     assumptions: [],
     confidence: null,
     brand: null,
+    sourceUrl: null,
     saveToLibrary: false,
   }
 }

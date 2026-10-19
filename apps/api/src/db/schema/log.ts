@@ -45,6 +45,8 @@ export const foods = pgTable(
     nutrients: jsonb('nutrients').$type<NutrientVector>().notNull(),
     foodGroups: jsonb('food_groups').$type<FoodGroupServes>().notNull(),
     source: text('source').$type<FoodSource>().notNull(),
+    /** The product page the numbers were read from (AI web search, D16); null otherwise. */
+    sourceUrl: text('source_url'),
     verified: boolean('verified').notNull().default(false),
     lastUsedAt: timestamptz('last_used_at'),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
@@ -78,6 +80,8 @@ export const logEntries = pgTable(
     nutrients: jsonb('nutrients').$type<NutrientVector>().notNull(),
     foodGroups: jsonb('food_groups').$type<FoodGroupServes>().notNull(),
     source: text('source').$type<EntrySource>().notNull(),
+    /** Copied from the estimate, or from the library food when logged from My foods. */
+    sourceUrl: text('source_url'),
     foodId: uuid('food_id').references(() => foods.id, { onDelete: 'set null' }),
     aiCallId: uuid('ai_call_id').references(() => aiCalls.id, { onDelete: 'set null' }),
     assumptions: text('assumptions').array().notNull().default([]),

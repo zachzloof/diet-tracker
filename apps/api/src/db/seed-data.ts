@@ -101,6 +101,7 @@ export const SEED_FOODS: Record<string, FoodInput[]> = {
     {
       name: 'Whey protein shake',
       brand: null,
+      sourceUrl: null,
       basis: 'per_serving',
       servingGrams: 35,
       servingLabel: '1 scoop',
@@ -121,6 +122,7 @@ export const SEED_FOODS: Record<string, FoodInput[]> = {
     {
       name: 'Rolled oats',
       brand: null,
+      sourceUrl: null,
       basis: 'per_100g',
       servingGrams: null,
       servingLabel: null,
@@ -145,6 +147,7 @@ export const SEED_FOODS: Record<string, FoodInput[]> = {
     {
       name: 'Greek yoghurt, full fat',
       brand: null,
+      sourceUrl: null,
       basis: 'per_100g',
       servingGrams: null,
       servingLabel: null,
@@ -169,6 +172,7 @@ export const SEED_FOODS: Record<string, FoodInput[]> = {
     {
       name: 'Rolled oats',
       brand: null,
+      sourceUrl: null,
       basis: 'per_100g',
       servingGrams: null,
       servingLabel: null,
@@ -193,6 +197,7 @@ export const SEED_FOODS: Record<string, FoodInput[]> = {
     {
       name: 'Banana',
       brand: null,
+      sourceUrl: null,
       basis: 'per_serving',
       servingGrams: 120,
       servingLabel: '1 medium',
@@ -215,6 +220,7 @@ export const SEED_FOODS: Record<string, FoodInput[]> = {
     {
       name: 'Skim milk',
       brand: null,
+      sourceUrl: null,
       basis: 'per_100g',
       servingGrams: null,
       servingLabel: null,

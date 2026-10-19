@@ -23,6 +23,8 @@ import {
   type EditableItem,
   type ItemEdit,
 } from './item-edit'
+import SourceLink from './SourceLink.vue'
+import { ENTRY_SOURCE_ICON, ENTRY_SOURCE_LABEL } from './source'
 import { useDeleteEntry, useUpdateEntry } from './useLog'
 
 /**
@@ -152,10 +154,20 @@ function del(): void {
 
       <ItemEditor :item="draft" :unit="entry.unit" @edit="edit" />
 
-      <ul v-if="entry.assumptions.length || entry.confidence" class="space-y-1">
-        <li v-if="entry.confidence" class="text-xs text-fg-muted">
-          AI estimate · {{ CONFIDENCE_LABELS[entry.confidence] }}
-        </li>
+      <div class="space-y-1">
+        <p class="flex items-center gap-2 text-sm text-fg-muted">
+          <Icon :name="ENTRY_SOURCE_ICON[entry.source]" :size="16" class="shrink-0" />
+          <span>
+            {{ ENTRY_SOURCE_LABEL[entry.source]
+            }}<template v-if="entry.confidence">
+              · {{ CONFIDENCE_LABELS[entry.confidence] }}</template
+            >
+          </span>
+        </p>
+        <SourceLink v-if="entry.sourceUrl" :url="entry.sourceUrl" />
+      </div>
+
+      <ul v-if="entry.assumptions.length" class="space-y-1">
         <li
           v-for="assumption in entry.assumptions"
           :key="assumption"

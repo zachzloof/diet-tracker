@@ -127,6 +127,7 @@ export const useQueueStore = defineStore('queue', () => {
         nutrients: entry.nutrients,
         foodGroups: entry.foodGroups,
         source: entry.source,
+        sourceUrl: entry.sourceUrl,
         foodId: entry.foodId,
         aiCallId: entry.aiCallId,
         assumptions: entry.assumptions,

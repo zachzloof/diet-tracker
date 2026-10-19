@@ -4,6 +4,12 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Where an item's numbers came from (2026-10-19)
+- Tap a logged item and the sheet now says how it was logged: "AI estimate · Confident", "Entered manually" or "From My foods". When the AI read the numbers from a product page, a "Label read from tesco.com" row opens that page.
+- The product page is now kept. Before, it was shown on the review card and then dropped; now it is stored on the logged entry and on the food saved to My foods, so it can be checked later. Logging a saved food from My foods carries its link onto the entry.
+- My foods: a food's sheet shows the same source line and link above the Log it / Edit tabs. The list icon now also tells a USDA food apart, for when that resolver arrives.
+- API: `foods.source_url` and `log_entries.source_url` (migration 0012, nullable), `sourceUrl` on `Food`, `LogEntry`, `FoodInput` and `LogEntryInput` (absolute http(s) only, up to 2,000 characters). Web: `features/log/source.ts`, `SourceLink.vue`.
+
 ### Gym Week: tonnes and week on week (2026-10-13)
 - The Lifted tile on Gym > Week reads in tonnes once the week passes 1,000 kg ("1.3 t", "12 t"), so a heavy week no longer spills out of its tile at 360 wide. Session rows keep kg.
 - A "Week on week" card under the day strip compares the seven days shown with the seven before: the biggest gain leads (the exercise whose best set rose the most, with this week's set against last week's), then lifted, sets and sessions with their change, then the other exercises that moved with "+2.5 kg" style chips, then what was new this week and what was missed. Each exercise opens its trend. With no sessions the week before it says so; stepping back a week compares that week with the one before it.

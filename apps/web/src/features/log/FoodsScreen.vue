@@ -15,7 +15,9 @@ import { formatInstant, formatKcal } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
 import ManualFoodForm from './ManualFoodForm.vue'
 import PortionPicker from './PortionPicker.vue'
+import SourceLink from './SourceLink.vue'
 import { basisLabel, emptyFoodForm, parseFoodForm } from './food-form'
+import { FOOD_SOURCE_ICON, FOOD_SOURCE_LABEL } from './source'
 import { useCreateEntries, useCreateFood, useDeleteFood, useFoods, useUpdateFood } from './useLog'
 import { useLocalDay } from './useLocalDay'
 
@@ -206,7 +208,7 @@ function logPortion(payload: { day: string; meal: Meal; entry: LogEntryInput }):
                 class="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg-muted"
                 aria-hidden="true"
               >
-                <Icon :name="food.source === 'ai' ? 'sparkles' : 'pencil'" :size="16" />
+                <Icon :name="FOOD_SOURCE_ICON[food.source]" :size="16" />
               </span>
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-base text-fg">
@@ -243,6 +245,13 @@ function logPortion(payload: { day: string; meal: Meal; entry: LogEntryInput }):
         </template>
 
         <template v-else-if="selected">
+          <div class="space-y-1">
+            <p class="flex items-center gap-2 text-sm text-fg-muted">
+              <Icon :name="FOOD_SOURCE_ICON[selected.source]" :size="16" class="shrink-0" />
+              {{ FOOD_SOURCE_LABEL[selected.source] }}
+            </p>
+            <SourceLink v-if="selected.sourceUrl" :url="selected.sourceUrl" />
+          </div>
           <SegmentedControl v-model="tabValue" label="Action" :options="TABS" />
           <PortionPicker
             v-if="tab === 'log'"

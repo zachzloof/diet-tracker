@@ -18,6 +18,17 @@ const foodName = z
   .max(120, 'Keep the name under 120 characters')
 const shortText = (max: number) => z.string().trim().max(max)
 
+/**
+ * The product page a food's numbers were read from (an AI estimate that searched the web,
+ * D16), kept on the food and on every entry logged from it so the person can check the
+ * label later. Absolute http(s) only; anything else is dropped before it is stored.
+ */
+export const MAX_SOURCE_URL_CHARS = 2000
+export const sourceUrlSchema = z
+  .url({ protocol: /^https?$/ })
+  .max(MAX_SOURCE_URL_CHARS)
+  .nullable()
+
 export const MAX_SERVING_GRAMS = 5000
 export const MAX_ENTRY_GRAMS = 20_000
 export const MAX_ENTRY_QUANTITY = 10_000
@@ -39,21 +50,24 @@ const foodFields = {
 }
 
 /** The manual-entry form. A per-serving food must say how many grams a serving is. */
-export const foodInputSchema = z.object(foodFields).superRefine((value, ctx) => {
-  if (value.basis === 'per_serving' && value.servingGrams === null) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['servingGrams'],
-      message: 'Enter the grams in one serving',
-    })
-  }
-})
+export const foodInputSchema = z
+  .object({ ...foodFields, sourceUrl: sourceUrlSchema.default(null) })
+  .superRefine((value, ctx) => {
+    if (value.basis === 'per_serving' && value.servingGrams === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['servingGrams'],
+        message: 'Enter the grams in one serving',
+      })
+    }
+  })
 export type FoodInput = z.infer<typeof foodInputSchema>
 
 export const foodSchema = z.object({
   id: z.uuid(),
   ...foodFields,
   source: foodSourceSchema,
+  sourceUrl: sourceUrlSchema,
   /** True for manual entries and AI estimates the person confirmed or edited. */
   verified: z.boolean(),
   lastUsedAt: z.iso.datetime().nullable(),
@@ -128,6 +142,8 @@ export const logEntryInputSchema = z.object({
   confidence: confidenceSchema.nullable(),
   /** Brand or retailer, kept on the food when `saveToLibrary` is set so the library can match it later. */
   brand: shortText(80).nullable().default(null),
+  /** The product page the values were read from, kept on the entry and on the saved food. */
+  sourceUrl: sourceUrlSchema.default(null),
   /** Save this item to My foods (as a per-serving food of `grams` grams) as well as logging it. */
   saveToLibrary: z.boolean().default(false),
 })
@@ -164,6 +180,7 @@ export const logEntrySchema = z.object({
   meal: mealSchema,
   ...entryFields,
   source: entrySourceSchema,
+  sourceUrl: sourceUrlSchema,
   foodId: z.uuid().nullable(),
   aiCallId: z.uuid().nullable(),
   assumptions: z.array(z.string()),

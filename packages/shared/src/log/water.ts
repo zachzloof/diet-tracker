@@ -44,6 +44,7 @@ export function waterEntryInput(ml: number = WATER_QUICK_ADD_ML): LogEntryInput 
     assumptions: [],
     confidence: null,
     brand: null,
+    sourceUrl: null,
     saveToLibrary: false,
   }
 }
