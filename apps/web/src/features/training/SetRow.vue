@@ -6,8 +6,8 @@ import type { SetReference } from '@/stores/ui'
 import { parseNumber, setLabel } from './draft'
 
 /**
- * One set, built for a thumb between sets: the number pill toggles warm-up, the greyed
- * reference (last time's set, or your best at this position) fills the row when tapped, the
+ * One set, built for a thumb between sets: the greyed reference (last time's set, or your
+ * best at this position) fills the row when tapped, the
  * inputs take kg and reps (or seconds and metres), and the tick marks it done. Every change
  * saves a moment later.
  */
@@ -67,10 +67,6 @@ function toggleDone(): void {
   emit('update', { ...props.set, completed: !props.set.completed })
 }
 
-function toggleWarmup(): void {
-  emit('update', { ...props.set, isWarmup: !props.set.isWarmup })
-}
-
 const referenceLabel = computed(() =>
   props.reference ? setLabel(props.reference, props.measures) : '',
 )
@@ -95,20 +91,12 @@ const inputId = (key: string) => `set-${props.set.id}-${key}`
     class="flex items-center gap-1.5 rounded-control py-1"
     :class="set.completed ? 'bg-met/10' : ''"
   >
-    <button
-      type="button"
-      class="flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums transition"
-      :class="set.isWarmup ? 'bg-close/20 text-fg' : 'bg-surface-2 text-fg-muted'"
-      :aria-label="
-        set.isWarmup
-          ? `Set ${index + 1}, warm-up. Tap to count it`
-          : `Set ${index + 1}. Tap to mark as warm-up`
-      "
-      :aria-pressed="set.isWarmup"
-      @click="toggleWarmup"
+    <span
+      class="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-semibold text-fg-muted tabular-nums"
+      :aria-label="`Set ${index + 1}`"
     >
-      {{ set.isWarmup ? 'W' : index + 1 }}
-    </button>
+      {{ index + 1 }}
+    </span>
 
     <button
       type="button"

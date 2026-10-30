@@ -179,7 +179,6 @@ export async function upsertWorkout(
         durationS: set.durationS,
         distanceM: set.distanceM,
         rpe: set.rpe,
-        isWarmup: set.isWarmup,
         completed: set.completed,
       })),
     )

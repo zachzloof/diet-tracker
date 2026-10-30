@@ -12,7 +12,7 @@ A session (`workout`) belongs to one user-local day and has a start, an optional
 title, notes and a 1 to 5 "feel". It holds exercise blocks in order; each block points at an
 exercise in the catalogue (or one of your own) and holds sets in order. A set records, in
 canonical units, whichever of these its exercise measures: weight (kg), reps, time (seconds),
-distance (metres), plus optional RPE, a warm-up flag and a done flag.
+distance (metres), plus optional RPE and a done flag.
 
 | Measure set | Used by |
 |---|---|
@@ -24,8 +24,9 @@ distance (metres), plus optional RPE, a warm-up flag and a done flag.
 
 ## Working sets
 
-A set counts when it is **done and not a warm-up**. Undone sets (an extra row never ticked) and
-warm-ups are kept in the session but never add to anything below. Finishing a session drops
+A set counts when it is **ticked done**. Undone sets (an extra row never ticked) are kept in
+the session but never add to anything below. There is no warm-up flag: a light first set you
+tick counts like any other (removed 2026-10-30). Finishing a session drops
 rows with no numbers at all.
 
 ## Volume
@@ -74,8 +75,8 @@ header (remembered on the phone, "Last" to begin with):
   exercise, done or not, so a plan copied forward is still shown.
 - **Best**: the best working set at that position across the last 20 sessions with this
   exercise (`bestSetAt`), by the metric above. Set 3's best is compared with set 3; a session
-  with fewer sets has no candidate for the later positions, and a warm-up or an unticked set
-  at that position never counts.
+  with fewer sets has no candidate for the later positions, and an unticked set at that
+  position never counts.
 
 The session being edited is never its own reference. Tapping the greyed set copies it into
 the row.
@@ -128,9 +129,9 @@ move, then "New this week" and "Not this week". Nothing here feeds a target.
 
 ## Repeating a session
 
-A repeat copies the title, the exercises and every set (weight, reps, time, distance, warm-up
-flags) with fresh ids, nothing ticked done, no notes, no feel and no finish time, onto the day
-chosen. "Add set" copies the previous set of the block, not done and not a warm-up.
+A repeat copies the title, the exercises and every set (weight, reps, time, distance) with
+fresh ids, nothing ticked done, no notes, no feel and no finish time, onto the day chosen.
+"Add set" copies the previous set of the block, not done.
 
 ## Not yet
 

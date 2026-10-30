@@ -10,7 +10,6 @@ export function toWireSet(row: WorkoutSetRow): WorkoutSet {
     durationS: row.durationS,
     distanceM: row.distanceM,
     rpe: row.rpe,
-    isWarmup: row.isWarmup,
     completed: row.completed,
   })
 }

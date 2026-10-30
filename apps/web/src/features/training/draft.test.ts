@@ -18,7 +18,6 @@ function set(partial: Partial<WorkoutSet>): WorkoutSet {
     durationS: null,
     distanceM: null,
     rpe: null,
-    isWarmup: false,
     completed: true,
     ...partial,
   }
@@ -67,7 +66,7 @@ describe('sessionLine', () => {
           exerciseId: null,
           exerciseName: 'Squat',
           notes: '',
-          sets: [set({ weightKg: 100, reps: 5 }), set({ weightKg: 60, reps: 5, isWarmup: true })],
+          sets: [set({ weightKg: 100, reps: 5 }), set({ weightKg: 60, reps: 5, completed: false })],
         },
       ],
     })

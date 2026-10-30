@@ -4,6 +4,9 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Warm-up sets removed (2026-10-30)
+- The set number is no longer a button. Tapping it used to mark the set as a warm-up ("W") and leave it out of volume, top sets and Best; now every set you tick counts, warm-up or not. Sets marked as warm-ups before today count from now on.
+
 ### Last / Best on a session, and what "best" means (2026-10-19)
 - A Last / Best pill sits in the middle of a session's header. Last shows, beside each set, what you did at that position last time (as before). Best shows your best at that position over your last 20 sessions with that exercise; tap it to copy it in. The choice is remembered on your phone.
 - "Best" now means the most weight lifted in one set (weight × reps), so 30 kg × 15 (450 kg) beats 35 kg × 10 (350 kg). Settings > Preferences has a Best set control to switch to the heaviest weight instead. Exercises measured in reps, time or distance are unaffected.

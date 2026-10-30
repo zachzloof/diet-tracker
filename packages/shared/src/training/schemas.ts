@@ -69,8 +69,7 @@ export type ExerciseResponse = z.infer<typeof exerciseResponseSchema>
 
 /**
  * One set. Which fields are filled depends on the exercise's measures; the rest are null.
- * Units are canonical: kilograms, reps, seconds, metres. A warm-up set is kept but never
- * counts towards volume or best sets.
+ * Units are canonical: kilograms, reps, seconds, metres.
  */
 export const workoutSetSchema = z.object({
   id: z.uuid(),
@@ -88,7 +87,6 @@ export const workoutSetSchema = z.object({
   durationS: z.number().int().min(0).max(MAX_SET_DURATION_S).nullable(),
   distanceM: z.number().min(0).max(MAX_SET_DISTANCE_M).nullable(),
   rpe: z.number().min(1).max(10).nullable(),
-  isWarmup: z.boolean(),
   completed: z.boolean(),
 })
 export type WorkoutSet = z.infer<typeof workoutSetSchema>

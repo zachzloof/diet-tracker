@@ -13,7 +13,6 @@ function set(partial: Partial<WorkoutSet>): WorkoutSet {
     durationS: null,
     distanceM: null,
     rpe: null,
-    isWarmup: false,
     completed: true,
     ...partial,
   }
@@ -43,7 +42,6 @@ function session(day: string, exercises: WorkoutInput['exercises'], finished = t
 const lastWeek: WorkoutInput[] = [
   session('2026-09-29', [
     block(SQUAT, 'Barbell back squat', [
-      set({ weightKg: 60, reps: 5, isWarmup: true }),
       set({ weightKg: 100, reps: 5 }),
       set({ weightKg: 100, reps: 5 }),
     ]),

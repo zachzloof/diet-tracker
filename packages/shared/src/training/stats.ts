@@ -9,9 +9,9 @@ export const MEASURE_ORDER: readonly ExerciseMeasure[] = ['weight', 'reps', 'tim
  * deterministic, like the nutrition engine; the screens and the API both read these.
  */
 
-/** A set counts when it was done and was not a warm-up. */
+/** A set counts when it was ticked done. */
 export function isWorkingSet(set: WorkoutSet): boolean {
-  return set.completed && !set.isWarmup
+  return set.completed
 }
 
 /** Weight × reps for one set; 0 when either is missing or it is not a working set. */
@@ -167,7 +167,7 @@ export function bestSet(sets: readonly WorkoutSet[], measure: ExerciseMeasure): 
 /**
  * The best working set at one position across past sessions, by a metric: the "Best" column
  * of the session screen reads set 3's best against set 3. A session with fewer sets has no
- * candidate; a warm-up or an unticked set at that position never counts.
+ * candidate; an unticked set at that position never counts.
  */
 export function bestSetAt(
   history: readonly { sets: readonly WorkoutSet[] }[],
@@ -218,7 +218,7 @@ export function emptyWorkout(day: string, startedAt: string): WorkoutInput {
 /** A new set for a block: a copy of the last set (not done), else a blank one. */
 export function nextSet(sets: readonly WorkoutSet[], id: string): WorkoutSet {
   const last = sets[sets.length - 1]
-  if (last) return { ...last, id, completed: false, isWarmup: false }
+  if (last) return { ...last, id, completed: false }
   return {
     id,
     weightKg: null,
@@ -226,7 +226,6 @@ export function nextSet(sets: readonly WorkoutSet[], id: string): WorkoutSet {
     durationS: null,
     distanceM: null,
     rpe: null,
-    isWarmup: false,
     completed: false,
   }
 }

@@ -74,7 +74,6 @@ function set(partial: Partial<WorkoutSet> = {}): WorkoutSet {
     durationS: null,
     distanceM: null,
     rpe: null,
-    isWarmup: false,
     completed: true,
     ...partial,
   }
@@ -95,7 +94,7 @@ function pushDay(overrides: Partial<WorkoutInput> = {}): WorkoutInput {
         exerciseName: 'Barbell back squat',
         notes: 'belt on',
         sets: [
-          set({ weightKg: 60, isWarmup: true }),
+          set({ weightKg: 60, completed: false }),
           set(),
           set(),
           set({ weightKg: 102.5, reps: 3 }),

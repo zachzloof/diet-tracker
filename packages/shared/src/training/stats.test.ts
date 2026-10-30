@@ -28,7 +28,6 @@ function set(partial: Partial<WorkoutSet>): WorkoutSet {
     durationS: null,
     distanceM: null,
     rpe: null,
-    isWarmup: false,
     completed: true,
     ...partial,
   }
@@ -40,7 +39,6 @@ const squat = {
   exerciseName: 'Barbell back squat',
   notes: '',
   sets: [
-    set({ weightKg: 60, reps: 5, isWarmup: true }),
     set({ weightKg: 100, reps: 5 }),
     set({ weightKg: 100, reps: 5 }),
     set({ weightKg: 102.5, reps: 3 }),
@@ -72,8 +70,7 @@ describe('set volume', () => {
   it('is weight × reps for a working set', () => {
     expect(setVolumeKg(set({ weightKg: 100, reps: 5 }))).toBe(500)
   })
-  it('is 0 for warm-ups, undone sets and sets without weight or reps', () => {
-    expect(setVolumeKg(set({ weightKg: 100, reps: 5, isWarmup: true }))).toBe(0)
+  it('is 0 for undone sets and sets without weight or reps', () => {
     expect(setVolumeKg(set({ weightKg: 100, reps: 5, completed: false }))).toBe(0)
     expect(setVolumeKg(set({ durationS: 60 }))).toBe(0)
     expect(setVolumeKg(set({ weightKg: 100, reps: null }))).toBe(0)
@@ -82,7 +79,7 @@ describe('set volume', () => {
 
 describe('workoutSummary', () => {
   it('adds up the working sets of the session', () => {
-    // 100×5 + 100×5 + 102.5×3 = 1307.5; the warm-up and the undone single do not count.
+    // 100×5 + 100×5 + 102.5×3 = 1307.5; the undone single does not count.
     expect(workoutSummary(pushA)).toEqual({
       volumeKg: 1307.5,
       workingSets: 4,
@@ -141,10 +138,8 @@ describe('topSet', () => {
     const tie = [set({ weightKg: 80, reps: 6 }), set({ weightKg: 80, reps: 8 })]
     expect(topSet(tie)?.reps).toBe(8)
   })
-  it('ignores warm-ups and undone sets', () => {
-    expect(
-      topSet([set({ weightKg: 60, isWarmup: true }), set({ weightKg: 50, completed: false })]),
-    ).toBeNull()
+  it('ignores undone sets', () => {
+    expect(topSet([set({ weightKg: 50, completed: false })])).toBeNull()
   })
 })
 
@@ -157,8 +152,8 @@ describe('bestSet', () => {
     const runs = [set({ distanceM: 5000, durationS: 1500 }), set({ distanceM: 3000 })]
     expect(bestSet(runs, 'distance')?.distanceM).toBe(5000)
   })
-  it('ignores warm-ups, undone sets and sets without that measure', () => {
-    expect(bestSet([set({ durationS: 90, isWarmup: true }), set({ reps: 10 })], 'time')).toBeNull()
+  it('ignores undone sets and sets without that measure', () => {
+    expect(bestSet([set({ reps: 10 })], 'time')).toBeNull()
     expect(bestSet([set({ reps: 12, completed: false })], 'reps')).toBeNull()
   })
 })
@@ -166,7 +161,7 @@ describe('bestSet', () => {
 describe('bestSetBy', () => {
   it('ranks on kilograms lifted in one set: heavier breaks a tie, then more reps', () => {
     // 100 × 5 = 500 beats 102.5 × 3 = 307.5; the first of two equal sets wins.
-    expect(bestSetBy(squat.sets, 'volume')).toBe(squat.sets[1])
+    expect(bestSetBy(squat.sets, 'volume')).toBe(squat.sets[0])
     const tie = [set({ weightKg: 50, reps: 10 }), set({ weightKg: 100, reps: 5 })]
     expect(bestSetBy(tie, 'volume')?.weightKg).toBe(100)
     const sameBar = [set({ weightKg: 80, reps: 6 }), set({ weightKg: 80, reps: 8 })]
@@ -214,13 +209,13 @@ describe('bestSetAt', () => {
     { sets: [set({ weightKg: 30, reps: 15 }), set({ weightKg: 40, reps: 1 }), set({ reps: 5 })] },
     {
       sets: [
-        set({ weightKg: 50, reps: 10, isWarmup: true }),
+        set({ weightKg: 50, reps: 10, completed: false }),
         set({ weightKg: 45, reps: 8, completed: false }),
       ],
     },
   ]
   it('is the best working set at that position across the sessions, by the metric', () => {
-    // 30 × 15 = 450 beats 35 × 10 = 350; by weight 35 wins; the warm-up 50 never counts.
+    // 30 × 15 = 450 beats 35 × 10 = 350; by weight 35 wins; the unticked 50 never counts.
     expect(bestSetAt(sessions, 0, 'volume')).toBe(sessions[1]?.sets[0])
     expect(bestSetAt(sessions, 0, 'weight')).toBe(sessions[0]?.sets[0])
     // 40 × 1 = 40 loses to 35 × 8 = 280 but wins on weight; the unticked 45 never counts.
@@ -254,22 +249,20 @@ describe('repeatWorkout', () => {
     const block = repeated.exercises[0]
     expect(block?.id).not.toBe(squat.id)
     expect(block?.exerciseId).toBe(squat.exerciseId)
-    expect(block?.sets.map((s) => s.weightKg)).toEqual([60, 100, 100, 102.5, 105])
+    expect(block?.sets.map((s) => s.weightKg)).toEqual([100, 100, 102.5, 105])
     expect(block?.sets.every((s) => !s.completed)).toBe(true)
-    expect(block?.sets[0]?.isWarmup).toBe(true)
-    expect(new Set(block?.sets.map((s) => s.id)).size).toBe(5)
+    expect(new Set(block?.sets.map((s) => s.id)).size).toBe(4)
   })
 })
 
 describe('nextSet', () => {
-  it('copies the last set, not done and not a warm-up', () => {
+  it('copies the last set, not done', () => {
     const next = nextSet(squat.sets, 'new')
     expect(next).toMatchObject({
       id: 'new',
       weightKg: 105,
       reps: 1,
       completed: false,
-      isWarmup: false,
     })
   })
   it('is blank for the first set', () => {
@@ -280,7 +273,6 @@ describe('nextSet', () => {
       durationS: null,
       distanceM: null,
       rpe: null,
-      isWarmup: false,
       completed: false,
     })
   })

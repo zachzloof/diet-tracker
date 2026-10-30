@@ -102,6 +102,10 @@ export const workoutSets = pgTable(
     durationS: integer('duration_s'),
     distanceM: doublePrecision('distance_m'),
     rpe: doublePrecision('rpe'),
+    /**
+     * Unused since the warm-up toggle was removed (2026-10-30): every ticked set counts. Kept
+     * so the deploy that stops writing it boots safely; drop it in a later migration.
+     */
     isWarmup: boolean('is_warmup').notNull().default(false),
     completed: boolean('completed').notNull().default(false),
   },
