@@ -8,6 +8,7 @@ import {
   type TargetEntry,
   type TargetKey,
 } from '@diet-tracker/shared'
+import { useQueryClient } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
@@ -17,6 +18,7 @@ import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import AiConsent from '@/features/ai/AiConsent.vue'
+import { PROFILE_KEY } from '@/features/profile/useProfile'
 import { usePreferences } from '@/features/profile/usePreferences'
 import { ApiError } from '@/lib/api'
 import { formatDay, formatNumber } from '@/lib/format'
@@ -25,11 +27,12 @@ import { useUiStore } from '@/stores/ui'
 import ExplanationCard from './ExplanationCard.vue'
 import OverrideSheet from './OverrideSheet.vue'
 import TargetRow from './TargetRow.vue'
-import { useExplainPlan, useSetOverrides, useTargets } from './useTargets'
+import { useExplainPlan, useSetOverrides, useTargets, type OverridePatch } from './useTargets'
 
 const route = useRoute()
 const router = useRouter()
 const ui = useUiStore()
+const queryClient = useQueryClient()
 const consent = useAiConsentStore()
 const targets = useTargets()
 const explain = useExplainPlan()
@@ -62,6 +65,12 @@ function recommended(key: TargetKey): TargetEntry | null {
 }
 
 const energy = computed(() => entry('energy_kcal'))
+/** "Set by you", "Uncapped" (D40) or both, beside the energy heading. */
+const energyTag = computed(() =>
+  [energy.value?.overridden ? 'Set by you' : null, energy.value?.uncapped ? 'Uncapped' : null]
+    .filter((part) => part !== null)
+    .join(' · '),
+)
 const meta = computed(() => version.value?.effective.meta ?? null)
 const macroKcal = computed(() => {
   const p = entry('protein_g')?.value ?? 0
@@ -106,18 +115,35 @@ function edit(key: TargetKey): void {
   editingKey.value = key
 }
 
-function applyOverride(value: number | null, confirm: boolean): void {
+function applyOverride(patch: OverridePatch): void {
   const key = editingKey.value
   if (!key) return
   serverError.value = null
+  const flag = patch.energyUncapped
   overrides.mutate(
-    { overrides: { [key]: value }, confirm },
+    {
+      overrides: patch.value !== undefined ? { [key]: patch.value } : {},
+      confirm: patch.confirm,
+      ...(flag !== undefined ? { energyUncapped: flag } : {}),
+    },
     {
       onSuccess: (result) => {
         editingKey.value = null
+        // The flag lives on the profile too, so the Profile form must see it.
+        if (flag !== undefined) void queryClient.invalidateQueries({ queryKey: PROFILE_KEY })
         const warning = result.warnings[0]
         if (warning) ui.toast(warning.message, 'info')
-        else ui.toast(value === null ? 'Back to the recommended target' : 'Target saved', 'success')
+        else if (patch.value === undefined && flag !== undefined) {
+          ui.toast(
+            flag ? 'Energy uncapped: going over never costs the day' : 'Energy capped again',
+            'success',
+          )
+        } else {
+          ui.toast(
+            patch.value === null ? 'Back to the recommended target' : 'Target saved',
+            'success',
+          )
+        }
       },
       onError: (error: unknown) => {
         serverError.value =
@@ -166,7 +192,7 @@ function applyOverride(value: number | null, confirm: boolean): void {
         <button type="button" class="w-full text-left" @click="edit('energy_kcal')">
           <div class="flex items-baseline justify-between">
             <span class="text-xs font-medium tracking-wide text-fg-muted uppercase">Energy</span>
-            <span v-if="energy.overridden" class="text-xs font-medium text-accent">Set by you</span>
+            <span v-if="energyTag" class="text-xs font-medium text-accent">{{ energyTag }}</span>
           </div>
           <div class="mt-1 flex items-baseline gap-2">
             <span class="text-hero font-bold text-fg">{{ formatNumber(energy.value) }}</span>
@@ -275,7 +301,7 @@ function applyOverride(value: number | null, confirm: boolean): void {
       :saving="overrides.isPending.value"
       :server-error="serverError"
       @save="applyOverride"
-      @reset="applyOverride(null, false)"
+      @reset="applyOverride({ value: null, confirm: false })"
     />
   </AppShell>
 </template>

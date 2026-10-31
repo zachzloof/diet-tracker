@@ -4,6 +4,16 @@ import { computed } from 'vue'
 import { targetsApi } from '@/features/profile/api'
 
 export const TARGETS_KEY = ['targets'] as const
+
+/**
+ * One save from the override sheet: a new value (`null` clears the pin, left out keeps it)
+ * and, for energy, the D40 flag when it changed.
+ */
+export interface OverridePatch {
+  value?: number | null
+  confirm: boolean
+  energyUncapped?: boolean
+}
 export const TARGETS_HISTORY_KEY = ['targets', 'history'] as const
 
 export function targetsQueryOptions() {

@@ -37,6 +37,8 @@ export interface OnboardingDraft {
   flags: SafetyFlags
   /** Ticked on the first step: explicit consent to store health data. */
   healthConsent: boolean
+  /** Offered on the pace step for a gain goal (D40): the energy target is a floor. */
+  energyUncapped: boolean
 }
 
 export function emptyDraft(): OnboardingDraft {
@@ -59,6 +61,7 @@ export function emptyDraft(): OnboardingDraft {
     dislikes: [],
     flags: { ...NO_FLAGS },
     healthConsent: false,
+    energyUncapped: false,
   }
 }
 
@@ -125,6 +128,8 @@ export function draftToInput(draft: OnboardingDraft): unknown {
     units: draft.units,
     flags: draft.flags,
     healthConsent: draft.healthConsent,
+    // Only offered for a gain goal; a switch left on from an earlier answer must not leak.
+    energyUncapped: draft.goal === 'gain' && draft.energyUncapped,
   }
   return input
 }

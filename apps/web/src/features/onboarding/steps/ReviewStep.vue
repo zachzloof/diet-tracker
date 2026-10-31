@@ -31,7 +31,7 @@ const rows = computed(() => {
   list.push({
     label: 'Goal',
     value: draft.goal
-      ? `${GOAL_LABELS[draft.goal].label}${draft.pace ? `, ${PACE_LABELS[draft.pace].label.toLowerCase()}` : ''}`
+      ? `${GOAL_LABELS[draft.goal].label}${draft.pace ? `, ${PACE_LABELS[draft.pace].label.toLowerCase()}` : ''}${draft.goal === 'gain' && draft.energyUncapped ? ', uncapped' : ''}`
       : '',
   })
   if (draft.goalWeightKg !== null)

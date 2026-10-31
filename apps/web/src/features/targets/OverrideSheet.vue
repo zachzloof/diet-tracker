@@ -5,12 +5,15 @@ import Button from '@/components/ui/Button.vue'
 import Icon from '@/components/ui/Icon.vue'
 import NumberField from '@/components/ui/NumberField.vue'
 import Sheet from '@/components/ui/Sheet.vue'
+import Toggle from '@/components/ui/Toggle.vue'
 import { KIND_LABELS, formatNumber, targetLabel, unitLabel } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
+import type { OverridePatch } from './useTargets'
 
 /**
  * Change one target. Inside the usual range saves quietly; outside it saves with a
- * warning; below the safety floor needs a second, explicit tap.
+ * warning; below the safety floor needs a second, explicit tap. Energy also carries the
+ * Uncapped switch (D40): on, going over never scores "over" or costs the day.
  */
 const open = defineModel<boolean>('open', { default: false })
 
@@ -25,12 +28,13 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  save: [value: number, confirm: boolean]
+  save: [patch: OverridePatch]
   reset: []
 }>()
 
 const ui = useUiStore()
 const value = ref<number | null>(null)
+const uncapped = ref(false)
 const confirming = ref(false)
 
 watch(
@@ -38,11 +42,14 @@ watch(
   ([isOpen, entry]) => {
     if (isOpen && entry) {
       value.value = entry.value
+      uncapped.value = entry.uncapped === true
       confirming.value = false
     }
   },
   { immediate: true },
 )
+
+const isEnergy = computed(() => props.entry?.key === 'energy_kcal')
 
 const unit = computed(() => (props.entry ? unitLabel(props.entry.unit, props.entry.key) : ''))
 const step = computed(() => {
@@ -60,7 +67,12 @@ const step = computed(() => {
 const check = computed(() =>
   props.recommended && value.value !== null ? checkOverride(props.recommended, value.value) : null,
 )
-const changed = computed(() => props.entry !== null && value.value !== props.entry.value)
+const valueChanged = computed(() => props.entry !== null && value.value !== props.entry.value)
+const uncappedChanged = computed(
+  () =>
+    isEnergy.value && props.entry !== null && uncapped.value !== (props.entry.uncapped === true),
+)
+const changed = computed(() => valueChanged.value || uncappedChanged.value)
 const isRecommended = computed(
   () => props.recommended !== null && value.value === props.recommended.value,
 )
@@ -72,12 +84,16 @@ const rangeText = computed(() => {
 })
 
 function save(): void {
-  if (value.value === null || !props.entry) return
-  if (check.value?.level === 'blocked' && !confirming.value) {
+  if (value.value === null || !props.entry || !changed.value) return
+  if (valueChanged.value && check.value?.level === 'blocked' && !confirming.value) {
     confirming.value = true
     return
   }
-  emit('save', value.value, confirming.value)
+  emit('save', {
+    ...(valueChanged.value ? { value: value.value } : {}),
+    confirm: confirming.value,
+    ...(uncappedChanged.value ? { energyUncapped: uncapped.value } : {}),
+  })
 }
 </script>
 
@@ -103,6 +119,14 @@ function save(): void {
         :step="step"
         :helper="rangeText ?? undefined"
       />
+
+      <div v-if="isEnergy" class="rounded-card border border-border bg-surface px-4">
+        <Toggle
+          v-model="uncapped"
+          label="Uncapped"
+          description="Going over never counts against the day. Met from 95% of the target, with no upper line."
+        />
+      </div>
 
       <p
         v-if="check && check.level !== 'ok'"

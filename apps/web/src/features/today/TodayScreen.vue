@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { addDays, isValidDay, isWaterEntry, type LogEntry } from '@diet-tracker/shared'
+import {
+  addDays,
+  energyUncapped,
+  isValidDay,
+  isWaterEntry,
+  type LogEntry,
+} from '@diet-tracker/shared'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
@@ -192,6 +198,7 @@ function retry(): void {
           class="mt-2"
           :score="score"
           :goal="targets.version.value.effective.meta.goalApplied"
+          :uncapped="energyUncapped(targets.version.value.effective)"
           :is-today="isToday"
         />
       </div>

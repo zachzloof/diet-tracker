@@ -140,7 +140,7 @@ export const STEPS: StepDef[] = [
         return 'Goal weight should be above your current weight'
       return null
     },
-    fields: ['pace', 'goalWeightKg'],
+    fields: ['pace', 'goalWeightKg', 'energyUncapped'],
   },
   {
     id: 'activity',

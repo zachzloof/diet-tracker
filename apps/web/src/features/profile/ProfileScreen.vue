@@ -57,10 +57,14 @@ const profileQuery = useProfile()
 const targets = useTargets()
 const save = useSaveProfile()
 
-type Form = Omit<ProfileInput, 'heightCm' | 'weightKg' | 'trainingDaysPerWeek'> & {
+type Form = Omit<
+  ProfileInput,
+  'heightCm' | 'weightKg' | 'trainingDaysPerWeek' | 'energyUncapped'
+> & {
   heightCm: number | null
   weightKg: number | null
   trainingDaysPerWeek: number | null
+  energyUncapped: boolean
 }
 
 const form = reactive<Form>(fromProfile(null))
@@ -87,6 +91,7 @@ function fromProfile(profile: Profile | null): Form {
     timezone: profile?.timezone ?? 'UTC',
     units: profile?.units ?? 'metric',
     flags: { ...(profile?.flags ?? { pregnant: false, breastfeeding: false, edHistory: false }) },
+    energyUncapped: profile?.energyUncapped ?? false,
   }
 }
 
@@ -303,6 +308,11 @@ function submit(): void {
           :units="form.units"
           label="Goal weight (optional)"
           :error="error('goalWeightKg')"
+        />
+        <Toggle
+          v-model="form.energyUncapped"
+          label="Uncapped energy"
+          description="Going over the energy target never counts against the day."
         />
       </Card>
 

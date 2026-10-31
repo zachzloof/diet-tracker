@@ -8,11 +8,12 @@ import { targetLabel } from '@/lib/format'
 /**
  * One line under the greeting: is the day met, and if not, what is in the way. What counts
  * depends on the goal the targets were built for (`dayMetRule`, D31), so a gainer is never
- * told sodium cost them the day.
+ * told sodium cost them the day. `uncapped` (D40) only changes the summary's words: an
+ * uncapped energy target cannot be over.
  */
-const props = defineProps<{ score: DayScore; goal: Goal; isToday: boolean }>()
+const props = defineProps<{ score: DayScore; goal: Goal; uncapped: boolean; isToday: boolean }>()
 
-const rule = computed(() => dayMetRule(props.goal))
+const rule = computed(() => dayMetRule(props.goal, props.uncapped))
 
 const reasons = computed(() => {
   const s = props.score.scores
