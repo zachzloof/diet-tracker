@@ -32,6 +32,7 @@ for (const seed of SEED_USERS) {
   const today = localDay(new Date(), seed.profile.timezone)
   const profile: Profile = {
     ...seed.profile,
+    energyUncapped: seed.profile.energyUncapped ?? false,
     healthConsentAt: null,
     preferences: DEFAULT_PREFERENCES,
     createdAt: `${today}T00:00:00.000Z`,

@@ -53,10 +53,15 @@ export const targetHistoryResponseSchema = z.object({
 })
 export type TargetHistoryResponse = z.infer<typeof targetHistoryResponseSchema>
 
-/** `null` removes an override. `confirm` accepts values below a safety floor. */
+/**
+ * `null` removes an override. `confirm` accepts values below a safety floor. `energyUncapped`
+ * (D40) switches the energy floor on or off on the profile and the current version in place;
+ * left out, it stays as it is.
+ */
 export const overridesInputSchema = z.object({
   overrides: z.partialRecord(targetKeySchema, z.number().min(0).max(100_000).nullable()),
   confirm: z.boolean().default(false),
+  energyUncapped: z.boolean().optional(),
 })
 export type OverridesInput = z.infer<typeof overridesInputSchema>
 

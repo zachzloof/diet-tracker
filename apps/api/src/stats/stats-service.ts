@@ -131,6 +131,7 @@ export async function weekStats(
         dietPattern: profile.dietPattern,
         allergies: profile.allergies,
         dislikes: profile.dislikes,
+        energyUncapped: profile.energyUncapped,
       },
     ),
     profile.preferences,

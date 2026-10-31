@@ -8,6 +8,7 @@ import type {
   Targets,
 } from '@diet-tracker/shared'
 import {
+  boolean,
   date,
   doublePrecision,
   index,
@@ -56,6 +57,8 @@ export const profiles = pgTable('profiles', {
   healthConsentAt: timestamptz('health_consent_at'),
   /** Display preferences (D37). Missing keys read as "on": `preferencesSchema` fills them. */
   preferences: jsonb('preferences').$type<Partial<Preferences>>().notNull().default({}),
+  /** The energy target is a floor (D40): over never scores "over" or costs the day. Migration 0013. */
+  energyUncapped: boolean('energy_uncapped').notNull().default(false),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
   updatedAt: timestamptz('updated_at').notNull().defaultNow(),
 })

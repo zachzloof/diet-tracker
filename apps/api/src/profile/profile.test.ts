@@ -5,6 +5,7 @@ import {
   preferencesResponseSchema,
   profileResponseSchema,
   profileSaveResponseSchema,
+  targetFor,
   targetHistoryResponseSchema,
   targetValue,
   targetsResponseSchema,
@@ -314,6 +315,120 @@ describe('overrides', () => {
     expect(unknown.status).toBe(400)
     const negative = await send('PATCH', '/api/v1/targets/overrides', { overrides: { fat_g: -5 } })
     expect(negative.status).toBe(400)
+  })
+})
+
+describe('uncapped energy (D40)', () => {
+  it('onboarding with the flag marks the energy target uncapped and keeps every number', async () => {
+    const saved = profileSaveResponseSchema.parse(
+      await (await send('PUT', '/api/v1/profile', { ...finn, energyUncapped: true })).json(),
+    )
+    expect(saved.profile.energyUncapped).toBe(true)
+    expect(saved.version.inputs.energyUncapped).toBe(true)
+    const energy = targetFor(saved.version.effective, 'energy_kcal')
+    expect(energy?.value).toBe(3250)
+    expect(energy?.uncapped).toBe(true)
+    expect(energy?.reason).toMatch(/Uncapped: going over never counts against the day/)
+    expect(targetFor(saved.version.effective, 'protein_g')).not.toHaveProperty('uncapped')
+
+    const profile = profileResponseSchema.parse(await (await send('GET', '/api/v1/profile')).json())
+    expect(profile.profile?.energyUncapped).toBe(true)
+
+    // An older client that leaves the field out keeps what is stored, and the version stands.
+    const again = profileSaveResponseSchema.parse(
+      await (await send('PUT', '/api/v1/profile', finn)).json(),
+    )
+    expect(again.profile.energyUncapped).toBe(true)
+    expect(again.targetsChanged).toBe(false)
+    expect(again.version.id).toBe(saved.version.id)
+  })
+
+  it('a profile without the flag is capped, and a false flag stores nothing extra in the inputs', async () => {
+    const saved = profileSaveResponseSchema.parse(
+      await (await send('PUT', '/api/v1/profile', finn)).json(),
+    )
+    expect(saved.profile.energyUncapped).toBe(false)
+    expect(saved.version.inputs).not.toHaveProperty('energyUncapped')
+    expect(targetFor(saved.version.effective, 'energy_kcal')).not.toHaveProperty('uncapped')
+    const explicit = profileSaveResponseSchema.parse(
+      await (await send('PUT', '/api/v1/profile', { ...finn, energyUncapped: false })).json(),
+    )
+    expect(explicit.targetsChanged).toBe(false)
+    expect(explicit.version.id).toBe(saved.version.id)
+  })
+
+  it('the overrides patch flips the flag in place on the profile and the current version', async () => {
+    const first = profileSaveResponseSchema.parse(
+      await (await send('PUT', '/api/v1/profile', finn)).json(),
+    )
+
+    const on = await send('PATCH', '/api/v1/targets/overrides', {
+      overrides: { energy_kcal: 3000 },
+      energyUncapped: true,
+    })
+    expect(on.status).toBe(200)
+    const onBody = overridesResponseSchema.parse(await on.json())
+    expect(onBody.warnings).toEqual([])
+    expect(onBody.version.id).toBe(first.version.id)
+    expect(onBody.version.inputs.energyUncapped).toBe(true)
+    const pinned = targetFor(onBody.version.effective, 'energy_kcal')
+    expect(pinned).toMatchObject({ value: 3000, overridden: true, uncapped: true })
+    expect(targetFor(onBody.version.computed, 'energy_kcal')).toMatchObject({
+      value: 3250,
+      uncapped: true,
+    })
+    expect(await db.select().from(targetVersions)).toHaveLength(1)
+    const profileOn = profileResponseSchema.parse(
+      await (await send('GET', '/api/v1/profile')).json(),
+    )
+    expect(profileOn.profile?.energyUncapped).toBe(true)
+
+    // A profile change carries the flag and the pin into the new version.
+    const heavier = profileSaveResponseSchema.parse(
+      await (await send('PUT', '/api/v1/profile', { ...finn, weightKg: 77 })).json(),
+    )
+    expect(heavier.targetsChanged).toBe(true)
+    expect(heavier.version.inputs.energyUncapped).toBe(true)
+    expect(targetFor(heavier.version.effective, 'energy_kcal')).toMatchObject({
+      value: 3000,
+      uncapped: true,
+    })
+
+    // Off again, with nothing else in the patch: the key leaves the inputs, the pin stays.
+    const off = overridesResponseSchema.parse(
+      await (
+        await send('PATCH', '/api/v1/targets/overrides', { overrides: {}, energyUncapped: false })
+      ).json(),
+    )
+    expect(off.version.id).toBe(heavier.version.id)
+    expect(off.version.inputs).not.toHaveProperty('energyUncapped')
+    expect(targetFor(off.version.effective, 'energy_kcal')).toMatchObject({
+      value: 3000,
+      overridden: true,
+    })
+    expect(targetFor(off.version.effective, 'energy_kcal')).not.toHaveProperty('uncapped')
+    const profileOff = profileResponseSchema.parse(
+      await (await send('GET', '/api/v1/profile')).json(),
+    )
+    expect(profileOff.profile?.energyUncapped).toBe(false)
+    expect(await db.select().from(targetVersions)).toHaveLength(2)
+
+    // Sending the value it already has changes nothing.
+    const same = overridesResponseSchema.parse(
+      await (
+        await send('PATCH', '/api/v1/targets/overrides', { overrides: {}, energyUncapped: false })
+      ).json(),
+    )
+    expect(same.version.inputs).not.toHaveProperty('energyUncapped')
+  })
+
+  it('rejects a non-boolean flag', async () => {
+    await send('PUT', '/api/v1/profile', finn)
+    const res = await send('PATCH', '/api/v1/targets/overrides', {
+      overrides: {},
+      energyUncapped: 'yes',
+    })
+    expect(res.status).toBe(400)
   })
 })
 

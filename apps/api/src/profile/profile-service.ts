@@ -46,6 +46,7 @@ export function toWireProfile(row: ProfileRow): Profile {
     timezone: row.timezone,
     units: row.units,
     flags: row.flags,
+    energyUncapped: row.energyUncapped,
     healthConsentAt: row.healthConsentAt?.toISOString() ?? null,
     preferences: preferencesSchema.parse(row.preferences),
     createdAt: row.createdAt.toISOString(),
@@ -69,6 +70,8 @@ export function buildTargetInput(profile: ProfileInput, today: string): TargetIn
     goalWeightKg: profile.goalWeightKg,
     dietPattern: profile.dietPattern,
     flags: profile.flags,
+    // Only ever present when true, so versions stored before D40 compare equal to a capped one.
+    ...(profile.energyUncapped === true ? { energyUncapped: true } : {}),
   }
 }
 
@@ -168,6 +171,8 @@ export async function saveProfile(
       timezone: input.timezone,
       units: input.units,
       flags: input.flags,
+      // Left out of the payload means "as it was" (an older client), off on a first save.
+      energyUncapped: input.energyUncapped ?? existing?.energyUncapped ?? false,
       healthConsentAt,
       updatedAt: now,
     }
@@ -183,7 +188,7 @@ export async function saveProfile(
     const current = await latestVersion(userId, tx)
     // A recalibration adjustment survives profile edits; only the next recalibration replaces it.
     const targetInput: TargetInput = {
-      ...buildTargetInput(input, today),
+      ...buildTargetInput({ ...input, energyUncapped: saved.energyUncapped }, today),
       ...(current?.inputs.recalibrationKcal !== undefined
         ? { recalibrationKcal: current.inputs.recalibrationKcal }
         : {}),

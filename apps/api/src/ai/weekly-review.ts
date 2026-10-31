@@ -3,6 +3,7 @@ import {
   FOOD_GROUPS,
   GOAL_LABELS,
   dayMetRule,
+  energyUncapped,
   MIN_REVIEW_DAYS,
   NUTRIENTS,
   ageOn,
@@ -125,7 +126,11 @@ function dayLine(scored: ScoredDay, today: string, prefs: Preferences): string {
 
 /** The goal's "day met" rule in words, so the review never cites a limit the rule ignores. */
 export function dayMetSentence(targets: Targets): string {
-  const rule = dayMetRule(targets.meta.goalApplied)
+  const uncapped = energyUncapped(targets)
+  const rule = dayMetRule(targets.meta.goalApplied, uncapped)
+  const energy = uncapped
+    ? 'energy is at least 90% of target (the energy target is uncapped: eating over it is fine and never a problem to raise)'
+    : 'energy is within 10% of target'
   const protein = rule.proteinCloseOk
     ? 'protein is at least 75% of target'
     : 'protein is at least 90% of target'
@@ -133,7 +138,7 @@ export function dayMetSentence(targets: Targets): string {
     rule.decidingLimits.length === 0
       ? 'no limit affects whether the day is met for this goal'
       : `${rule.decidingLimits.map((k) => label(k).toLowerCase()).join(', ')} ${rule.decidingLimits.length === 1 ? 'is' : 'are'} not more than 5% over the limit`
-  return `A day is met (for the goal "${GOAL_LABELS[rule.goal].label.toLowerCase()}") when energy is within 10% of target, ${protein} and ${limits}.`
+  return `A day is met (for the goal "${GOAL_LABELS[rule.goal].label.toLowerCase()}") when ${energy}, ${protein} and ${limits}.`
 }
 
 export function buildWeeklyReviewUserMessage(

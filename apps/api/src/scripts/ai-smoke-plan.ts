@@ -24,6 +24,7 @@ const today = '2026-09-25'
 for (const seed of SEED_USERS) {
   const profile: Profile = {
     ...seed.profile,
+    energyUncapped: seed.profile.energyUncapped ?? false,
     healthConsentAt: null,
     preferences: DEFAULT_PREFERENCES,
     createdAt: `${today}T00:00:00.000Z`,

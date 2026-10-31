@@ -40,6 +40,7 @@ const tess: Profile = {
   timezone: 'Australia/Sydney',
   units: 'metric',
   flags: NO_FLAGS,
+  energyUncapped: false,
   healthConsentAt: null,
   preferences: DEFAULT_PREFERENCES,
   createdAt: '2026-09-25T10:00:00.000Z',

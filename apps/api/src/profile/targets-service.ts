@@ -8,12 +8,13 @@ import {
   type Overrides,
   type OverridesInput,
   type TargetHistoryItem,
+  type TargetInput,
   type TargetKey,
   type TargetVersion,
 } from '@diet-tracker/shared'
 import { and, desc, eq } from 'drizzle-orm'
 import { db, type Db } from '../db/client.js'
-import { targetVersions, type TargetVersionRow } from '../db/schema/index.js'
+import { profiles, targetVersions, type TargetVersionRow } from '../db/schema/index.js'
 import { errors } from '../errors.js'
 
 export type Tx = Db | Parameters<Parameters<Db['transaction']>[0]>[0]
@@ -72,10 +73,19 @@ export async function listVersions(userId: string): Promise<TargetHistoryItem[]>
   }))
 }
 
+/** The engine input with the D40 flag set or cleared; cleared means absent, never false. */
+function withEnergyUncapped(inputs: TargetInput, uncapped: boolean): TargetInput {
+  const { energyUncapped: _dropped, ...rest } = inputs
+  return uncapped ? { ...rest, energyUncapped: true } : rest
+}
+
 /**
  * Applies an override patch to the current version in place. Values inside the range are
  * silent, outside it come back as warnings, below a floor are refused unless `confirm`.
  * Changing overrides drops the cached explanation so it can never contradict the numbers.
+ * `energyUncapped` (D40) is a profile fact that the engine input carries, so it updates the
+ * profile row and the current version's inputs and computed targets in place: no new version,
+ * because no number changed.
  */
 export async function setOverrides(
   userId: string,
@@ -111,14 +121,29 @@ export async function setOverrides(
   if (blocked.length > 0 && !patch.confirm) throw errors.overrideBlocked(blocked)
   warnings.push(...blocked)
 
-  const effective = computeTargets(current.inputs, next)
-  const updated = (
-    await db
-      .update(targetVersions)
-      .set({ overrides: next, effective, explanation: null })
-      .where(and(eq(targetVersions.id, current.id), eq(targetVersions.userId, userId)))
-      .returning()
-  )[0]
-  if (!updated) throw errors.notFound()
-  return { version: updated, warnings }
+  const uncappedChanged =
+    patch.energyUncapped !== undefined &&
+    patch.energyUncapped !== (current.inputs.energyUncapped === true)
+  const inputs = uncappedChanged
+    ? withEnergyUncapped(current.inputs, patch.energyUncapped === true)
+    : current.inputs
+  const computed = uncappedChanged ? computeTargets(inputs) : current.computed
+  const effective = computeTargets(inputs, next)
+  return db.transaction(async (tx) => {
+    if (uncappedChanged) {
+      await tx
+        .update(profiles)
+        .set({ energyUncapped: patch.energyUncapped === true, updatedAt: new Date() })
+        .where(eq(profiles.userId, userId))
+    }
+    const updated = (
+      await tx
+        .update(targetVersions)
+        .set({ inputs, computed, overrides: next, effective, explanation: null })
+        .where(and(eq(targetVersions.id, current.id), eq(targetVersions.userId, userId)))
+        .returning()
+    )[0]
+    if (!updated) throw errors.notFound()
+    return { version: updated, warnings }
+  })
 }
