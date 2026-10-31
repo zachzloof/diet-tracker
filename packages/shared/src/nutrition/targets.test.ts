@@ -334,6 +334,36 @@ describe('computeTargets edge cases', () => {
   })
 })
 
+describe('energyUncapped (D40)', () => {
+  it('marks only the energy entry, says so in the reason, and leaves every number alone', () => {
+    const capped = computeTargets(finn)
+    const uncapped = computeTargets({ ...finn, energyUncapped: true })
+    const energy = targetFor(uncapped, 'energy_kcal')
+    expect(energy?.uncapped).toBe(true)
+    expect(energy?.value).toBe(3250)
+    expect(energy?.reason).toMatch(/Uncapped: going over never counts against the day/)
+    expect(targetFor(capped, 'energy_kcal')).not.toHaveProperty('uncapped')
+    expect(targetFor(capped, 'energy_kcal')?.reason).not.toMatch(/Uncapped/)
+    for (const entry of uncapped.entries) {
+      const other = targetFor(capped, entry.key)
+      expect(other?.value).toBe(entry.value)
+      if (entry.key !== 'energy_kcal') expect(entry).not.toHaveProperty('uncapped')
+    }
+    // A false flag reads the same as no flag, so stored versions compare equal.
+    expect(computeTargets({ ...finn, energyUncapped: false })).toEqual(capped)
+  })
+
+  it('survives a pinned energy value', () => {
+    const pinned = computeTargets({ ...finn, energyUncapped: true }, { energy_kcal: 3000 })
+    const energy = targetFor(pinned, 'energy_kcal')
+    expect(energy?.value).toBe(3000)
+    expect(energy?.overridden).toBe(true)
+    expect(energy?.uncapped).toBe(true)
+    expect(energy?.reason).toMatch(/^Set by you\. Recommended: 3250 kcal\./)
+    expect(energy?.reason).toMatch(/Uncapped/)
+  })
+})
+
 describe('overrides as pins', () => {
   const computed = computeTargets(finn)
 

@@ -97,6 +97,28 @@ describe('findGaps', () => {
     expect(findGaps(week([]), profile)).toEqual([])
   })
 
+  it('uncapped energy (D40): over plan is not a gap, under plan still is', () => {
+    const big = week([
+      scored({ energy_kcal: 4500 }),
+      scored({ energy_kcal: 4500 }),
+      scored({ energy_kcal: 4500 }),
+      scored({ energy_kcal: 4500 }),
+    ])
+    // (4 × 4500 + 3 × 3250) / 7 = 3964 → 1.22, past the 115% line.
+    expect(rules(findGaps(big, profile))).toEqual(['energy_off_plan:energy_kcal'])
+    expect(rules(findGaps(big, { ...profile, energyUncapped: true }))).toEqual([])
+    const small = week([
+      scored({ energy_kcal: 2000 }),
+      scored({ energy_kcal: 2000 }),
+      scored({ energy_kcal: 2000 }),
+      scored({ energy_kcal: 2000 }),
+    ])
+    expect(findGaps(small, { ...profile, energyUncapped: true })[0]).toMatchObject({
+      rule: 'energy_off_plan',
+      direction: 'under',
+    })
+  })
+
   it('flags energy off plan from the average, in either direction', () => {
     const low = findGaps(
       week([

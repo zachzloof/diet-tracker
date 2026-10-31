@@ -4,6 +4,7 @@ import { emptyFoodGroupServes, emptyNutrientVector, type NutrientVector } from '
 import {
   WATER_CAUTION_ML,
   dayMetRule,
+  energyUncapped,
   evaluateDay,
   scoreTarget,
   type DayTotals,
@@ -53,6 +54,23 @@ describe('scoreTarget', () => {
     expect(scoreTarget(energy, 2924).status).toBe('short')
     expect(scoreTarget(energy, 3576).status).toBe('over')
     expect(scoreTarget(energy, 2925).ratio).toBeCloseTo(0.9, 10)
+  })
+
+  it('scores an uncapped energy target as a floor: met from 95%, close from 90%, never over (D40)', () => {
+    const uncapped = computeTargets({ ...finn, energyUncapped: true })
+    const energy = targetFor(uncapped, 'energy_kcal')
+    if (!energy) throw new Error('no energy target')
+    expect(energy.value).toBe(3250)
+    expect(energy.uncapped).toBe(true)
+    expect(energyUncapped(uncapped)).toBe(true)
+    expect(energyUncapped(targets)).toBe(false)
+    expect(scoreTarget(energy, 3087.5).status).toBe('met') // 0.95 exactly
+    expect(scoreTarget(energy, 3500).status).toBe('met') // 1.08: close when capped
+    expect(scoreTarget(energy, 4500).status).toBe('met') // 1.38: over when capped
+    expect(scoreTarget(energy, 3000).status).toBe('close') // 0.92
+    expect(scoreTarget(energy, 2925).status).toBe('close') // 0.90 exactly
+    expect(scoreTarget(energy, 2924).status).toBe('short')
+    expect(scoreTarget(energy, 4500).ratio).toBeCloseTo(1.3846, 3)
   })
 
   it('never marks protein over; close from 75%, met from 90%', () => {
@@ -161,6 +179,29 @@ describe('evaluateDay', () => {
     expect(score.scores.energy_kcal?.status).toBe('close')
     expect(score.scores.protein_g?.status).toBe('met')
     expect(score.dayMet).toBe(true)
+  })
+
+  it('uncapped: a day far over the energy target is still met, and under it still is not (D40)', () => {
+    const uncapped = computeTargets({ ...finn, energyUncapped: true })
+    const big = evaluateDay(day({ energy_kcal: 4200, protein_g: 160 }, 4), uncapped)
+    expect(big.scores.energy_kcal?.status).toBe('met')
+    expect(big.dayMet).toBe(true)
+    // The same day against the capped targets is over, and not met.
+    const capped = evaluateDay(day({ energy_kcal: 4200, protein_g: 160 }, 4), targets)
+    expect(capped.scores.energy_kcal?.status).toBe('over')
+    expect(capped.dayMet).toBe(false)
+    // Uncapped only removes the ceiling: short is still short.
+    const small = evaluateDay(day({ energy_kcal: 2600, protein_g: 160 }, 4), uncapped)
+    expect(small.scores.energy_kcal?.status).toBe('short')
+    expect(small.dayMet).toBe(false)
+    // And protein still has to be hit.
+    const lowProtein = evaluateDay(day({ energy_kcal: 4200, protein_g: 100 }, 4), uncapped)
+    expect(lowProtein.dayMet).toBe(false)
+    expect(dayMetRule('gain', true).summary).toBe('Energy reached, protein hit.')
+    expect(dayMetRule('gain').summary).toBe('Energy in band, protein hit.')
+    expect(dayMetRule('maintain', true).summary).toBe(
+      'Energy reached, protein close or better, no limit over.',
+    )
   })
 
   it('gain: a limit over is shown but never fails the day (D31)', () => {

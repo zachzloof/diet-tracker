@@ -74,6 +74,12 @@ export const targetInputSchema = z.object({
    * changes carry it forward and the next recalibration replaces it.
    */
   recalibrationKcal: z.number().min(-2000).max(2000).optional(),
+  /**
+   * D40: the energy target is a floor. The number is the same; the energy entry carries
+   * `uncapped` and scoring never marks it over. Absent means capped, so versions stored
+   * before the flag read unchanged.
+   */
+  energyUncapped: z.boolean().optional(),
 })
 export type TargetInput = z.infer<typeof targetInputSchema>
 
@@ -100,6 +106,11 @@ export const targetEntrySchema = z.object({
   overAbove: z.number().min(0).nullable(),
   reason: z.string(),
   overridden: z.boolean(),
+  /**
+   * A goal scored as a floor (D40): met from the band's lower edge, never "over". Set on
+   * energy when the profile says uncapped; absent means the usual two-sided band.
+   */
+  uncapped: z.boolean().optional(),
 })
 export type TargetEntry = z.infer<typeof targetEntrySchema>
 
@@ -325,6 +336,10 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
   }
   if (energyNotes.length > 0) energyReason += ` Then ${energyNotes.join('; ')}.`
   for (const note of energyNotes) notes.push(`Energy was ${note}.`)
+  const energyUncapped = input.energyUncapped === true
+  if (energyUncapped) {
+    energyReason += ' Uncapped: going over never counts against the day; it is met from 95%.'
+  }
 
   // 4. Protein by g/kg of reference weight.
   const heightM = heightCm / 100
@@ -463,7 +478,7 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
     key: TargetKey,
     value: number,
     reason: string,
-    extra: Partial<Pick<TargetEntry, 'range' | 'floor' | 'overAbove' | 'kind'>> = {},
+    extra: Partial<Pick<TargetEntry, 'range' | 'floor' | 'overAbove' | 'kind' | 'uncapped'>> = {},
   ) => {
     const meta = key in NUTRIENTS ? NUTRIENTS[key as NutrientKey] : FOOD_GROUPS[key as FoodGroupKey]
     const unit: TargetUnit = 'unit' in meta ? meta.unit : 'serves'
@@ -477,10 +492,16 @@ export function computeTargets(input: TargetInput, overrides: Overrides = {}): T
       overAbove: extra.overAbove ?? null,
       reason,
       overridden: false,
+      // Left out rather than false so stored versions from before D40 compare equal.
+      ...(extra.uncapped ? { uncapped: true } : {}),
     })
   }
 
-  add('energy_kcal', energy, energyReason, { range: energyRange, floor: roundTo(floorKcal, 10) })
+  add('energy_kcal', energy, energyReason, {
+    range: energyRange,
+    floor: roundTo(floorKcal, 10),
+    uncapped: energyUncapped,
+  })
   add('protein_g', protein, proteinReason, { range: proteinRange, floor: proteinFloor })
   add('carbs_g', carbs, carbsReason, { range: carbsRange, floor: carbsMin })
   add('fat_g', fat, fatReason, { range: fatRange, floor: roundTo(fatFloorG, 5) })

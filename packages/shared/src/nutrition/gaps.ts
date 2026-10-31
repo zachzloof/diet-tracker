@@ -11,7 +11,7 @@ import { targetKeySchema, type TargetKey } from './targets.js'
  * evidence strings are what the weekly review quotes.
  *
  * | rule | triggers when | severity |
- * | energy_off_plan | average energy ratio outside 0.85 to 1.15 | high |
+ * | energy_off_plan | average energy ratio outside 0.85 to 1.15 (only under 0.85 when energy is uncapped, D40) | high |
  * | protein_short | protein short or close on 3+ logged days | high |
  * | limit_over | a limit over on 3+ logged days | medium |
  * | fibre_short | fibre below 0.75 on 4+ logged days | medium |
@@ -88,7 +88,10 @@ const SCORED_FOOD_GROUPS: readonly FoodGroupKey[] = [
 const SEVERITY_RANK: Readonly<Record<GapSeverity, number>> = { high: 0, medium: 1, low: 2 }
 const EPS = 1e-9
 
-export type GapProfile = SuggestionProfile
+export type GapProfile = SuggestionProfile & {
+  /** An uncapped energy target (D40) is never "over plan"; only the under direction is a gap. */
+  energyUncapped?: boolean
+}
 
 function labelFor(key: TargetKey): string {
   return key in NUTRIENTS
@@ -181,11 +184,11 @@ export function findGaps(days: readonly DayScore[], profile: GapProfile): Gap[] 
   // Energy: the average over logged days, not a day count, because one big day is not a pattern.
   const energyRatios = ratiosOf(scoresOf(logged, 'energy_kcal'))
   const energyAvg = mean(energyRatios)
-  if (
-    energyAvg !== null &&
-    (energyAvg < ENERGY_BAND.min - EPS || energyAvg > ENERGY_BAND.max + EPS)
-  ) {
-    const under = energyAvg < ENERGY_BAND.min
+  const energyUnder = energyAvg !== null && energyAvg < ENERGY_BAND.min - EPS
+  const energyOver =
+    energyAvg !== null && energyAvg > ENERGY_BAND.max + EPS && profile.energyUncapped !== true
+  if (energyAvg !== null && (energyUnder || energyOver)) {
+    const under = energyUnder
     const affected = energyRatios.filter((r) =>
       under ? r < ENERGY_BAND.min - EPS : r > ENERGY_BAND.max + EPS,
     ).length

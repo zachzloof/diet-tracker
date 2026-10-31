@@ -8,7 +8,13 @@ import {
   type NutrientVector,
 } from './nutrients.js'
 import { type Goal } from '../profile.js'
-import { targetKeySchema, type TargetEntry, type TargetKey, type Targets } from './targets.js'
+import {
+  targetFor,
+  targetKeySchema,
+  type TargetEntry,
+  type TargetKey,
+  type Targets,
+} from './targets.js'
 
 /**
  * `evaluateDay`: one day's totals against its targets (nutrition-engine skill, nutrients.md
@@ -17,6 +23,8 @@ import { targetKeySchema, type TargetEntry, type TargetKey, type Targets } from 
  *
  * Per-target status from actual / target (D34 bands):
  * - goal (energy): met 0.95 to 1.05, close 0.90 to 1.10, else short or over
+ * - goal, uncapped (D40; energy when the profile says so): the band loses its upper edge,
+ *   so energy is met from 0.95, close from 0.90, short below, never over
  * - goal (water): met >= 0.95, close 0.90 to 0.95, else short; never over (the UI shows a
  *   caution above `WATER_CAUTION_ML` instead)
  * - goal (protein): met >= 0.90, close 0.75 to 0.90, else short; never over
@@ -28,7 +36,7 @@ import { targetKeySchema, type TargetEntry, type TargetKey, type Targets } from 
  *
  * `dayMet` depends on the goal the targets were computed for (`dayMetRule`, D31): energy met
  * or close and protein hit for everyone; which limits can fail the day, and whether close
- * protein is enough, vary by goal.
+ * protein is enough, vary by goal. With energy uncapped, "met or close" means at least 90%.
  */
 
 export const TARGET_STATUSES = ['met', 'close', 'short', 'over', 'unscored'] as const
@@ -81,35 +89,36 @@ export interface DayMetRule {
 
 const ALL_LIMITS: readonly TargetKey[] = ['sodium_mg', 'saturated_fat_g', 'added_sugar_g']
 
-const DAY_MET_RULES: Readonly<Record<Goal, DayMetRule>> = {
-  gain: {
-    goal: 'gain',
-    proteinCloseOk: false,
-    decidingLimits: [],
-    summary: 'Energy in band, protein hit.',
-  },
-  recomp: {
-    goal: 'recomp',
-    proteinCloseOk: false,
-    decidingLimits: [],
-    summary: 'Energy in band, protein hit.',
-  },
+/** The rule minus its energy clause, which depends on whether energy is uncapped (D40). */
+const DAY_MET_RULES: Readonly<Record<Goal, Omit<DayMetRule, 'summary'> & { rest: string }>> = {
+  gain: { goal: 'gain', proteinCloseOk: false, decidingLimits: [], rest: 'protein hit.' },
+  recomp: { goal: 'recomp', proteinCloseOk: false, decidingLimits: [], rest: 'protein hit.' },
   lose: {
     goal: 'lose',
     proteinCloseOk: false,
     decidingLimits: ['added_sugar_g'],
-    summary: 'Energy in band, protein hit, added sugar under the limit.',
+    rest: 'protein hit, added sugar under the limit.',
   },
   maintain: {
     goal: 'maintain',
     proteinCloseOk: true,
     decidingLimits: ALL_LIMITS,
-    summary: 'Energy in band, protein close or better, no limit over.',
+    rest: 'protein close or better, no limit over.',
   },
 }
 
-export function dayMetRule(goal: Goal): DayMetRule {
-  return DAY_MET_RULES[goal]
+/**
+ * What "day met" asks for this goal. `energyUncapped` only changes the words: "in band"
+ * becomes "reached", because an uncapped energy target cannot be over (D40).
+ */
+export function dayMetRule(goal: Goal, energyUncapped = false): DayMetRule {
+  const { rest, ...rule } = DAY_MET_RULES[goal]
+  return { ...rule, summary: `${energyUncapped ? 'Energy reached' : 'Energy in band'}, ${rest}` }
+}
+
+/** Whether these targets score energy as a floor (D40). */
+export function energyUncapped(targets: Targets): boolean {
+  return targetFor(targets, 'energy_kcal')?.uncapped === true
 }
 
 /** A day with fewer entries than this AND under `UNLOGGED_ENERGY_RATIO` of energy is unlogged. */
@@ -161,8 +170,10 @@ function inBand(ratio: number, min: number, max: number): boolean {
   return ratio >= min - EPS && ratio <= max + EPS
 }
 
-function goalStatus(key: TargetKey, ratio: number): TargetStatus {
-  const band = goalBand(key)
+function goalStatus(entry: TargetEntry, ratio: number): TargetStatus {
+  const base = goalBand(entry.key)
+  // An uncapped goal (D40) keeps its lower edges and loses its upper ones: never over.
+  const band = entry.uncapped ? { ...base, metMax: Infinity, closeMax: Infinity } : base
   if (inBand(ratio, band.metMin, band.metMax)) return 'met'
   if (inBand(ratio, band.closeMin, band.closeMax)) return 'close'
   return ratio < band.closeMin ? 'short' : 'over'
@@ -209,7 +220,7 @@ export function scoreTarget(entry: TargetEntry, actual: number): TargetScore {
     status:
       entry.kind === 'minimum'
         ? minimumStatus(actual, ratio, entry.overAbove)
-        : goalStatus(entry.key, ratio),
+        : goalStatus(entry, ratio),
   }
 }
 
@@ -229,7 +240,7 @@ export function evaluateDay(day: DayTotals, targets: Targets): DayScore {
   )
 
   const all = Object.values(scores)
-  const rule = dayMetRule(targets.meta.goalApplied)
+  const rule = dayMetRule(targets.meta.goalApplied, energyUncapped(targets))
   const limitOver = rule.decidingLimits.some((key) => scores[key]?.status === 'over')
   const energyOk = energy?.status === 'met' || energy?.status === 'close'
   const protein = scores.protein_g?.status

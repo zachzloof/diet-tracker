@@ -144,6 +144,12 @@ export const profileInputSchema = z
      * leave it out.
      */
     healthConsent: z.boolean().optional(),
+    /**
+     * The energy target is a floor, not a band (D40): eating over it never scores "over" and
+     * never costs the day. Left out means "keep what is stored" on an edit and off on the
+     * first save; onboarding offers it for a gain goal.
+     */
+    energyUncapped: z.boolean().optional(),
   })
   .superRefine((value, ctx) => {
     const allowed = PACES_BY_GOAL[value.goal]
@@ -181,6 +187,8 @@ export type ProfileInput = z.infer<typeof profileInputSchema>
 /** A saved profile as the API returns it. */
 export const profileSchema = z.object({
   ...profileInputSchema.shape,
+  /** Always present on a saved profile (D40). */
+  energyUncapped: z.boolean(),
   /** When the person agreed to their health data being stored; null for older accounts. */
   healthConsentAt: z.iso.datetime().nullable(),
   /** Display preferences (D37); set from Settings > Preferences, not onboarding. */
