@@ -155,6 +155,10 @@ Serve sizes follow the Australian Dietary Guidelines. The AI estimation prompt q
 
 A person can change any target. Inside the target's range the change is accepted silently. Outside the range it is accepted with a warning. Below a safety floor (energy, protein, fat, carbs, water) it is refused unless explicitly confirmed. Overrides carry over when targets are recomputed, unless the new computed target would block them.
 
+### 1.12 Uncapped energy (D40)
+
+The energy target can be marked **uncapped**: the number is unchanged and so is everything built from it (macros, fibre, the limits), but it is scored as a floor. Met from 95% up with no upper line, close from 90%, short below; never over. It is a profile fact (`energyUncapped`), offered on onboarding's pace step for a gain goal, on the energy sheet under Targets, and on the Profile form; it survives recomputation and a pinned energy value. Off by default.
+
 ---
 
 ## 2. Scoring a day
@@ -164,6 +168,7 @@ Every target is scored as `ratio = eaten / target`, then given a status: **met**
 | target | met | close | short | over (red) |
 |---|---|---|---|---|
 | energy | 95 to 105% | 90 to 95% and 105 to 110% | under 90% | over 110% |
+| energy, uncapped (1.12) | 95% and up | 90 to 95% | under 90% | never |
 | water | 95% and up | 90 to 95% | under 90% | never; the water card shows a caution in words at 4 litres or more (`WATER_CAUTION_ML`) |
 | protein | 90% and up | 75 to 90% | under 75% | never |
 | carbs, fat | 80 to 120% | 65 to 80% and 120 to 135% | under 65% | over 135% |
@@ -178,7 +183,7 @@ A day with fewer than 2 food entries **and** under 40% of the energy target is "
 
 ### 2.2 "Day met"
 
-The verdict follows the goal the targets were built for (D31). Energy must be met or close (within 10%) for everyone. Then:
+The verdict follows the goal the targets were built for (D31). Energy must be met or close for everyone: within 10% of target, or at least 90% of it when energy is uncapped (1.12). Then:
 
 | goal | protein must be | limits that fail the day when over (past 105%) |
 |---|---|---|
@@ -260,9 +265,9 @@ A log entry's nutrients are always the totals for the quantity logged. Every vec
 
 | rule | file in `packages/shared/src/nutrition` |
 |---|---|
-| sections 1.1 to 1.7, 1.11 | `targets.ts` (`computeTargets`, `checkOverride`) |
+| sections 1.1 to 1.7, 1.11, 1.12 | `targets.ts` (`computeTargets`, `checkOverride`; the `uncapped` mark on the energy entry) |
 | 1.8, 1.9, 1.10 | `dri.ts` (`DRI`, `UPPER_LIMIT`, `foodGroupServesFor`) |
-| 2 | `scoring.ts` (`scoreTarget`, `evaluateDay`, `dayMetRule`, `WATER_CAUTION_ML`) |
+| 2 | `scoring.ts` (`scoreTarget`, `evaluateDay`, `dayMetRule`, `energyUncapped`, `WATER_CAUTION_ML`) |
 | 3 | `week.ts` |
 | 4 | `gaps.ts`, `gap-suggestions.ts` |
 | 5 | `weight.ts` |
@@ -285,5 +290,6 @@ BMR 1189. TDEE 1843. Energy 1843 − 275 = 1568, rounded 1570 kcal (deficit 14.9
 
 ## Change log for this page
 
+- 2026-10-31 (D40): uncapped energy. A profile flag marks the energy target a floor: met from 95% with no upper line, close from 90%, never over; the number and everything derived from it are unchanged. The week's "energy over plan" gap is skipped for it. Sections 1.12, 2 and 2.2.
 - 2026-10-08 (D34 follow-up): limits now read met only up to the limit itself, close from there to 105%, over past 105% (was met to 105%, close to 110%). A deciding limit fails the day past 105%.
 - 2026-10-08 (D34): page created. Energy met within 5%, close within 10%; water met from 95%, never over, caution at 4 litres; minimums met from 95%, red only at the UL; limits met to 105%, close to 110%; alcohol hidden. Upper-limit table added.

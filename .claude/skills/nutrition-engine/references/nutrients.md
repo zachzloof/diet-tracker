@@ -102,6 +102,7 @@ Per-target status from `actual / target`:
 | kind | met | close | short / over |
 |---|---|---|---|
 | goal (energy) | 0.95 to 1.05 | 0.90 to 1.10 | below 0.90 short, above 1.10 over |
+| goal (energy, `uncapped`, D40) | >= 0.95 | 0.90 to 0.95 | below 0.90 short; never over (the band loses its upper edges) |
 | goal (protein) | >= 0.90 | 0.75 to 0.90 | below 0.75 short; never "over" |
 | goal (carbs, fat) | 0.80 to 1.20 | 0.65 to 1.35 | outside: short or over |
 | goal (water) | >= 0.95 | 0.90 to 0.95 | below 0.90 short; never over. The Today card shows a caution in words at or above `WATER_CAUTION_ML` (4000 ml) |
@@ -112,7 +113,7 @@ Per-target status from `actual / target`:
 Bands are D34 (2026-10-08): energy, water, minimums and limits sit at 5% met and 10% close. Protein, carbs and fat keep their earlier, wider bands. Boundary values land inside the band (`EPS`).
 
 Overall:
-- `dayMet` depends on the goal the targets were built for (`dayMetRule(goal)`, D31). Energy must be `met` or `close` for everyone. Then:
+- `dayMet` depends on the goal the targets were built for (`dayMetRule(goal, energyUncapped)`, D31). Energy must be `met` or `close` for everyone (at least 90% when uncapped; the second argument only changes the summary's words). Then:
 
 | goal | protein | limits that fail the day when `over` |
 |---|---|---|
@@ -130,7 +131,7 @@ Evaluated over the last 7 calendar days, using only logged days; require at leas
 
 | rule | triggers when | severity |
 |---|---|---|
-| energy_off_plan | average energy ratio outside 0.85 to 1.15 (note the direction) | high |
+| energy_off_plan | average energy ratio outside 0.85 to 1.15 (note the direction; only below 0.85 when `GapProfile.energyUncapped`, D40) | high |
 | protein_short | protein `short` or `close` on 3+ logged days | high |
 | limit_over (sodium, saturated_fat, added_sugar) | `over` on 3+ logged days | medium |
 | fibre_short | fibre below 0.75 on 4+ logged days | medium |

@@ -4,6 +4,12 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Uncapped energy (2026-10-31)
+- The energy target can be uncapped: going over never counts as "Over" and never costs the day. It is met from 95% of the target up, close from 90%, short below. The number itself, and the macros built from it, do not change.
+- Where: tap the energy card under Targets and flip the Uncapped switch (the card then says "Uncapped", or "Set by you · Uncapped" with your own number); the Profile form has the same switch under Goal; onboarding offers it on the pace step when the goal is Gain muscle, off to start, and the review row says "uncapped".
+- Today's status line reads "Energy reached, protein hit." for an uncapped plan. The ring still counts "kcal over" so you can see how far past the target you are. The week's "Energy over plan" gap no longer appears for an uncapped target, and the AI weekly review is told going over is fine.
+- API: `profiles.energy_uncapped` (migration 0013), `energyUncapped` on the profile (leaving it out of a profile save keeps what is stored) and on `PATCH /targets/overrides`, which flips it on the profile and the current version in place. Shared: `uncapped` on the energy target entry, `energyUncapped(targets)`, `dayMetRule(goal, energyUncapped)`, `GapProfile.energyUncapped`.
+
 ### Warm-up sets removed (2026-10-30)
 - The set number is no longer a button. Tapping it used to mark the set as a warm-up ("W") and leave it out of volume, top sets and Best; now every set you tick counts, warm-up or not. Sets marked as warm-ups before today count from now on.
 

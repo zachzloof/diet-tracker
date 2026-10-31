@@ -650,3 +650,16 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **Recommendation.** A throughout. The preference is worth having: volume favours high-rep sets, so a strength block (threes and fives) is better judged on the bar. Default to kg lifted as asked.
 
 **Status.** `adopted` (2026-10-19), please confirm. Open: whether the week-on-week card should show both numbers (the set and its kg lifted) is answered with "450 kg (30 kg × 15)"; whether estimated one-rep max should become a third option is a slice 9 question.
+
+## D40. Uncapped energy: the target as a floor, not a band (adopted, please confirm)
+
+**Context.** The owner is gaining. The computed 3,500 kcal was more than their stomach manages every day, so they set 3,000; now the days they do reach 3,500 score "over" and the day is not met, which punishes exactly the days the plan wants. The ask: a toggle on the energy target that says "uncapped", and the same choice during onboarding, because anyone gaining muscle will likely want it.
+
+**Options considered.**
+- **What "uncapped" does.** (A) The energy target is scored as a floor: met from 95% with no upper line, close from 90%, short below, never over; the number and everything built from it (macros, fibre, the limits) are unchanged; the week's "energy over plan" gap is skipped; the Today line reads "Energy reached" instead of "in band". Built. (B) Widen the upper band (say met to 120%). Still fails a big day eventually, and 3,500 against 3,000 is 117%. (C) Raise the target and lower the met line. Changes the number the person is aiming at, which is the thing they chose.
+- **Where the choice lives.** (A) A profile fact (`profiles.energy_uncapped`) that the engine input carries, so every recomputed version keeps it; offered on the energy sheet under Targets (saved by the overrides patch, in place, no new version), on the Profile form, and on onboarding's pace step. Built. (B) A per-version setting next to the overrides. Would need its own carry-over rule and a second place to edit it. (C) A display preference (D37). Preferences only hide; this changes a verdict.
+- **Who sees it in onboarding.** (A) The pace step for a gain goal only, off by default. Built: that is the case the owner named, and switching it on silently would change what "day met" means for everyone. (B) On for gain by default. One tap less for gainers; a surprise for anyone who wanted the band. (C) Every goal. A fat-loss plan with no ceiling is a strange default to offer on day one; the Targets and Profile screens still offer it to anyone who wants it.
+
+**Recommendation.** A throughout. The toggle is honest about what it does ("going over never counts against the day") and the maths page states the floor band next to the normal one.
+
+**Status.** `adopted` (2026-10-31), please confirm. Open: should onboarding default it on for a gain goal (option B above), and should the weekly review mention big days at all when the target is uncapped (today it is told the target is uncapped and that over is fine)?

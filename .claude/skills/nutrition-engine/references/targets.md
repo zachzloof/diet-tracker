@@ -44,6 +44,8 @@ Clamps, applied after the pace adjustment:
 
 Round energy to the nearest 10 kcal.
 
+**Uncapped (D40).** `TargetInput.energyUncapped` leaves every number alone and sets `uncapped: true` on the energy entry (absent otherwise, so stored versions from before the flag compare equal), with a sentence on the reason. Scoring treats it as a floor (nutrients.md section 4). It survives pins and recomputation; the API keeps it on `profiles.energy_uncapped` and in the version's inputs.
+
 ## 4. Protein
 
 Target in g/kg of **reference weight**, then grams = g/kg * referenceWeight.

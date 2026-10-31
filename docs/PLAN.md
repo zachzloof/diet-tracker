@@ -315,6 +315,28 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ---
 
+## Follow-up - Uncapped energy (D40)
+
+**Status:** done (2026-10-31)
+
+**Goal.** Let a person say the energy target is a floor: going over never scores "over" and never costs the day. Offered where the target is set (the energy sheet under Targets), on the Profile form, and during onboarding for a gain goal.
+
+**Shipped.** Shared: `energyUncapped` on the profile and on `TargetInput`, an `uncapped` mark on the energy `TargetEntry` (absent when off, so older versions compare equal), `scoreTarget` treating an uncapped goal as a floor, `dayMetRule(goal, energyUncapped)` and `energyUncapped(targets)`, `findGaps` skipping "energy over plan" for it. API: `profiles.energy_uncapped` (migration 0013), `PUT /profile` keeps the stored value when the field is left out, `PATCH /targets/overrides` takes `energyUncapped` and flips the profile and the current version in place, the weekly review's day-met sentence. Web: the Uncapped switch in the energy sheet, "Set by you · Uncapped" on the card, "Energy reached, protein hit." on Today, the switch on the Profile form, and on onboarding's pace step for a gain goal with ", uncapped" on the review row. Written up in `docs/NUTRITION-MATHS.md` 1.12 and D40.
+
+**Done when.**
+- [x] A 3,000 kcal target with 4,200 kcal eaten reads Met, the ring says "1,200 kcal over", and the day is met with "Energy reached, protein hit."; the same day capped reads Over and "Not met yet · energy over". *Walked with Playwright at 390x844 dark and 360x780 light against Vite (:5174) and the API, with two 2,100 kcal entries posted through the API.*
+- [x] The energy sheet shows the Uncapped switch; flipping it alone enables Save, saves with a toast ("Energy capped again" / "Energy uncapped: going over never costs the day"), and the card's "Uncapped" word follows it; a value and the switch save together as "Set by you · Uncapped". *Walked at both widths; `GET /profile` followed the switch each time.*
+- [x] The Profile form shows the switch in its state and saving the form untouched keeps the flag, the pin and the version. *Walked; the version id was unchanged.*
+- [x] Onboarding: the pace step shows "Uncapped energy" for a gain goal, off to start; the review row reads "Gain muscle, lean gain, uncapped"; Create my plan lands on Targets with "Uncapped" on the energy card and the flag on the profile; going back and choosing Lose fat hides the switch. *Walked at 430x932 dark and 360x780 light.*
+- [x] No horizontal scroll and no console errors on every screen above, both themes.
+- [x] Tests: `scoring.test.ts` (the floor band, day met over and under, the summaries), `targets.test.ts` (the mark, the reason, a pin, false equals absent), `gaps.test.ts` (over plan skipped, under plan kept), `profile.test.ts` (onboarding with the flag, an absent field keeps the stored value, the overrides patch in place, the flag across a profile change, a non-boolean rejected).
+
+**Deferrals.** No real-phone check. The first read of the Targets screen in the walk's cold 390-dark run came back before the card had rendered (the screenshot of that state shows "Uncapped"); the later reads and the 360 run passed the same checks. The weekly review was not regenerated against the real model; its prompt builder is unit-tested. The Week screen's energy chart has no upper line to drop, so it is unchanged.
+
+**Decisions it depends on.** D40, D34, D31.
+
+---
+
 ## Ideas after slice 6 (not planned)
 
 - Coach chat: a conversational agent with tools to log food, answer "how am I doing", and propose target changes.
