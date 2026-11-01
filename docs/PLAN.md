@@ -337,9 +337,65 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ---
 
+## Slice 11 - The coach (D41)
+
+**Status:** not started (planned 2026-11-01)
+
+**Goal.** One AI coach that knows everything the app knows about a person and helps them think about it: "how am I doing", "what should I eat tonight", "am I getting stronger on squat", "should I change my target". It reads through typed tools over the existing services, speaks in plain words with the real numbers, and drafts actions as cards the person confirms. It lives at `/coach`, shared by both halves, behind the same AI consent as the estimator. Mechanics in the `ai-coach` skill; choices in D41.
+
+**Why in three parts.** Each part is one session and ends with something to use on a phone. The first is the whole value for questions; the second makes the answers actionable; the third brings the coach to the person instead of waiting to be asked.
+
+### 11a - Ask the coach (read-only, streaming)
+
+**In scope.**
+- `packages/shared/src/coach/`: thread and message wire schemas, the card schemas (empty union for now, filled in 11b), tool argument schemas, the SSE event schema.
+- DB: `coach_threads`, `coach_messages` (migration 0014), retention by `updated_at` (D27), both in the export (D24), cascade delete.
+- API: `apps/api/src/ai/coach/` with the briefing builder, the system prompt, the tool loop, the read tools (`get_day_food`, `get_week_food`, `get_month_food`, `get_targets`, `get_gym_week`, `get_workout`, `get_lift_history`, `get_weight_history`, `get_recalibration`, `search_my_foods`, `search_meals`, `list_exercises`, `get_weekly_review`), the threads service and routes: `GET /coach/threads`, `POST /coach/threads`, `GET /coach/threads/:id`, `POST /coach/threads/:id/messages` (SSE, `?stream=false` for JSON), `DELETE /coach/threads/:id`. Purpose `coach` in `AI_PURPOSES`; env `OPENAI_COACH_MODEL` (defaults to `OPENAI_MODEL`) and `AI_COACH_DAILY_TURN_CAP` (60) in `.env.example` and the zod env.
+- Web: `apps/web/src/features/coach/`: the sparkles button in the header's right column on root screens (both halves), `/coach` (latest thread, or an empty state with three suggestion chips), `/coach/threads` (recent chats, New chat, swipe or button to delete), the message list with streamed text and status lines, the composer pinned above the keyboard, the consent card first (copy extended: the coach also sends the food log for the days it looks at, workouts and weigh-ins), offline state (composer disabled, "The coach needs a connection"), error state with retry, a Coach row under You.
+- Tests: briefing against Finn and Tess; every tool against Postgres including the cross-user scoping check; the loop with a scripted fake client; routes. Smoke `pnpm ai:smoke:coach` with the ten canonical questions.
+
+**Out of scope.** Draft cards and writes of any kind, notes, proactive briefs, web search, photo input, voice.
+
+**Done when.**
+- [ ] From Today (either half) the sparkles button opens `/coach`; a fresh account sees the consent card, then an empty state with suggestion chips; the first message creates a thread and the answer streams in word by word within about two seconds of the first token.
+- [ ] As Finn: "How am I doing this week?" answers from the briefing with no tool call, quotes the days met, energy and protein averages exactly as the Week screen shows them, and names the top gap the Week screen lists.
+- [ ] "Am I getting stronger on squat?" shows a status line naming the lift history tool, then an answer whose numbers match the lift page (best, latest, trend).
+- [ ] "What did I eat on <a day with no entries>?" says there is nothing logged that day; "What did I eat yesterday?" lists the entries by meal with the kcal the Today screen shows.
+- [ ] A turn over the daily turn cap gets the friendly cap message; a 1,001-character message is rejected before any call; a thread at 40 turns offers New chat.
+- [ ] Threads list, reopen with history, and delete; a deleted account leaves no `coach_*` rows; the export JSON holds the threads.
+- [ ] Switching AI features off in Settings replaces the coach with the consent card.
+- [ ] Looks right at 360, 390 and 430 wide, dark and light, keyboard open (composer above the keyboard, list scrolls under, last message visible); no horizontal scroll; no console errors.
+- [ ] Smoke: ten questions as Finn and Tess; every number traced to the briefing or a tool result; no diet-pattern, allergy or dislike conflicts; the table in the report.
+- [ ] `pnpm typecheck && pnpm lint && pnpm test` green; migration applies from fresh and from 0013.
+
+### 11b - Cards: let the coach draft actions
+
+**In scope.** The five draft tools and their cards (`estimate`, `target_change`, `workout`, `meal`, `note`): `draft_food_log` runs the estimator with the same cap and foods memory and the card is the existing review card, confirm through the existing log endpoint with the usual "save to My foods" and "Add to meals" behaviour; `draft_target_change` dry-runs the pin through the engine and shows before and after with dependants and the floor check, confirm through the overrides patch; `draft_workout` opens the session screen with the plan filled in; `draft_meal` saves through the meals endpoint; `remember_note` with `coach_notes` (migration 0015), Coach > Notes to read and delete, notes read into the briefing. Cards persist in the message and show their state (drafted, confirmed, dismissed). Smoke extended with questions 5 to 7.
+
+**Done when.**
+- [ ] "Log 2 eggs and toast for breakfast" shows an estimate card and writes nothing until Confirm; after Confirm the entries are on Today for the right meal and the card reads Logged.
+- [ ] "Should I drop my calories by 200?" shows a target change card with the current and proposed energy, the recomputed fat and carbs, and a floor note; Apply pins it through the existing patch and the Targets screen reads "Set by you".
+- [ ] "Plan me a 45 minute upper body session like last week" shows a workout card; Start opens the session with the exercises and sets filled and last time's numbers beside them.
+- [ ] "Remember that my left knee is sore" saves a note after Confirm, the note appears under Coach > Notes, and the next turn's briefing carries it.
+- [ ] Dismissing a card leaves it dismissed after a reload; nothing was written.
+- [ ] Widths, themes, keyboard, offline, tests and smoke as in 11a.
+
+### 11c - The coach comes to you
+
+**In scope.** A one-line brief on Today in each half ("Protein is 40 g short with dinner to go" / "Leg day planned; last squat 105 kg × 5"), built in code from the briefing with the model asked only for the sentence, generated at most once a day per half on open (D17's pattern), cached on the day, tapping it opens `/coach` with that context. Weekly review regenerated through the coach's briefing so the two agree. Owner's cost view: `ai_calls` by purpose and user for the last 30 days behind an owner-only route.
+
+**Done when.**
+- [ ] Today shows the brief within two seconds of opening, once a day, and tapping it opens the coach with the brief as the first assistant line.
+- [ ] The brief's numbers match the Today screen; with nothing logged it invites the first entry rather than judging.
+- [ ] The cost view lists calls, tokens and web searches by purpose and user.
+
+**Decisions it depends on.** D41 (proposed: one agent, our database for state, cards not writes, streaming, header placement), D25 (consent copy extended), D27 (retention), D24 (export), D6 and D11 (model), D38 (placement across halves), D40 (uncapped energy in the briefing).
+
+---
+
 ## Ideas after slice 6 (not planned)
 
-- Coach chat: a conversational agent with tools to log food, answer "how am I doing", and propose target changes.
+- Coach chat moved to Slice 11 (D41) on 2026-11-01.
 - Photo-of-meal estimation via the vision model.
 - Barcode scanning with Open Food Facts lookup.
 - USDA FoodData Central as a second resolver for whole foods (D5 option B).

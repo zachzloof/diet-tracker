@@ -58,6 +58,7 @@ docker compose up -d db
 | `slice` | Executing any slice or feature from PLAN.md |
 | `nutrition-engine` | Targets, DRIs, goal math, day scoring, gap rules |
 | `ai-food-estimation` | Any OpenAI call: food parsing, explanations, weekly reviews |
+| `ai-coach` | The coach: its tools, briefing, threads, streaming, cards, the `/coach` screens |
 | `mobile-ui` | Any screen, component, style or chart in `apps/web` |
 | `db-schema` | Any table, migration, seed or query |
 | `railway-deploy` | Dockerfile, env vars, build/start, deploy checks |
