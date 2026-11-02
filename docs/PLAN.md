@@ -389,7 +389,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 - [ ] The brief's numbers match the Today screen; with nothing logged it invites the first entry rather than judging.
 - [ ] The cost view lists calls, tokens and web searches by purpose and user.
 
-**Decisions it depends on.** D41 (proposed: one agent, our database for state, cards not writes, streaming, header placement), D25 (consent copy extended), D27 (retention), D24 (export), D6 and D11 (model), D38 (placement across halves), D40 (uncapped energy in the briefing).
+**Decisions it depends on.** D41 (accepted 2026-11-02: one agent, our database for state, cards not writes, streaming, header placement), D25 (consent copy extended), D27 (retention), D24 (export), D6 and D11 (model), D38 (placement across halves), D40 (uncapped energy in the briefing).
 
 ---
 

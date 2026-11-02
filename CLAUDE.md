@@ -52,6 +52,15 @@ docker compose up -d db
 - **Big decisions go to the owner with options**, recorded in `docs/DECISIONS.md`: new dependency categories, schema shapes that later slices depend on, auth or AI approach changes, anything that costs money, anything the App Store will care about. Do the parts that don't depend on the answer, state your assumption for the rest, and ask at the end of the session.
 - Keep `docs/PLAN.md` status and `CHANGELOG.md` current as part of every slice.
 
+## Docs stay current
+A commit that changes behaviour is incomplete until the page that describes that behaviour says the new thing. This holds for every session, slice or not, and the update goes in the same commit as the code:
+- A number, band, rule or formula: `docs/NUTRITION-MATHS.md` or `docs/TRAINING-MATHS.md`, plus the change log at its foot.
+- A choice with options, or a reversal of one: `docs/DECISIONS.md` (new entry, or the status line of the one it changes).
+- Scope, status, deferrals: `docs/PLAN.md`; what a person can now do: `CHANGELOG.md`; parked work or an open question: `docs/OUTSTANDING.md`.
+- An env var: `.env.example`. A route, table, schema, prompt, tool or screen convention: the skill that owns it under `.claude/skills/` and its `references/` (the AI schemas in `ai-food-estimation`, the coach tools in `ai-coach`, the table list in `db-schema`).
+- A new area of the app gets a skill before its second session, and a row in the table above.
+Before closing any session, read the diff and ask of each file: which doc or skill describes this, and does it still? Fix it or say in the report that it was left stale and why.
+
 ## Skills
 | Skill | Use when |
 |---|---|

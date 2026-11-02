@@ -10,7 +10,7 @@ The app is built one slice per session so every session ends with something the 
 ## 1. Frame it (before any code)
 - Read the slice in `docs/PLAN.md`: Goal, In scope, Out of scope, Done when, Decisions it depends on. Quote the "Done when" list in your first message so the owner can correct scope early.
 - Read `docs/DECISIONS.md`. If the slice depends on a decision still `proposed`, don't stall: build the recommended option, say so up front, and keep the alternative cheap to switch to.
-- Read the skills the slice touches: `nutrition-engine`, `ai-food-estimation`, `mobile-ui`, `db-schema`, `railway-deploy`. They hold the conventions that keep slices consistent with each other.
+- Read the skills the slice touches: `nutrition-engine`, `ai-food-estimation`, `ai-coach`, `mobile-ui`, `db-schema`, `railway-deploy`. They hold the conventions that keep slices consistent with each other.
 - Confirm the previous slice actually landed: `git log --oneline -10`, then `pnpm typecheck && pnpm test` green before adding anything. Building on a broken base wastes the session.
 
 ## 2. Build in dependency order
@@ -33,6 +33,7 @@ Commit at each boundary, not once at the end. A half-finished slice on `main` is
 - `docs/PLAN.md`: set the status, tick the Done-when items you verified, list deferrals with reasons.
 - `CHANGELOG.md`: a short "Slice N" section in user terms.
 - `docs/DECISIONS.md`: add any decision the slice surfaced (options, recommendation, status `proposed`).
+- Skills and `.env.example`: any route, table, schema, prompt, tool, env var or screen convention the slice added or changed is in the skill that owns it (the "Docs stay current" section of CLAUDE.md).
 - Commit and push to `main`.
 
 ## Commit messages

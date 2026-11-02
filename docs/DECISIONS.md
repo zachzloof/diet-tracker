@@ -666,7 +666,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 ---
 
-## D41. The coach: one agent with tools over the person's data, drafting actions as cards (proposed)
+## D41. The coach: one agent with tools over the person's data, drafting actions as cards (accepted)
 
 **Context.** The owner asked for a specialised AI whose only job is to know everything the app knows about a person (food log, targets, scores, gaps, workouts, lifts, weigh-ins) and help them think: answer questions, weigh choices, propose changes. It will run in the live app for friends, so it has to be cheap enough per turn, safe with health data, honest about numbers, and usable one-handed on a phone. The `ai-coach` skill holds the mechanics; this entry holds the choices.
 
@@ -683,4 +683,4 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** A throughout, built in three parts (PLAN.md, Slice 11): the read-only coach with streaming and the briefing; then the draft cards and notes; then a proactive one-line brief on Today. If the AI bill per active friend is more than a few pence a day after the first week, try `OPENAI_COACH_MODEL` on a smaller tier before anything else.
 
-**Status.** `proposed` (2026-11-01). The owner's call on: one agent (A) versus specialists (B); our database (A) versus OpenAI state (B); draft cards (A) versus direct writes (B); and whether to start with streaming (A) or add it after the first internal build (B).
+**Status.** `accepted` (2026-11-02): A throughout, confirmed by the owner. Build starts with Slice 11a.
