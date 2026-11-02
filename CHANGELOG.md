@@ -4,6 +4,14 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### The coach drafts, you confirm (2026-11-02, slice 11b)
+- Ask the coach to do something and it drafts a card under its answer instead of doing it: "Log 2 eggs and toast for breakfast" gives the same review card as the Log sheet (tap an item to fix it, pick the meal and day, Add to meals), and "Add to breakfast" logs it; "Should I drop my calories by 200?" gives a card with the number now, the number after, every target the engine recomputes from it and the safe minimum, and Apply pins it so Targets reads "Set by you"; "Plan me an upper body session like last week" gives the session with last time's sets beside each planned one, and Start opens it filled in; "Save my oats as a meal" gives the meal with its ingredients and totals, and Save keeps it; "Remember that my left knee is sore" gives a note, and Remember keeps it.
+- Nothing happens until you tap. Dismiss leaves the card as it was; a card you acted on reads Logged, Applied, Started, Saved or Remembered, and stays that way when you come back to the chat. The coach is told to describe the card and never to claim it did the thing.
+- A value under a target's safe minimum is refused: no card, and the coach explains the floor instead.
+- Notes: the chat list has a Notes row (also at `/coach/notes`) listing what you asked the coach to remember, with a bin to forget one. The coach reads your notes every time you ask it something. Up to 30 notes of 200 characters.
+- Offline, a card's confirm reads "(offline)" and waits; Start on a session works offline like the rest of the gym.
+- API: five draft tools (`draft_food_log`, `draft_target_change`, `draft_workout`, `draft_meal`, `remember_note`) returning cards on the message and a `card` event in the stream; `PATCH /coach/threads/:id/cards/:cardId` records confirmed or dismissed; `coach_notes` (migration 0015) with `GET/POST /coach/notes` and `DELETE /coach/notes/:id`; `coachNotes` in the export (schema 5). Shared: `packages/shared/src/coach/cards.ts`. Web: `features/coach/cards/`, `CoachNotesScreen.vue`.
+
 ### The coach (2026-11-02, slice 11a)
 - A sparkles button on Today and Week in both halves, and a Coach row under You, open `/coach`: one place to ask anything about your food, targets and training. The coach knows what the app knows (today so far, this week, your targets and why, this week's sessions and week on week, your weight trend, the plan check, the gaps) and answers in plain words with your numbers.
 - The first time it shows the AI permission card, which now also says the coach sends the food log for the days it looks at, your workouts and your weigh-ins. Allow it once; Settings turns it off again and the card comes back.

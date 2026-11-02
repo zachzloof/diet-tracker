@@ -18,7 +18,7 @@ Briefing {
   today_session: { title, exercises[], sets, volume_kg, finished } | null
   weight: { latest, trend_kg_per_week, change_28d, weigh_ins_28d } | null
   recalibration: { status: 'not_yet' | 'proposed' | 'snoozed' | 'applied', proposal? } 
-  notes: [{ text, created }]                                // coach notes the person has kept (phase 2)
+  notes: [{ text, created }]                                // coach notes the person has kept (slice 11b), oldest first, "None yet." when empty
 }
 ```
 Rendered as labelled lines, not JSON, in the system prompt (lines cost fewer tokens and the weekly review showed the model reads them well).
@@ -43,17 +43,21 @@ Rendered as labelled lines, not JSON, in the system prompt (lines cost fewer tok
 
 Result caps: 20 entries, 20 sessions, 20 foods, 20 meals, 30 exercises, 40 weigh-in points, 12,000 characters per output; numbers rounded as the screens round them (whole kcal and grams, one decimal on kg); units in labels; `{ empty: true, reason }` when there is nothing, for a future day, for another person's id and for a name that matches no exercise. Every argument with a default is `| null` (strict tools): `week_end: null` is the week ending today, `month: null` this month.
 
-## Draft tools (return cards; nothing is written)
+## Draft tools (slice 11b; return cards, nothing is written)
+
+A draft tool returns `{ card, summary }`. The card (zod in `packages/shared/src/coach/cards.ts`, every kind with `id`, `kind`, `state: 'drafted' | 'confirmed' | 'dismissed'`) is stored on the assistant message and streamed as a `card` event; the model is told `{ card_id, ...summary }` and nothing else. Every card ends with "nothing happens until they tap" in its `shows` line so the model never claims the action.
 
 | Tool | Arguments | Card | Confirm goes to |
 |---|---|---|---|
-| `draft_food_log` | `{ text, day, meal \| null }` | `estimate`: the FoodEstimate items as the review card shows them | `POST /api/v1/log/entries` (existing confirm) |
-| `draft_target_change` | `{ key, value \| null (null = unpin), reason }` | `target_change`: before, after, the engine's recomputed dependants (fat and carbs when energy or protein moves), the floor check | `PATCH /api/v1/targets/overrides` |
-| `draft_workout` | `{ title, exercises: [{ exercise_id, sets: [{ weight_kg \| null, reps \| null, time_s \| null, distance_m \| null }] }], notes }` | `workout`: the plan with last-time numbers beside each set | opens the session screen with the draft (client-side) |
-| `draft_meal` | `{ name, items: [{ food_id, quantity, unit }] }` | `meal`: the meal and its totals | `POST /api/v1/meals` |
-| `remember_note` | `{ text }` | `note`: the line to keep | `POST /api/v1/coach/notes` (phase 2) |
+| `draft_food_log` | `{ text (≤500), day \| null (today), meal \| null (inferred) }` | `estimate`: `{ text, result: EstimateResponse }`, the estimator's answer with the day and meal overridden by the arguments; a future day is `empty`; the estimator's cap or "unclear" error goes back to the model as words | `POST /api/v1/log/entries` through `EstimateReview` (items editable, meal and day pickers, save to My foods, Add to meals) |
+| `draft_target_change` | `{ key, value \| null (null = clear the pin), reason (≤200) }` | `target_change`: `{ key, label, unit, before, after, value, pinnedBefore, recommended, floor, warning, dependants: [{ key, label, unit, before, after }], reason }`; `after` and the dependants come from `computeTargets(inputs, nextOverrides)`, so they are exactly what the patch would produce; a value under the floor returns `{ refused, reason, floor, note }` and no card; clearing a pin that is not there is refused; an unknown key is `empty` | `PATCH /api/v1/targets/overrides` with `{ overrides: { [key]: value }, confirm: false }` |
+| `draft_workout` | `{ title (≤60), day \| null (today), exercises: [{ exercise_id \| null, exercise_name, sets: [{ weight_kg \| null, reps \| null, time_s \| null, distance_m \| null }] }], notes (≤300) }` | `workout`: `{ title, day, exercises: [{ exerciseId \| null, exerciseName, measures, sets, last: { day, sets } \| null }], notes }`; each exercise resolved by id, else exact name, else a used partial match; `last` is `exerciseHistory(…, 1)`; unmatched names keep the block with `exerciseId: null` and are listed in the summary; a future day is `empty` | the session screen: Start builds a `WorkoutInput` with fresh ids and `drafts.start`s it (client-side, saves itself) |
+| `draft_meal` | `{ name (≤80), items: [{ food_id, amount, unit: 'g' \| 'serving' }] (≤20), meal \| null }` | `meal`: `{ name, items: SavedMealItem[], totals: { energy_kcal, protein_g, carbs_g, fat_g } (whole), meal }`; each item is `portionOf(food, grams)` rounded, as the meal editor snapshots it; a missing or foreign id, or `serving` on a per-100 g food, is left out and named; nothing usable is `empty` | `POST /api/v1/meals` |
+| `remember_note` | `{ text (≤200) }` | `note`: `{ text }` (whitespace collapsed) | `POST /api/v1/coach/notes` |
 
-Card schemas are zod in `packages/shared/src/coach/cards.ts`; the client renders each with the existing component (`EstimateReview`, the energy sheet's before/after, the session screen) so the confirm path is the one already tested.
+Status lines: `draft_food_log` "Estimating "2 eggs and toast"" (cut at 40 characters); `draft_target_change` "Checking what 2,300 kcal energy would change" / "Checking what clearing your energy pin would change"; `draft_workout` "Planning Upper body"; `draft_meal` "Putting together "Big oats""; `remember_note` "Drafting a note to remember".
+
+The client renders each kind with its own component under `features/coach/cards/` inside `CardFrame` (confirm and Dismiss while drafted; a chip afterwards). After the person's action the client calls `PATCH /coach/threads/:id/cards/:cardId` with `{ state: 'confirmed' | 'dismissed' }`; the first state sticks, so a later call cannot undo it.
 
 ## Threads and messages
 
@@ -62,9 +66,9 @@ coach_threads   { id uuid v7, user_id, title (first message, cut to 60 chars), t
 coach_messages  { id, user_id (repeated for the cap count and scoping), thread_id, role 'user' | 'assistant', text,
                   cards jsonb (empty until 11b), tool_trail jsonb [{ name, arguments, summary, ms, ok }],
                   ai_call_ids uuid[], error text | null (the failure, text then holds the failure copy), created_at }
-coach_notes     { id, user_id, text, created_at }   // phase 2
+coach_notes     { id, user_id, text, created_at }   // slice 11b, migration 0015; at most COACH_MAX_NOTES (30) per person
 ```
-There is no `replay` column: earlier turns go back to the model as plain messages (SKILL.md, "State"). Retention: `coach_threads` by `updated_at` older than `RETENTION_DAYS` (cascade to messages); notes kept until deleted. Export: `coachThreads` (each thread with its messages, schema 4; D24). Indexes: `(user_id, updated_at)`, `(thread_id, created_at)`, `(user_id, created_at)` on messages. The list hides threads with `turns = 0` (created, nothing sent) and shows at most 50.
+There is no `replay` column: earlier turns go back to the model as plain messages (SKILL.md, "State"). `cards` holds `CoachCard[]` (slice 11b); `setCardState` rewrites the one card's `state` in place. Retention: `coach_threads` by `updated_at` older than `RETENTION_DAYS` (cascade to messages); notes kept until deleted. Export: `coachThreads` (each thread with its messages and cards) and `coachNotes` (schema 5; D24). Indexes: `(user_id, updated_at)`, `(thread_id, created_at)`, `(user_id, created_at)` on messages, `(user_id, created_at)` on notes. The list hides threads with `turns = 0` (created, nothing sent) and shows at most 50.
 
 ## Routes
 
@@ -74,7 +78,11 @@ There is no `replay` column: earlier turns go back to the model as plain message
 | `POST /api/v1/coach/threads` | 201 `{ thread }` (empty; the web creates one on the first send) |
 | `GET /api/v1/coach/threads/:id` | `{ thread, messages }` oldest first; 404 for another person's |
 | `DELETE /api/v1/coach/threads/:id` | 204 |
-| `POST /api/v1/coach/threads/:id/messages` `{ text }` | SSE `status*`, `delta*`, `done`; `?stream=false` → `CoachTurnResponse` JSON |
+| `POST /api/v1/coach/threads/:id/messages` `{ text }` | SSE `status*`, `card*`, `delta*`, `done`; `?stream=false` → `CoachTurnResponse` JSON |
+| `PATCH /api/v1/coach/threads/:id/cards/:cardId` `{ state: 'confirmed' \| 'dismissed' }` | `{ message }` with the card's new state; a card already confirmed or dismissed keeps its first state; 404 for another person's thread or an unknown card; 400 for any other state |
+| `GET /api/v1/coach/notes` | `{ notes }`, newest first |
+| `POST /api/v1/coach/notes` `{ text }` | 201 `{ note }`; 400 empty or over 200 characters; 409 `conflict` at 30 notes ("Delete one under Coach > Notes") |
+| `DELETE /api/v1/coach/notes/:id` | 204; 404 for another person's |
 
 ## Status lines (what the person sees while a tool runs; kept as `tool_trail.summary`)
 
@@ -100,5 +108,6 @@ There is no `replay` column: earlier turns go back to the model as plain message
 8. "Is my weight trending the right way?"
 9. "What am I lacking?" (must match the Week screen's gaps)
 10. "What did I eat on Tuesday?" (a day with no entries must be reported as empty)
+11. "Remember that my left knee is sore" (expects a `note` card; the answer may add the one-sentence professional pointer)
 
-Checks per answer: every number appears in the briefing or a tool result; no food conflicts with diet pattern, allergies or dislikes; no medical claim; under 120 words unless the question asked for detail; the tool trail is plausible (question 1 needs no tool; question 4 uses `get_lift_history`).
+Checks per answer: every number appears in the briefing, a tool result or a card; no food conflicts with diet pattern, allergies or dislikes; no medical claim; under 120 words unless the question asked for detail; the tool trail is plausible (question 1 needs no tool; question 4 uses `get_lift_history`; question 7 reads last week with `get_gym_week` or `get_workout` before `draft_workout`); the expected card kind was drafted (5 to 7 and 11) and the answer never claims the action happened.
