@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import type { CoachCard } from '@diet-tracker/shared'
 import { computed } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import Icon from '@/components/ui/Icon.vue'
+import CoachCardView from './cards/CoachCard.vue'
 
 /**
  * One message. The person's on the right in the accent tint; the coach's on the left on a
  * surface, with the lines it looked at ("Looking at your last 5 squat sessions") above
  * the text so data and opinion read apart. While streaming, the latest status pulses and
- * the text grows in place; a failed answer shows the failure copy with a retry.
+ * the text grows in place; a failed answer shows the failure copy with a retry. Drafted
+ * cards (slice 11b) sit under the bubble at full width, each with its own confirm.
  */
 const props = defineProps<{
   role: 'user' | 'assistant'
@@ -20,9 +23,18 @@ const props = defineProps<{
   error?: string | null
   /** The time, already formatted, under the bubble. */
   time?: string
+  /** The cards the coach drafted with this answer. */
+  cards?: readonly CoachCard[]
+  /** Cards still streaming in: shown, buttons held until the turn is stored. */
+  cardsPending?: boolean
 }>()
 
-const emit = defineEmits<{ retry: [] }>()
+const emit = defineEmits<{
+  retry: []
+  confirmed: [card: CoachCard]
+  dismiss: [card: CoachCard]
+  clarify: [text: string]
+}>()
 
 /** Split on blank lines so a two-paragraph answer keeps its gap without rendering HTML. */
 const paragraphs = computed(() =>
@@ -31,11 +43,13 @@ const paragraphs = computed(() =>
     .map((p) => p.trim())
     .filter((p) => p.length > 0),
 )
-const waiting = computed(() => props.streaming && props.text.length === 0 && !props.status)
+const waiting = computed(
+  () => props.streaming && props.text.length === 0 && !props.status && !(props.cards?.length ?? 0),
+)
 </script>
 
 <template>
-  <div class="flex" :class="role === 'user' ? 'justify-end' : 'justify-start'">
+  <div class="flex flex-col" :class="role === 'user' ? 'items-end' : 'items-start'">
     <div class="max-w-[88%] min-w-0" :class="role === 'user' ? 'items-end' : 'items-start'">
       <ul
         v-if="trail && trail.length"
@@ -56,6 +70,7 @@ const waiting = computed(() => props.streaming && props.text.length === 0 && !pr
         {{ status }}
       </p>
       <div
+        v-if="role === 'user' || text.length || waiting || !cards?.length"
         class="rounded-card px-4 py-3 text-base leading-snug break-words whitespace-pre-wrap"
         :class="
           role === 'user'
@@ -89,6 +104,17 @@ const waiting = computed(() => props.streaming && props.text.length === 0 && !pr
           <Icon name="refresh" :size="14" /> Try again
         </Button>
       </div>
+    </div>
+    <div v-if="cards?.length" class="mt-2 w-full space-y-2">
+      <CoachCardView
+        v-for="card in cards"
+        :key="card.id"
+        :card="card"
+        :pending="cardsPending"
+        @confirmed="emit('confirmed', card)"
+        @dismiss="emit('dismiss', card)"
+        @clarify="emit('clarify', $event)"
+      />
     </div>
   </div>
 </template>

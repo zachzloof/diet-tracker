@@ -24,7 +24,9 @@ function resolve(exercises: readonly Exercise[], id: string | null, name: string
   return pool.find((e) => e.lastUsedAt !== null) ?? pool[0] ?? null
 }
 
-function toCardSet(set: Pick<WorkoutSet, 'weightKg' | 'reps' | 'durationS' | 'distanceM'>): WorkoutCardSet {
+function toCardSet(
+  set: Pick<WorkoutSet, 'weightKg' | 'reps' | 'durationS' | 'distanceM'>,
+): WorkoutCardSet {
   return {
     weightKg: set.weightKg,
     reps: set.reps,
@@ -60,7 +62,9 @@ export const draftWorkout = defineTool({
   async run(ctx, args): Promise<DraftResult | ReturnType<typeof empty>> {
     const day = args.day ?? ctx.today
     if (day > ctx.today) {
-      return empty(`${day} has not happened yet; a session is started on the day, plan it for today`)
+      return empty(
+        `${day} has not happened yet; a session is started on the day, plan it for today`,
+      )
     }
     const catalogue = await listExercises(ctx.userId)
     const unmatched: string[] = []
@@ -98,7 +102,8 @@ export const draftWorkout = defineTool({
       card,
       summary: {
         card: 'workout',
-        shows: 'a workout card the person opens with "Start"; the session is not saved until they do',
+        shows:
+          'a workout card the person opens with "Start"; the session is not saved until they do',
         title: card.title,
         day: `${day} (${relativeDayLabel(day, ctx.today)})`,
         exercises: exercises.map((block) => ({

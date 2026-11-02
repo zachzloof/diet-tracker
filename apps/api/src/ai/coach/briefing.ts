@@ -253,7 +253,9 @@ export function buildBriefing(inputs: BriefingInputs): string {
   }
   lines.push('')
 
-  lines.push('NOTES (things the person asked you to remember; they manage them under Coach > Notes)')
+  lines.push(
+    'NOTES (things the person asked you to remember; they manage them under Coach > Notes)',
+  )
   if (notes.length === 0) {
     lines.push('- None yet.')
   } else {
@@ -381,22 +383,22 @@ export async function loadBriefingInputs(
   const previousStart = addDays(today, -13)
   const [version, day, week, workouts, exercises, weights, recalibration, notes] =
     await Promise.all([
-    requireLatestVersion(userId),
-    getDay(userId, today),
-    weekStats(userId, profile, undefined, now),
-    profile.preferences.workouts
-      ? listWorkouts(userId, { from: previousStart, to: today })
-      : Promise.resolve<Workout[]>([]),
-    profile.preferences.workouts ? listExercises(userId) : Promise.resolve<Exercise[]>([]),
-    listWeights(
-      userId,
-      profile,
-      { days: Math.max(WEIGHT_HISTORY_DAYS.min, BRIEFING_WEIGHT_DAYS) },
-      now,
-    ),
-    assess(userId, profile, now),
-    allNotes(userId),
-  ])
+      requireLatestVersion(userId),
+      getDay(userId, today),
+      weekStats(userId, profile, undefined, now),
+      profile.preferences.workouts
+        ? listWorkouts(userId, { from: previousStart, to: today })
+        : Promise.resolve<Workout[]>([]),
+      profile.preferences.workouts ? listExercises(userId) : Promise.resolve<Exercise[]>([]),
+      listWeights(
+        userId,
+        profile,
+        { days: Math.max(WEIGHT_HISTORY_DAYS.min, BRIEFING_WEIGHT_DAYS) },
+        now,
+      ),
+      assess(userId, profile, now),
+      allNotes(userId),
+    ])
   const targets = version.effective
   return {
     now,

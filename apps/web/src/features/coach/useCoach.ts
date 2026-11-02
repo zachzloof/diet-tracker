@@ -1,7 +1,7 @@
-import type { CoachThread, CoachThreadResponse } from '@diet-tracker/shared'
+import type { CoachNote, CoachThread, CoachThreadResponse } from '@diet-tracker/shared'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
-import { COACH_THREADS_KEY, coachThreadKey } from '@/stores/coach'
+import { COACH_NOTES_KEY, COACH_THREADS_KEY, coachThreadKey } from '@/stores/coach'
 import { coachApi } from './api'
 
 export function threadsQueryOptions() {
@@ -53,6 +53,41 @@ export function useCoachThread(id: MaybeRefOrGetter<string | null>) {
     error: query.error,
     refetch: query.refetch,
   }
+}
+
+/** The lines the person asked the coach to remember, newest first. */
+export function useCoachNotes() {
+  const query = useQuery(
+    queryOptions({
+      queryKey: COACH_NOTES_KEY,
+      queryFn: (): Promise<CoachNote[]> => coachApi.notes(),
+      staleTime: 60_000,
+    }),
+  )
+  return {
+    notes: computed(() => query.data.value ?? []),
+    hasData: computed(() => query.data.value !== undefined),
+    isLoading: query.isPending,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+  }
+}
+
+export function useCreateNote() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (text: string) => coachApi.createNote(text),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: COACH_NOTES_KEY }),
+  })
+}
+
+export function useDeleteNote() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => coachApi.removeNote(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: COACH_NOTES_KEY }),
+  })
 }
 
 export function useDeleteThread() {

@@ -1,4 +1,10 @@
-import { localDay, type CoachEvent, type Profile } from '@diet-tracker/shared'
+import {
+  localDay,
+  type CoachCard,
+  type CoachCardKind,
+  type CoachEvent,
+  type Profile,
+} from '@diet-tracker/shared'
 import { eq, inArray } from 'drizzle-orm'
 import { runTurn } from '../ai/coach/agent.js'
 import { buildBriefing, loadBriefingInputs } from '../ai/coach/briefing.js'
@@ -9,13 +15,15 @@ import { SEED_USERS } from '../db/seed-data.js'
 import { getProfile } from '../profile/profile-service.js'
 
 /**
- * `pnpm ai:smoke:coach [--only finn|tess] [--question N]`: asks the live model the ten
+ * `pnpm ai:smoke:coach [--only finn|tess] [--question N]`: asks the live model the eleven
  * canonical questions (ai-coach skill, `references/tools.md`) as the seeded Finn and Tess
- * against the local database, prints each answer with the tools it used, tokens and
- * latency, then checks that every number in the answer appears in the briefing or a tool
- * result and that no food conflicts with the person's allergies or dislikes. Run
- * `pnpm db:seed` first. Nothing is stored: threads are not created, only `ai_calls` rows.
- * Not in CI.
+ * against the local database, prints each answer with the tools it used, the cards it
+ * drafted, tokens and latency, then checks that every number in the answer appears in the
+ * briefing or a tool result, that no food conflicts with the person's allergies or
+ * dislikes, and that the questions expecting a card got one of the right kind (5 to 7
+ * and 11; question 5 may instead give a reason not to). Run `pnpm db:seed` first. Nothing
+ * is stored: threads are not created and cards are not confirmed, only `ai_calls` rows
+ * (question 6 spends one estimator call). Not in CI.
  */
 
 const QUESTIONS = [
@@ -29,7 +37,16 @@ const QUESTIONS = [
   'Is my weight trending the right way?',
   'What am I lacking?',
   'What did I eat on Tuesday?',
+  'Remember that my left knee is sore',
 ]
+
+/** The card each question should draft; `optional` when a reasoned "no" is also right. */
+const EXPECTED_CARDS: Record<number, { kind: CoachCardKind; optional: boolean }> = {
+  5: { kind: 'target_change', optional: true },
+  6: { kind: 'estimate', optional: false },
+  7: { kind: 'workout', optional: false },
+  11: { kind: 'note', optional: false },
+}
 
 const args = process.argv.slice(2)
 const only = args.includes('--only') ? args[args.indexOf('--only') + 1] : null
@@ -45,6 +62,7 @@ interface Row {
   words: number
   ms: number
   tokens: string
+  cards: string
   unmatched: string
   conflicts: string
   ok: boolean
@@ -54,6 +72,22 @@ const rows: Row[] = []
 
 function numbersIn(text: string): string[] {
   return [...text.matchAll(/\d[\d,]*(?:\.\d+)?/g)].map((m) => m[0].replace(/,/g, ''))
+}
+
+/** One line per card for the console: what the person would see on it. */
+function cardLine(card: CoachCard): string {
+  switch (card.kind) {
+    case 'estimate':
+      return `${card.result.estimate.items.map((i) => `${i.name} ${Math.round(i.nutrients.energy_kcal)} kcal`).join(', ')} → ${card.result.meal} ${card.result.day}`
+    case 'target_change':
+      return `${card.label} ${card.before} → ${card.after} ${card.unit}${card.dependants.length ? `; ${card.dependants.map((d) => `${d.label} ${d.before} → ${d.after}`).join(', ')}` : ''}${card.warning ? `; warning: ${card.warning}` : ''}`
+    case 'workout':
+      return `${card.title}: ${card.exercises.map((e) => `${e.exerciseName} ×${e.sets.length}${e.exerciseId ? '' : ' (unmatched)'}`).join(', ')}`
+    case 'meal':
+      return `${card.name}: ${card.items.length} items, ${card.totals.energy_kcal} kcal`
+    case 'note':
+      return `"${card.text}"`
+  }
 }
 
 function conflictsIn(answer: string, profile: Profile): string[] {
@@ -120,6 +154,14 @@ for (const seed of SEED_USERS) {
         // The check falls back to the briefing alone for this tool.
       }
     }
+    const cardKinds = result.cards.map((card) => card.kind)
+    const expected = EXPECTED_CARDS[n]
+    const cardOk =
+      !expected ||
+      cardKinds.includes(expected.kind) ||
+      (expected.optional && cardKinds.length === 0)
+    // Every number a card shows is one the model was told, so the trace covers them too.
+    seen += `\n${JSON.stringify(result.cards)}`
     const seenNumbers = new Set(numbersIn(seen))
     const unmatched = [...new Set(numbersIn(result.text))].filter((num) => !seenNumbers.has(num))
     const conflicts = conflictsIn(result.text, profile)
@@ -132,6 +174,12 @@ for (const seed of SEED_USERS) {
     for (const trail of result.toolTrail) {
       console.log(
         `    tool ${trail.name} ${JSON.stringify(trail.arguments)} ${trail.ok ? 'ok' : 'failed'} ${trail.ms} ms`,
+      )
+    }
+    for (const card of result.cards) console.log(`    card ${card.kind} ${cardLine(card)}`)
+    if (!cardOk) {
+      console.log(
+        `    EXPECTED a ${expected?.kind} card, got ${cardKinds.length ? cardKinds.join(', ') : 'none'}`,
       )
     }
     console.log(`\n${result.text.replace(/^/gm, '    ')}`)
@@ -148,20 +196,21 @@ for (const seed of SEED_USERS) {
       words,
       ms,
       tokens: `${tokensIn}/${tokensOut}`,
+      cards: cardKinds.join(', ') || (expected ? (cardOk ? 'none (reasoned)' : 'MISSING') : '-'),
       unmatched: unmatched.join(' ') || '-',
       conflicts: conflicts.join(' ') || '-',
-      ok: result.error === null,
+      ok: result.error === null && cardOk,
     })
   }
 }
 
 console.log(
-  '\n| Who | # | Question | Tools | Words | ms | Tokens in/out | Numbers not traced | Conflicts | OK |',
+  '\n| Who | # | Question | Tools | Cards | Words | ms | Tokens in/out | Numbers not traced | Conflicts | OK |',
 )
-console.log('|---|---|---|---|---|---|---|---|---|---|')
+console.log('|---|---|---|---|---|---|---|---|---|---|---|')
 for (const r of rows) {
   console.log(
-    `| ${r.who} | ${r.n} | ${r.question} | ${r.tools} | ${r.words} | ${r.ms} | ${r.tokens} | ${r.unmatched} | ${r.conflicts} | ${r.ok ? 'yes' : 'no'} |`,
+    `| ${r.who} | ${r.n} | ${r.question} | ${r.tools} | ${r.cards} | ${r.words} | ${r.ms} | ${r.tokens} | ${r.unmatched} | ${r.conflicts} | ${r.ok ? 'yes' : 'no'} |`,
   )
 }
 

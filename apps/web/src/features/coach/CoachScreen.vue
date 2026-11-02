@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { COACH_MAX_TURNS } from '@diet-tracker/shared'
+import { COACH_MAX_TURNS, type CoachCard } from '@diet-tracker/shared'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
@@ -25,7 +25,8 @@ import { useCoachThread, useCoachThreads } from './useCoach'
  * `/coach` (D41): the latest chat, `/coach/:id` one chat, `/coach/new` a fresh one. The
  * consent card comes first; then an empty state with three questions to tap, or the
  * thread with the answer streaming in word by word. The composer is pinned above the
- * keyboard; the list scrolls under it and follows the newest line.
+ * keyboard; the list scrolls under it and follows the newest line. Drafted cards (slice
+ * 11b) confirm through their own endpoint and then record their state on the thread.
  */
 const route = useRoute()
 const router = useRouter()
@@ -111,6 +112,20 @@ function retryStored(text: string): void {
   void send(text)
 }
 
+/** The card's own endpoint has run (or the person dismissed it); keep that on the thread. */
+async function recordCard(card: CoachCard, state: 'confirmed' | 'dismissed'): Promise<void> {
+  if (!threadId.value) return
+  try {
+    await coach.setCardState(threadId.value, card.id, state)
+  } catch (error) {
+    // The action itself happened; only the record failed. Say so without undoing anything.
+    ui.toast(
+      error instanceof ApiError ? error.message : 'Could not update the card on this chat.',
+      'error',
+    )
+  }
+}
+
 const back = computed(() => ({ name: mode.value === 'training' ? 'gym-today' : 'today' }))
 </script>
 
@@ -184,6 +199,10 @@ const back = computed(() => ({ name: mode.value === 'training' ? 'gym-today' : '
           :trail="message.toolTrail.map((t) => t.summary)"
           :error="message.error"
           :time="message.role === 'assistant' ? formatMealTime(message.createdAt) : undefined"
+          :cards="message.cards"
+          @confirmed="recordCard($event, 'confirmed')"
+          @dismiss="recordCard($event, 'dismissed')"
+          @clarify="send"
           @retry="
             retryStored(
               thread.messages.value[thread.messages.value.indexOf(message) - 1]?.text ?? '',
@@ -200,6 +219,8 @@ const back = computed(() => ({ name: mode.value === 'training' ? 'gym-today' : '
           :status="pending.status"
           :streaming="!pending.error"
           :error="pending.error"
+          :cards="pending.cards"
+          cards-pending
           @retry="retryPending"
         />
       </template>

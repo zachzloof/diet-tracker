@@ -40,6 +40,8 @@ const props = defineProps<{
   today: string
   saving: boolean
   error: string | null
+  /** The coach's card has no text box to go back to. */
+  hideEdit?: boolean
 }>()
 
 /**
@@ -200,6 +202,7 @@ function confirm(): void {
         >”
       </p>
       <button
+        v-if="!hideEdit"
         type="button"
         class="shrink-0 text-sm font-semibold text-accent"
         @click="emit('edit')"

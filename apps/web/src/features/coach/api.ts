@@ -1,9 +1,15 @@
 import {
+  coachCardStateResponseSchema,
   coachEventSchema,
+  coachNoteResponseSchema,
+  coachNotesResponseSchema,
   coachThreadResponseSchema,
   coachThreadSchema,
   coachThreadsResponseSchema,
+  type CoachCardStateRequest,
   type CoachEvent,
+  type CoachMessage,
+  type CoachNote,
   type CoachThread,
   type CoachThreadResponse,
   type CoachTurnResponse,
@@ -20,8 +26,10 @@ export interface StreamHandlers {
 
 /**
  * `/api/v1/coach` (D41). A message answers as server-sent events read off a `fetch`
- * body (`EventSource` cannot POST): `status` lines and text `delta`s as they arrive, then
- * one `done` with the stored messages, or one `error`.
+ * body (`EventSource` cannot POST): `status` lines, text `delta`s and drafted `card`s as
+ * they arrive, then one `done` with the stored messages, or one `error`. Cards are
+ * confirmed through their own endpoint; `setCardState` only records what happened. Notes
+ * are the lines the person asked the coach to remember.
  */
 export const coachApi = {
   async threads(): Promise<CoachThread[]> {
@@ -37,6 +45,32 @@ export const coachApi = {
   },
   remove(id: string): Promise<void> {
     return requestVoid(`/coach/threads/${id}`, { method: 'DELETE' })
+  },
+  async setCardState(
+    threadId: string,
+    cardId: string,
+    input: CoachCardStateRequest,
+  ): Promise<CoachMessage> {
+    const { message } = await request(
+      `/coach/threads/${threadId}/cards/${cardId}`,
+      coachCardStateResponseSchema,
+      { method: 'PATCH', body: input },
+    )
+    return message
+  },
+  async notes(): Promise<CoachNote[]> {
+    const { notes } = await request('/coach/notes', coachNotesResponseSchema)
+    return notes
+  },
+  async createNote(text: string): Promise<CoachNote> {
+    const { note } = await request('/coach/notes', coachNoteResponseSchema, {
+      method: 'POST',
+      body: { text },
+    })
+    return note
+  },
+  removeNote(id: string): Promise<void> {
+    return requestVoid(`/coach/notes/${id}`, { method: 'DELETE' })
   },
   async send(id: string, text: string, handlers: StreamHandlers): Promise<CoachTurnResponse> {
     const res = await requestStream(`/coach/threads/${id}/messages`, {

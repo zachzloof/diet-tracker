@@ -833,9 +833,14 @@ describe('the tool loop', () => {
     expect(events[1]).toMatchObject({ event: 'card', data: { card: result.cards[0] } })
     // The model sees the card's id and summary, not the card itself.
     const second = fake.params[1]!.input as Responses.ResponseInputItem[]
-    const output = second.find((i) => 'type' in i && i.type === 'function_call_output') as
-      Responses.ResponseInputItem.FunctionCallOutput
-    const told = JSON.parse(output.output) as { card_id: string; card: string; text: string }
+    const output = second.find(
+      (i) => 'type' in i && i.type === 'function_call_output',
+    ) as Responses.ResponseInputItem.FunctionCallOutput
+    const told = JSON.parse(String(output.output)) as {
+      card_id: string
+      card: string
+      text: string
+    }
     expect(told.card_id).toBe(result.cards[0]!.id)
     expect(told.card).toBe('note')
     expect(told.text).toBe('Left knee sore')
@@ -866,8 +871,9 @@ describe('the tool loop', () => {
     })
     expect(events.some((e) => e.event === 'card')).toBe(false)
     const second = fake.params[1]!.input as Responses.ResponseInputItem[]
-    const output = second.find((i) => 'type' in i && i.type === 'function_call_output') as
-      Responses.ResponseInputItem.FunctionCallOutput
+    const output = second.find(
+      (i) => 'type' in i && i.type === 'function_call_output',
+    ) as Responses.ResponseInputItem.FunctionCallOutput
     expect(output.output).toContain('AI estimates')
     expect(result.toolTrail[0]).toMatchObject({ name: 'draft_food_log', ok: false })
   })
@@ -1092,8 +1098,11 @@ describe('/api/v1/coach', () => {
     const path = `/api/v1/coach/threads/${thread.id}/cards/${card.id}`
     expect((await send(tessAccount.cookie, 'PATCH', path, { state: 'dismissed' })).status).toBe(404)
     expect(
-      (await send(cookie, 'PATCH', `/api/v1/coach/threads/${thread.id}/cards/nope`, { state: 'dismissed' }))
-        .status,
+      (
+        await send(cookie, 'PATCH', `/api/v1/coach/threads/${thread.id}/cards/nope`, {
+          state: 'dismissed',
+        })
+      ).status,
     ).toBe(404)
     expect((await send(cookie, 'PATCH', path, { state: 'logged' })).status).toBe(400)
 
@@ -1129,7 +1138,9 @@ describe('/api/v1/coach', () => {
       notes: { id: string }[]
     }
     expect(listed.notes.map((n) => n.id)).toEqual([note.id])
-    const tessNotes = (await (await send(tessAccount.cookie, 'GET', '/api/v1/coach/notes')).json()) as {
+    const tessNotes = (await (
+      await send(tessAccount.cookie, 'GET', '/api/v1/coach/notes')
+    ).json()) as {
       notes: unknown[]
     }
     expect(tessNotes.notes).toEqual([])

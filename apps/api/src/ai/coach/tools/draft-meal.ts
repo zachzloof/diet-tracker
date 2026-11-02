@@ -44,13 +44,13 @@ export const draftMeal = defineTool({
         missing.push(`${food.name} (no serving size; give grams)`)
         continue
       }
-      const grams = input.unit === 'serving' ? input.amount * (food.servingGrams ?? 0) : input.amount
+      const grams =
+        input.unit === 'serving' ? input.amount * (food.servingGrams ?? 0) : input.amount
       const portion = portionOf(food, grams)
       items.push({
         name: food.name,
         quantity: input.amount,
-        unit:
-          input.unit === 'serving' ? (food.servingLabel ?? 'serving').slice(0, 30) : 'g',
+        unit: input.unit === 'serving' ? (food.servingLabel ?? 'serving').slice(0, 30) : 'g',
         grams,
         nutrients: roundNutrientVector(portion.nutrients),
         foodGroups: roundFoodGroupServes(portion.foodGroups),
@@ -81,7 +81,8 @@ export const draftMeal = defineTool({
       card,
       summary: {
         card: 'meal',
-        shows: 'a meal card the person saves with "Save to meals"; nothing is saved until they tap it',
+        shows:
+          'a meal card the person saves with "Save to meals"; nothing is saved until they tap it',
         name: card.name,
         ...(args.meal ? { usually_at: MEAL_LABELS[args.meal] } : {}),
         items: items.map((item) => ({

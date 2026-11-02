@@ -54,6 +54,20 @@ function confirmDelete(): void {
       <IconButton label="New chat" icon="plus" @click="router.push({ name: 'coach-new' })" />
     </template>
 
+    <RouterLink
+      :to="{ name: 'coach-notes' }"
+      class="mb-3 flex min-h-14 items-center gap-3 rounded-card border border-border bg-surface px-4 py-2 transition hover:bg-surface-2"
+    >
+      <Icon name="bookmark" :size="20" class="shrink-0 text-accent" />
+      <span class="min-w-0 flex-1">
+        <span class="block text-base font-medium text-fg">Notes</span>
+        <span class="block truncate text-sm text-fg-muted"
+          >What you asked the coach to remember</span
+        >
+      </span>
+      <Icon name="chevron-right" :size="18" class="shrink-0 text-fg-muted" />
+    </RouterLink>
+
     <div
       v-if="threads.isLoading.value && !threads.hasData.value"
       class="space-y-2"

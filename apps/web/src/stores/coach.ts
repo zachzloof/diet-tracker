@@ -1,4 +1,10 @@
-import type { CoachMessage, CoachThread, CoachThreadResponse } from '@diet-tracker/shared'
+import type {
+  CoachCard,
+  CoachCardState,
+  CoachMessage,
+  CoachThread,
+  CoachThreadResponse,
+} from '@diet-tracker/shared'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { coachApi } from '@/features/coach/api'
@@ -8,6 +14,7 @@ import { queryClient } from '@/lib/query-client'
 export const COACH_KEY = ['coach'] as const
 export const COACH_THREADS_KEY = ['coach', 'threads'] as const
 export const coachThreadKey = (id: string) => ['coach', 'thread', id] as const
+export const COACH_NOTES_KEY = ['coach', 'notes'] as const
 
 /** The turn in flight: what the person asked and what has streamed back so far. */
 export interface PendingTurn {
@@ -18,6 +25,8 @@ export interface PendingTurn {
   /** Every status line so far, kept so the trail reads after the answer. */
   statuses: string[]
   streamed: string
+  /** Cards drafted so far, shown read-only until `done` lands the stored message. */
+  cards: CoachCard[]
   /** Set when the request failed before the server could answer; the text is kept to retry. */
   error: string | null
 }
@@ -49,7 +58,15 @@ export const useCoachStore = defineStore('coach', () => {
     if (pending.value) throw new ApiError(409, 'conflict', 'The coach is still answering.')
     const id = threadId ?? (await coachApi.create()).id
     controller = new AbortController()
-    pending.value = { threadId: id, text, status: null, statuses: [], streamed: '', error: null }
+    pending.value = {
+      threadId: id,
+      text,
+      status: null,
+      statuses: [],
+      streamed: '',
+      cards: [],
+      error: null,
+    }
     try {
       const done = await coachApi.send(id, text, {
         signal: controller.signal,
@@ -62,6 +79,9 @@ export const useCoachStore = defineStore('coach', () => {
           } else if (event.event === 'delta') {
             turn.status = null
             turn.streamed += event.data.text
+          } else if (event.event === 'card') {
+            turn.status = null
+            turn.cards.push(event.data.card)
           }
         },
       })
@@ -79,6 +99,27 @@ export const useCoachStore = defineStore('coach', () => {
     }
   }
 
+  /**
+   * Records that a card was confirmed (its own endpoint has already run) or dismissed, and
+   * lands the updated message in the thread's cache so the card reads the same after a
+   * reload.
+   */
+  async function setCardState(
+    threadId: string,
+    cardId: string,
+    state: Exclude<CoachCardState, 'drafted'>,
+  ): Promise<void> {
+    const message = await coachApi.setCardState(threadId, cardId, { state })
+    queryClient.setQueryData<CoachThreadResponse>(coachThreadKey(threadId), (current) =>
+      current
+        ? {
+            ...current,
+            messages: current.messages.map((m) => (m.id === message.id ? message : m)),
+          }
+        : current,
+    )
+  }
+
   /** Drops a failed turn so the composer is free again (the text goes back to the composer). */
   function clear(): void {
     controller?.abort()
@@ -86,5 +127,5 @@ export const useCoachStore = defineStore('coach', () => {
     pending.value = null
   }
 
-  return { pending, send, clear }
+  return { pending, send, setCardState, clear }
 })

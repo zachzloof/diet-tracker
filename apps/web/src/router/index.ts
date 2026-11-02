@@ -63,6 +63,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/coach/CoachThreadsScreen.vue'),
   },
   {
+    path: '/coach/notes',
+    name: 'coach-notes',
+    component: () => import('@/features/coach/CoachNotesScreen.vue'),
+  },
+  {
     path: '/coach/new',
     name: 'coach-new',
     component: () => import('@/features/coach/CoachScreen.vue'),

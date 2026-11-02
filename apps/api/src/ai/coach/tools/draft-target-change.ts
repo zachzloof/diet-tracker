@@ -97,7 +97,8 @@ export const draftTargetChange = defineTool({
       card,
       summary: {
         card: 'target_change',
-        shows: 'a target change card the person applies with "Apply"; nothing changes until they tap it, and they may decline',
+        shows:
+          'a target change card the person applies with "Apply"; nothing changes until they tap it, and they may decline',
         target: label,
         before: `${fmt(current.value)} ${unit}${current.overridden ? ' (pinned)' : ''}`,
         after: `${fmt(afterEntry.value)} ${unit}${args.value === null ? " (the engine's number, pin cleared)" : ' (pinned)'}`,
