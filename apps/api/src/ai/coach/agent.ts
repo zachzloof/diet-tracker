@@ -4,7 +4,9 @@ import {
   COACH_REPLAY_TURNS,
   COACH_SUMMARY_CHARS,
   COACH_UNAVAILABLE_TEXT,
+  coachCardSchema,
   localDay,
+  type CoachCard,
   type CoachEvent,
   type CoachMessage,
   type CoachToolTrailEntry,
@@ -14,6 +16,7 @@ import type * as Responses from 'openai/resources/responses/responses'
 import { zodResponsesFunction } from 'openai/helpers/zod'
 import { toResponseInputItems } from 'openai/lib/responses/ResponseInputItems'
 import { env } from '../../env.js'
+import { AppError } from '../../errors.js'
 import { logger } from '../../logger.js'
 import {
   AI_TIMEOUT_MS,
@@ -25,14 +28,15 @@ import {
 } from '../openai.js'
 import { buildBriefing, loadBriefingInputs } from './briefing.js'
 import { COACH_SYSTEM_PROMPT } from './prompt.js'
-import { COACH_TOOLS, toolByName, type ToolContext } from './tools/index.js'
+import { COACH_TOOLS, isDraftResult, toolByName, type ToolContext } from './tools/index.js'
 
 /**
  * The tool loop (ai-coach skill, "Flow for one turn"): briefing, replayed thread, the
  * person's message, then at most `COACH_MAX_TOOL_ROUNDS` model rounds. Each round streams
  * text deltas to the caller as they arrive, runs the function calls the model made (in
  * parallel) and appends their outputs; the loop ends on a round with no calls. Every round
- * is one `ai_calls` row with purpose `coach`.
+ * is one `ai_calls` row with purpose `coach`. A draft tool's card is emitted as a `card`
+ * event the moment the tool returns and kept for the stored message (slice 11b).
  */
 
 type StreamParams = Responses.ResponseCreateParamsStreaming
@@ -86,13 +90,15 @@ export interface TurnArgs {
   history: readonly CoachMessage[]
   text: string
   now: Date
-  /** Receives `status` and `delta` events as they happen (and `card` in slice 11b). */
+  /** Receives `status`, `delta` and `card` events as they happen. */
   emit: (event: CoachEvent) => void | Promise<void>
   model?: CoachModelClient
 }
 
 export interface TurnResult {
   text: string
+  /** The cards the draft tools returned this turn, in the order they were drafted. */
+  cards: CoachCard[]
   toolTrail: CoachToolTrailEntry[]
   aiCallIds: string[]
   /** What went wrong, for the log; the stored text is then the failure copy. */
@@ -134,6 +140,7 @@ export async function runTurn(args: TurnArgs): Promise<TurnResult> {
   const client = args.model ?? coachModel.override ?? realClient()
   const model = coachModelName()
   const toolTrail: CoachToolTrailEntry[] = []
+  const cards: CoachCard[] = []
   const aiCallIds: string[] = []
   const texts: string[] = []
   const ctx: ToolContext = {
@@ -180,7 +187,9 @@ export async function runTurn(args: TurnArgs): Promise<TurnResult> {
       if (outcome.calls.length === 0 || last) break
 
       input.push(...toResponseInputItems(outcome.response.output))
-      const outputs = await Promise.all(outcome.calls.map((call) => runCall(call, ctx, toolTrail)))
+      const outputs = await Promise.all(
+        outcome.calls.map((call) => runCall(call, ctx, toolTrail, cards, args.emit)),
+      )
       input.push(...outputs)
     }
 
@@ -188,16 +197,17 @@ export async function runTurn(args: TurnArgs): Promise<TurnResult> {
     if (!text) {
       return {
         text: COACH_UNAVAILABLE_TEXT,
+        cards,
         toolTrail,
         aiCallIds,
         error: 'the model answered with no text',
       }
     }
-    return { text, toolTrail, aiCallIds, error: null }
+    return { text, cards, toolTrail, aiCallIds, error: null }
   } catch (error) {
     const described = describeAiError(error).slice(0, 500)
     logger.warn({ err: error, userId: args.userId }, 'coach turn failed')
-    return { text: COACH_UNAVAILABLE_TEXT, toolTrail, aiCallIds, error: described }
+    return { text: COACH_UNAVAILABLE_TEXT, cards, toolTrail, aiCallIds, error: described }
   }
 }
 
@@ -304,11 +314,17 @@ function statusFor(call: Responses.ResponseFunctionToolCall, ctx: ToolContext): 
   }
 }
 
-/** Parses, runs and times one call; a bad argument or a thrown error goes back to the model as text. */
+/**
+ * Parses, runs and times one call; a bad argument or a thrown error goes back to the model
+ * as text (an `AppError`'s own message, such as the estimator's daily cap, so the model can
+ * explain it). A draft tool's card is validated, kept and emitted; the model sees its summary.
+ */
 async function runCall(
   call: Responses.ResponseFunctionToolCall,
   ctx: ToolContext,
   toolTrail: CoachToolTrailEntry[],
+  cards: CoachCard[],
+  emit: TurnArgs['emit'],
 ): Promise<Responses.ResponseInputItem.FunctionCallOutput> {
   const start = performance.now()
   const tool = toolByName(call.name)
@@ -338,14 +354,26 @@ async function runCall(
       summary = tool.status(parsed.data as never, ctx)
       try {
         const result = await tool.run(ctx, parsed.data as never)
-        output = JSON.stringify(result)
+        if (isDraftResult(result)) {
+          const card = coachCardSchema.parse(result.card)
+          cards.push(card)
+          await emit({ event: 'card', data: { card } })
+          output = JSON.stringify({ card_id: card.id, ...result.summary })
+        } else {
+          output = JSON.stringify(result)
+        }
         if (output.length > MAX_TOOL_OUTPUT_CHARS) {
           output = `${output.slice(0, MAX_TOOL_OUTPUT_CHARS)}…(cut)`
         }
         ok = true
       } catch (error) {
         logger.warn({ err: error, tool: call.name }, 'coach tool failed')
-        output = JSON.stringify({ error: 'that lookup failed; answer without it' })
+        output = JSON.stringify({
+          error:
+            error instanceof AppError
+              ? `${error.message} (tell the person in your own words)`
+              : 'that lookup failed; answer without it',
+        })
       }
     }
   }

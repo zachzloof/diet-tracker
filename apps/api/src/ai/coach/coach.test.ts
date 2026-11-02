@@ -10,7 +10,9 @@ import {
   coachThreadResponseSchema,
   coachThreadsResponseSchema,
   coachTurnResponseSchema,
+  COACH_MAX_NOTES,
   localDay,
+  computeTargets,
   portionOf,
   summariseTarget,
   type CoachEvent,
@@ -23,7 +25,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../../app.js'
 import { SESSION_COOKIE } from '../../auth/session-service.js'
 import { db } from '../../db/client.js'
-import { aiCalls, coachMessages, coachThreads } from '../../db/schema/index.js'
+import { aiCalls, coachMessages, coachNotes, coachThreads } from '../../db/schema/index.js'
 import { SEED_FOODS, SEED_USERS } from '../../db/seed-data.js'
 import { seedWeights } from '../../db/seed-progress.js'
 import { seedWorkouts } from '../../db/seed-training.js'
@@ -33,11 +35,14 @@ import { createFood, listFoods } from '../../log/foods-service.js'
 import { createSavedMeal } from '../../log/saved-meals-service.js'
 import { resetRateLimits } from '../../middleware/rate-limit.js'
 import { getProfile } from '../../profile/profile-service.js'
+import { requireLatestVersion } from '../../profile/targets-service.js'
 import { weekStats } from '../../stats/stats-service.js'
 import { ensureExerciseCatalogue } from '../../training/exercises-service.js'
 import { listWorkouts } from '../../training/workouts-service.js'
 import { coachModel, replayHistory, runTurn, type CoachModelClient } from './agent.js'
+import type { DraftResult } from './tools/index.js'
 import { buildBriefing, loadBriefingInputs } from './briefing.js'
+import { createNote } from './notes-service.js'
 import { createThread } from './threads-service.js'
 import { COACH_TOOLS, toolByName, type ToolContext } from './tools/index.js'
 
@@ -62,7 +67,7 @@ interface Account {
 
 async function send(
   cookie: string,
-  method: 'GET' | 'POST' | 'DELETE',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
 ): Promise<Response> {
@@ -277,6 +282,7 @@ beforeEach(async () => {
   // The route checks for a key before it stores anything; the fake model never uses it.
   env.OPENAI_API_KEY = 'test-only-key'
   env.AI_COACH_DAILY_TURN_CAP = 60
+  env.AI_DAILY_CALL_CAP = 150
   coachModel.override = scripted([{ text: 'Hello.' }])
 })
 
@@ -493,6 +499,214 @@ describe('the read tools', () => {
   })
 })
 
+describe('the draft tools (slice 11b)', () => {
+  it('draft_target_change dry-runs a pin: before, after, dependants, and refuses the floor', async () => {
+    const ctx = ctxFor(finnAccount)
+    const version = await requireLatestVersion(finnAccount.id)
+    const energy = version.effective.entries.find((e) => e.key === 'energy_kcal')!
+    const result = (await run('draft_target_change', ctx, {
+      key: 'energy_kcal',
+      value: energy.value - 200,
+      reason: 'short most days',
+    })) as DraftResult
+    expect(result.card).toMatchObject({
+      kind: 'target_change',
+      state: 'drafted',
+      key: 'energy_kcal',
+      before: energy.value,
+      after: energy.value - 200,
+      value: energy.value - 200,
+      pinnedBefore: false,
+      recommended: energy.value,
+      floor: energy.floor,
+      reason: 'short most days',
+    })
+    // Energy moved, so the engine recomputes carbs (the remainder) and the card lists it.
+    const dependants = (result.card as { dependants: { key: string; after: number }[] }).dependants
+    expect(dependants.map((d) => d.key)).toContain('carbs_g')
+    const expected = computeTargets(version.inputs, { energy_kcal: energy.value - 200 })
+    for (const d of dependants) {
+      expect(d.after).toBe(expected.entries.find((e) => e.key === d.key)!.value)
+    }
+    expect(result.summary).toMatchObject({ card: 'target_change', target: 'Energy' })
+    expect(String(result.summary.dependants)).toContain('Carbs')
+
+    // Under the floor: no card, a reason naming the floor.
+    const blocked = (await run('draft_target_change', ctx, {
+      key: 'energy_kcal',
+      value: 500,
+      reason: 'faster',
+    })) as { refused: boolean; reason: string; floor: string }
+    expect(blocked.refused).toBe(true)
+    expect(blocked.reason).toContain('below the safe minimum')
+    expect(blocked.floor).toContain('kcal')
+
+    // Clearing a pin that is not there is refused; a food group pins in serves.
+    const notPinned = (await run('draft_target_change', ctx, {
+      key: 'protein_g',
+      value: null,
+      reason: '',
+    })) as { refused: boolean; reason: string }
+    expect(notPinned.refused).toBe(true)
+    expect(notPinned.reason).toContain('not pinned')
+    expect(
+      await run('draft_target_change', ctx, { key: 'fruit', value: 2, reason: '' }),
+    ).toMatchObject({ card: expect.objectContaining({ key: 'fruit', unit: 'serves' }) })
+  })
+
+  it("draft_workout matches exercises and puts last time's sets beside the plan", async () => {
+    const ctx = ctxFor(finnAccount)
+    const result = (await run('draft_workout', ctx, {
+      title: 'Upper body',
+      day: null,
+      exercises: [
+        {
+          exercise_id: null,
+          exercise_name: 'bench press',
+          sets: [
+            { weight_kg: 77.5, reps: 5, time_s: null, distance_m: null },
+            { weight_kg: 77.5, reps: 5, time_s: null, distance_m: null },
+          ],
+        },
+        {
+          exercise_id: null,
+          exercise_name: 'Overhead press',
+          sets: [{ weight_kg: null, reps: 8, time_s: null, distance_m: null }],
+        },
+        {
+          exercise_id: null,
+          exercise_name: 'Cable flyover',
+          sets: [{ weight_kg: 20, reps: 12, time_s: null, distance_m: null }],
+        },
+      ],
+      notes: 'like last week, a bit heavier',
+    })) as DraftResult
+    const card = result.card
+    if (card.kind !== 'workout') throw new Error('expected a workout card')
+    expect(card).toMatchObject({ state: 'drafted', title: 'Upper body', day: today() })
+    expect(card.exercises.map((e) => e.exerciseName)).toEqual([
+      'Barbell bench press',
+      'Overhead press',
+      'Cable flyover',
+    ])
+    expect(card.exercises[0]!.exerciseId).not.toBeNull()
+    expect(card.exercises[0]!.measures).toEqual(['weight', 'reps'])
+    expect(card.exercises[0]!.sets).toEqual([
+      { weightKg: 77.5, reps: 5, durationS: null, distanceM: null },
+      { weightKg: 77.5, reps: 5, durationS: null, distanceM: null },
+    ])
+    // Finn's last bench session: 75 kg x 5 three times, two days ago.
+    expect(card.exercises[0]!.last).toMatchObject({ day: addDays(today(), -2) })
+    expect(card.exercises[0]!.last!.sets.map((s) => s.weightKg)).toEqual([75, 75, 75])
+    expect(card.exercises[1]!.last!.sets.map((s) => s.weightKg)).toEqual([50, 50, 50])
+    expect(card.exercises[2]!).toMatchObject({ exerciseId: null, last: null })
+    expect(result.summary).toMatchObject({ card: 'workout', title: 'Upper body' })
+    expect(String(result.summary.unmatched)).toContain('Cable flyover')
+    const first = (result.summary.exercises as { sets: string[]; last_time: string }[])[0]!
+    expect(first.sets).toEqual(['77.5 kg × 5', '77.5 kg × 5'])
+    expect(first.last_time).toContain('75 kg × 5')
+
+    expect(
+      await run('draft_workout', ctx, {
+        title: 'Legs',
+        day: addDays(today(), 1),
+        exercises: [
+          {
+            exercise_id: null,
+            exercise_name: 'squat',
+            sets: [{ weight_kg: 100, reps: 5, time_s: null, distance_m: null }],
+          },
+        ],
+        notes: '',
+      }),
+    ).toMatchObject({ empty: true })
+  })
+
+  it('draft_meal builds a saved meal from My foods and leaves out what it cannot use', async () => {
+    const ctx = ctxFor(finnAccount)
+    const oats = (await listFoods(finnAccount.id, { q: 'oats', limit: 1 }))[0]!
+    const result = (await run('draft_meal', ctx, {
+      name: 'Big oats',
+      items: [
+        { food_id: oats.id, amount: 100, unit: 'g' },
+        { food_id: oats.id, amount: 1, unit: 'serving' },
+        { food_id: '00000000-0000-7000-8000-000000000001', amount: 50, unit: 'g' },
+      ],
+      meal: 'breakfast',
+    })) as DraftResult
+    const card = result.card
+    if (card.kind !== 'meal') throw new Error('expected a meal card')
+    expect(card.name).toBe('Big oats')
+    expect(card.meal).toBe('breakfast')
+    expect(card.items).toHaveLength(oats.basis === 'per_serving' ? 2 : 1)
+    expect(card.items[0]).toMatchObject({
+      name: oats.name,
+      quantity: 100,
+      unit: 'g',
+      grams: 100,
+      foodId: oats.id,
+    })
+    expect(card.items[0]!.nutrients.energy_kcal).toBe(
+      Math.round(portionOf(oats, 100).nutrients.energy_kcal * 10) / 10,
+    )
+    expect(card.totals.energy_kcal).toBe(
+      Math.round(card.items.reduce((sum, i) => sum + i.nutrients.energy_kcal, 0)),
+    )
+    expect((result.summary.left_out as string[]).length).toBeGreaterThan(0)
+    expect(
+      await run('draft_meal', ctx, {
+        name: 'Nothing',
+        items: [{ food_id: '00000000-0000-7000-8000-000000000001', amount: 50, unit: 'g' }],
+        meal: null,
+      }),
+    ).toMatchObject({ empty: true })
+    // Another person's food is not found either.
+    const tessOats = (await listFoods(tessAccount.id, { q: 'oats', limit: 1 }))[0]!
+    expect(
+      await run('draft_meal', ctx, {
+        name: 'Theirs',
+        items: [{ food_id: tessOats.id, amount: 50, unit: 'g' }],
+        meal: null,
+      }),
+    ).toMatchObject({ empty: true })
+  })
+
+  it('remember_note drafts the line and the briefing carries confirmed notes', async () => {
+    const ctx = ctxFor(finnAccount)
+    const result = (await run('remember_note', ctx, {
+      text: '  My left   knee is sore ',
+    })) as DraftResult
+    expect(result.card).toMatchObject({
+      kind: 'note',
+      state: 'drafted',
+      text: 'My left knee is sore',
+    })
+    expect(result.summary).toMatchObject({ card: 'note', text: 'My left knee is sore' })
+    expect(await db.select().from(coachNotes)).toHaveLength(0)
+
+    const before = buildBriefing(await loadBriefingInputs(finnAccount.id, finnAccount.profile))
+    expect(before).toContain('NOTES')
+    expect(before).toContain('- None yet.')
+    await createNote(finnAccount.id, { text: 'My left knee is sore' })
+    const after = buildBriefing(await loadBriefingInputs(finnAccount.id, finnAccount.profile))
+    expect(after).toContain(`${today()}: My left knee is sore`)
+    // Tess's briefing does not carry Finn's note.
+    const tess = buildBriefing(await loadBriefingInputs(tessAccount.id, tessAccount.profile))
+    expect(tess).not.toContain('knee')
+  })
+
+  it('draft_food_log refuses a future day before any call and throws the cap for the loop', async () => {
+    const ctx = ctxFor(finnAccount)
+    expect(
+      await run('draft_food_log', ctx, { text: '2 eggs', day: addDays(today(), 1), meal: null }),
+    ).toMatchObject({ empty: true })
+    env.AI_DAILY_CALL_CAP = 0
+    await expect(
+      run('draft_food_log', ctx, { text: '2 eggs', day: null, meal: 'breakfast' }),
+    ).rejects.toMatchObject({ code: 'ai_cap_reached' })
+  })
+})
+
 describe('the tool loop', () => {
   const base = () => ({
     userId: finnAccount.id,
@@ -588,6 +802,74 @@ describe('the tool loop', () => {
     expect(outputs[1]!.output).toContain('arguments rejected')
     expect(outputs[2]!.output).toContain('no tool called no_such_tool')
     expect(result.toolTrail.filter((t) => t.ok)).toHaveLength(COACH_MAX_TOOL_ROUNDS)
+  })
+
+  it('emits a card as soon as a draft tool returns, tells the model its summary, and keeps it', async () => {
+    const fake = scripted([
+      {
+        calls: [{ name: 'remember_note', arguments: JSON.stringify({ text: 'Left knee sore' }) }],
+      },
+      { text: 'Noted: tap Remember to keep it.' },
+    ])
+    const { events, emit } = collect()
+    const result = await runTurn({
+      ...base(),
+      text: 'Remember that my left knee is sore',
+      emit,
+      model: fake,
+    })
+    expect(result.error).toBeNull()
+    expect(result.cards).toHaveLength(1)
+    expect(result.cards[0]).toMatchObject({
+      kind: 'note',
+      state: 'drafted',
+      text: 'Left knee sore',
+    })
+    expect(events.map((e) => e.event).slice(0, 3)).toEqual(['status', 'card', 'delta'])
+    expect(events[0]).toMatchObject({
+      event: 'status',
+      data: { tool: 'remember_note', text: 'Drafting a note to remember' },
+    })
+    expect(events[1]).toMatchObject({ event: 'card', data: { card: result.cards[0] } })
+    // The model sees the card's id and summary, not the card itself.
+    const second = fake.params[1]!.input as Responses.ResponseInputItem[]
+    const output = second.find((i) => 'type' in i && i.type === 'function_call_output') as
+      Responses.ResponseInputItem.FunctionCallOutput
+    const told = JSON.parse(output.output) as { card_id: string; card: string; text: string }
+    expect(told.card_id).toBe(result.cards[0]!.id)
+    expect(told.card).toBe('note')
+    expect(told.text).toBe('Left knee sore')
+    expect(output.output).not.toContain('"state"')
+    expect(await db.select().from(coachNotes)).toHaveLength(0)
+  })
+
+  it('turns a tool that throws an app error into its message for the model', async () => {
+    env.AI_DAILY_CALL_CAP = 0
+    const fake = scripted([
+      {
+        calls: [
+          {
+            name: 'draft_food_log',
+            arguments: JSON.stringify({ text: '2 eggs and toast', day: null, meal: 'breakfast' }),
+          },
+        ],
+      },
+      { text: "You've used today's estimates." },
+    ])
+    const { events, emit } = collect()
+    const result = await runTurn({ ...base(), text: 'Log 2 eggs and toast', emit, model: fake })
+    expect(result.error).toBeNull()
+    expect(result.cards).toEqual([])
+    expect(events[0]).toMatchObject({
+      event: 'status',
+      data: { tool: 'draft_food_log', text: 'Estimating "2 eggs and toast"' },
+    })
+    expect(events.some((e) => e.event === 'card')).toBe(false)
+    const second = fake.params[1]!.input as Responses.ResponseInputItem[]
+    const output = second.find((i) => 'type' in i && i.type === 'function_call_output') as
+      Responses.ResponseInputItem.FunctionCallOutput
+    expect(output.output).toContain('AI estimates')
+    expect(result.toolTrail[0]).toMatchObject({ name: 'draft_food_log', ok: false })
   })
 
   it('answers with the failure copy and keeps the trail when the model fails', async () => {
@@ -780,6 +1062,101 @@ describe('/api/v1/coach', () => {
     expect(
       (await send(cookie, 'POST', '/api/v1/coach/threads/nope/messages', { text: 'Hi' })).status,
     ).toBe(404)
+  })
+
+  it('stores cards on the message, records confirm or dismiss once, and scopes them', async () => {
+    const { cookie } = finnAccount
+    coachModel.override = scripted([
+      { calls: [{ name: 'remember_note', arguments: JSON.stringify({ text: 'Knee sore' }) }] },
+      { text: 'Tap Remember to keep it.' },
+    ])
+    const thread = await createThread(finnAccount.id)
+    const res = await send(cookie, 'POST', `/api/v1/coach/threads/${thread.id}/messages`, {
+      text: 'Remember my knee is sore',
+    })
+    const events = await readSse(res)
+    expect(events.map((e) => e.event).slice(0, 2)).toEqual(['status', 'card'])
+    const done = events[events.length - 1]!
+    if (done.event !== 'done') throw new Error('unreachable')
+    expect(done.data.assistant.cards).toHaveLength(1)
+    const card = done.data.assistant.cards[0]!
+    expect(card).toMatchObject({ kind: 'note', state: 'drafted', text: 'Knee sore' })
+
+    // Reopening the thread shows the card as drafted.
+    const opened = coachThreadResponseSchema.parse(
+      await (await send(cookie, 'GET', `/api/v1/coach/threads/${thread.id}`)).json(),
+    )
+    expect(opened.messages[1]!.cards[0]).toMatchObject({ id: card.id, state: 'drafted' })
+
+    // Another person cannot touch it; a malformed id is not found; a bad state is rejected.
+    const path = `/api/v1/coach/threads/${thread.id}/cards/${card.id}`
+    expect((await send(tessAccount.cookie, 'PATCH', path, { state: 'dismissed' })).status).toBe(404)
+    expect(
+      (await send(cookie, 'PATCH', `/api/v1/coach/threads/${thread.id}/cards/nope`, { state: 'dismissed' }))
+        .status,
+    ).toBe(404)
+    expect((await send(cookie, 'PATCH', path, { state: 'logged' })).status).toBe(400)
+
+    // Dismiss: persisted, nothing written anywhere.
+    const dismissed = await send(cookie, 'PATCH', path, { state: 'dismissed' })
+    expect(dismissed.status).toBe(200)
+    const body = (await dismissed.json()) as { message: { cards: { state: string }[] } }
+    expect(body.message.cards[0]!.state).toBe('dismissed')
+    const again = coachThreadResponseSchema.parse(
+      await (await send(cookie, 'GET', `/api/v1/coach/threads/${thread.id}`)).json(),
+    )
+    expect(again.messages[1]!.cards[0]!.state).toBe('dismissed')
+    expect(await db.select().from(coachNotes)).toHaveLength(0)
+
+    // The first state sticks: a later confirm does not undo a dismiss.
+    const confirm = await send(cookie, 'PATCH', path, { state: 'confirmed' })
+    const after = (await confirm.json()) as { message: { cards: { state: string }[] } }
+    expect(after.message.cards[0]!.state).toBe('dismissed')
+  })
+
+  it('keeps, lists, caps and deletes notes, and exports them with the account', async () => {
+    const { cookie } = finnAccount
+    const created = await send(cookie, 'POST', '/api/v1/coach/notes', { text: ' Left knee sore ' })
+    expect(created.status).toBe(201)
+    const { note } = (await created.json()) as { note: { id: string; text: string } }
+    expect(note.text).toBe('Left knee sore')
+    expect(
+      (await send(cookie, 'POST', '/api/v1/coach/notes', { text: 'x'.repeat(201) })).status,
+    ).toBe(400)
+    expect((await send(cookie, 'POST', '/api/v1/coach/notes', { text: '  ' })).status).toBe(400)
+
+    const listed = (await (await send(cookie, 'GET', '/api/v1/coach/notes')).json()) as {
+      notes: { id: string }[]
+    }
+    expect(listed.notes.map((n) => n.id)).toEqual([note.id])
+    const tessNotes = (await (await send(tessAccount.cookie, 'GET', '/api/v1/coach/notes')).json()) as {
+      notes: unknown[]
+    }
+    expect(tessNotes.notes).toEqual([])
+    expect(
+      (await send(tessAccount.cookie, 'DELETE', `/api/v1/coach/notes/${note.id}`)).status,
+    ).toBe(404)
+
+    for (let i = 1; i < COACH_MAX_NOTES; i++) {
+      await createNote(finnAccount.id, { text: `note ${i}` })
+    }
+    const full = await send(cookie, 'POST', '/api/v1/coach/notes', { text: 'one more' })
+    expect(full.status).toBe(409)
+    expect(apiErrorSchema.parse(await full.json()).error.message).toContain('Delete one')
+
+    const exported = accountExportSchema.parse(
+      await (await send(cookie, 'GET', '/api/v1/account/export/json')).json(),
+    )
+    expect(exported.coachNotes).toHaveLength(COACH_MAX_NOTES)
+    expect(exported.coachNotes[0]!.text).toBe('Left knee sore')
+
+    expect((await send(cookie, 'DELETE', `/api/v1/coach/notes/${note.id}`)).status).toBe(204)
+    expect((await send(cookie, 'DELETE', `/api/v1/coach/notes/${note.id}`)).status).toBe(404)
+    expect(await db.select().from(coachNotes)).toHaveLength(COACH_MAX_NOTES - 1)
+
+    const deleted = await send(cookie, 'DELETE', '/api/v1/account', { password: 'finn-password' })
+    expect(deleted.status).toBe(204)
+    expect(await db.select().from(coachNotes)).toHaveLength(0)
   })
 
   it('exports the threads with the account and deletes them with it', async () => {

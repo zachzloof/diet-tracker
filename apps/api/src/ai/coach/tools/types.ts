@@ -1,15 +1,18 @@
 import type {
-  CoachReadTool,
+  CoachCard,
   CoachToolArgs,
+  CoachToolName,
   Profile,
   coachToolArgsSchemas,
 } from '@diet-tracker/shared'
 import type { z } from 'zod'
 
 /**
- * One read tool (ai-coach skill, "The tools"): a name and description the model sees, the
+ * One tool (ai-coach skill, "The tools"): a name and description the model sees, the
  * shared zod argument schema, a status line for the screen, and `run`, which wraps an
- * existing service with the session's `userId` and returns a compact, labelled result.
+ * existing service with the session's `userId` and returns a compact, labelled result. A
+ * read tool returns plain data; a draft tool returns a `DraftResult` (the card for the
+ * person and a summary for the model) and writes nothing.
  */
 
 export interface ToolContext {
@@ -30,7 +33,27 @@ export function empty(reason: string): EmptyResult {
   return { empty: true, reason }
 }
 
-export interface CoachTool<N extends CoachReadTool = CoachReadTool> {
+/**
+ * What a draft tool returns: the card the person sees (stored on the message, streamed as
+ * a `card` event) and what the model is told about it, in words and rounded numbers, so it
+ * can refer to the card without the card's full payload going into the replay.
+ */
+export interface DraftResult {
+  card: CoachCard
+  summary: Record<string, unknown>
+}
+
+export function isDraftResult(value: unknown): value is DraftResult {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'card' in value &&
+    'summary' in value &&
+    typeof (value as { card: unknown }).card === 'object'
+  )
+}
+
+export interface CoachTool<N extends CoachToolName = CoachToolName> {
   name: N
   description: string
   schema: (typeof coachToolArgsSchemas)[N]
@@ -44,13 +67,13 @@ export interface CoachTool<N extends CoachReadTool = CoachReadTool> {
  * receive arguments parsed by the tool's own schema (agent.ts), so the erasure is safe.
  */
 export interface AnyCoachTool {
-  name: CoachReadTool
+  name: CoachToolName
   description: string
   schema: z.ZodType
   status: (args: never, ctx: ToolContext) => string
   run: (ctx: ToolContext, args: never) => Promise<unknown>
 }
 
-export function defineTool<N extends CoachReadTool>(tool: CoachTool<N>): AnyCoachTool {
+export function defineTool<N extends CoachToolName>(tool: CoachTool<N>): AnyCoachTool {
   return tool as AnyCoachTool
 }

@@ -28,7 +28,7 @@ export const coachThreads = pgTable(
 /**
  * One message. `user_id` is repeated so the daily turn cap is one count and the scoping is
  * one condition. `tool_trail` is what the assistant looked at (name, arguments, the status
- * line shown, duration); `cards` the drafted actions (empty until slice 11b); `error` the
+ * line shown, duration); `cards` the drafted actions (slice 11b: `CoachCard[]`, each with its state); `error` the
  * failure recorded when the model could not answer, with `text` holding the failure copy.
  */
 export const coachMessages = pgTable(
@@ -56,6 +56,26 @@ export const coachMessages = pgTable(
   ],
 )
 
+/**
+ * Lines the person asked the coach to remember ("left knee sore"), confirmed from a `note`
+ * card (slice 11b, D41 option A for memory). Read into every briefing, listed and deleted
+ * under Coach > Notes. Kept until deleted (not under the dated retention), exported with the
+ * account, cascades from `users`. Capped at `COACH_MAX_NOTES` per person by the service.
+ */
+export const coachNotes = pgTable(
+  'coach_notes',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    text: text('text').notNull(),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('coach_notes_user_created_idx').on(t.userId, t.createdAt)],
+)
+
 export type CoachThreadRow = typeof coachThreads.$inferSelect
 export type CoachMessageRow = typeof coachMessages.$inferSelect
 export type NewCoachMessageRow = typeof coachMessages.$inferInsert
+export type CoachNoteRow = typeof coachNotes.$inferSelect

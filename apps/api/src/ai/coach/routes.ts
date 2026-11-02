@@ -1,7 +1,12 @@
 import {
   COACH_MAX_TURNS,
+  coachCardStateRequestSchema,
+  coachNoteInputSchema,
   coachSendRequestSchema,
+  type CoachCardStateResponse,
   type CoachEvent,
+  type CoachNoteResponse,
+  type CoachNotesResponse,
   type CoachThreadResponse,
   type CoachThreadsResponse,
   type CoachTurnResponse,
@@ -17,6 +22,7 @@ import { getProfile } from '../../profile/profile-service.js'
 import type { AppEnv } from '../../types.js'
 import { aiConfigured } from '../openai.js'
 import { runTurn } from './agent.js'
+import { createNote, deleteNote, listNotes } from './notes-service.js'
 import {
   addAssistantMessage,
   addUserMessage,
@@ -26,6 +32,7 @@ import {
   listMessages,
   listThreads,
   requireThread,
+  setCardState,
   toWireThread,
   turnsToday,
 } from './threads-service.js'
@@ -48,10 +55,30 @@ export const COACH_THREAD_FULL_MESSAGE = 'This chat is full. Start a new chat to
 
 /**
  * `/api/v1/coach` (D41). Threads are the person's own; a message runs one turn of the
- * agent and answers as server-sent events (`status`, `delta`, then `done`), or as one JSON
- * body with `?stream=false` for tests and the smoke script.
+ * agent and answers as server-sent events (`status`, `delta`, `card`, then `done`), or as
+ * one JSON body with `?stream=false` for tests and the smoke script. Cards (slice 11b) are
+ * confirmed through the endpoint they belong to; this API only records their state. Notes
+ * are the one thing the coach's own routes write, and only from a confirmed `note` card.
  */
 export const coachRoutes = new Hono<AppEnv>()
+  .get('/notes', async (c) => {
+    const { user } = requireAuth(c)
+    const body: CoachNotesResponse = { notes: await listNotes(user.id) }
+    return c.json(body, 200)
+  })
+
+  .post('/notes', requireJson, jsonBody(coachNoteInputSchema), async (c) => {
+    const { user } = requireAuth(c)
+    const body: CoachNoteResponse = { note: await createNote(user.id, c.req.valid('json')) }
+    return c.json(body, 201)
+  })
+
+  .delete('/notes/:id', async (c) => {
+    const { user } = requireAuth(c)
+    await deleteNote(user.id, idParam(c.req.param('id')))
+    return c.body(null, 204)
+  })
+
   .get('/threads', async (c) => {
     const { user } = requireAuth(c)
     const body: CoachThreadsResponse = { threads: await listThreads(user.id) }
@@ -76,6 +103,25 @@ export const coachRoutes = new Hono<AppEnv>()
     await deleteThread(user.id, idParam(c.req.param('id')))
     return c.body(null, 204)
   })
+
+  /** The person confirmed (through the card's own endpoint) or dismissed a card. */
+  .patch(
+    '/threads/:id/cards/:cardId',
+    requireJson,
+    jsonBody(coachCardStateRequestSchema),
+    async (c) => {
+      const { user } = requireAuth(c)
+      const body: CoachCardStateResponse = {
+        message: await setCardState(
+          user.id,
+          idParam(c.req.param('id')),
+          idParam(c.req.param('cardId')),
+          c.req.valid('json'),
+        ),
+      }
+      return c.json(body, 200)
+    },
+  )
 
   .post('/threads/:id/messages', requireJson, jsonBody(coachSendRequestSchema), async (c) => {
     const { user } = requireAuth(c)

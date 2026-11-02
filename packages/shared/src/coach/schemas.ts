@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { coachCardsSchema } from './cards.js'
+import { coachCardSchema, coachCardsSchema } from './cards.js'
+import { COACH_NOTE_MAX_CHARS } from './tools.js'
 
 /**
  * Wire shapes for `/api/v1/coach` (slice 11a, D41). A thread is one conversation; a turn
@@ -91,8 +92,9 @@ export const coachTurnResponseSchema = z.object({
 export type CoachTurnResponse = z.infer<typeof coachTurnResponseSchema>
 
 /**
- * Server-sent events on `POST /coach/threads/:id/messages`, in order: zero or more `status`
- * and `delta`, then one `done` or one `error`. The browser reads them with `fetch` and a
+ * Server-sent events on `POST /coach/threads/:id/messages`, in order: zero or more `status`,
+ * `delta` and `card` (a drafted card, as soon as its tool returns; slice 11b), then one
+ * `done` or one `error`. The browser reads them with `fetch` and a
  * `ReadableStream`; `EventSource` cannot POST.
  */
 export const coachStatusEventSchema = z.object({
@@ -109,12 +111,42 @@ export const coachErrorEventSchema = z.object({
 export const coachEventSchema = z.discriminatedUnion('event', [
   z.object({ event: z.literal('status'), data: coachStatusEventSchema }),
   z.object({ event: z.literal('delta'), data: coachDeltaEventSchema }),
-  z.object({ event: z.literal('card'), data: z.object({ card: z.unknown() }) }),
+  z.object({ event: z.literal('card'), data: z.object({ card: coachCardSchema }) }),
   z.object({ event: z.literal('done'), data: coachTurnResponseSchema }),
   z.object({ event: z.literal('error'), data: coachErrorEventSchema }),
 ])
 export type CoachEvent = z.infer<typeof coachEventSchema>
 export type CoachEventName = CoachEvent['event']
+
+// --- Notes (slice 11b): lines the person asked the coach to remember ------------------------
+
+/** Notes a person can keep; the briefing carries every one, so the cap bounds its size. */
+export const COACH_MAX_NOTES = 30
+
+export const coachNoteSchema = z.object({
+  id: z.uuid(),
+  text: z.string(),
+  createdAt: z.iso.datetime(),
+})
+export type CoachNote = z.infer<typeof coachNoteSchema>
+
+export const coachNoteInputSchema = z.object({
+  text: z
+    .string({ error: 'Type a note' })
+    .trim()
+    .min(1, 'Type a note')
+    .max(COACH_NOTE_MAX_CHARS, `Keep it under ${COACH_NOTE_MAX_CHARS} characters`),
+})
+export type CoachNoteInput = z.infer<typeof coachNoteInputSchema>
+
+export const coachNotesResponseSchema = z.object({ notes: z.array(coachNoteSchema) })
+export type CoachNotesResponse = z.infer<typeof coachNotesResponseSchema>
+export const coachNoteResponseSchema = z.object({ note: coachNoteSchema })
+export type CoachNoteResponse = z.infer<typeof coachNoteResponseSchema>
+
+/** `PATCH /coach/threads/:id/cards/:cardId` answers the message the card sits on. */
+export const coachCardStateResponseSchema = z.object({ message: coachMessageSchema })
+export type CoachCardStateResponse = z.infer<typeof coachCardStateResponseSchema>
 
 /** What the thread shows when the assistant fails after the question was kept. */
 export const COACH_UNAVAILABLE_TEXT =

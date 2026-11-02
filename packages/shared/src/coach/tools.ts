@@ -1,12 +1,22 @@
 import { z } from 'zod'
-import { MAX_FOOD_QUERY_CHARS } from '../log/schemas.js'
+import { mealSchema } from '../log/enums.js'
+import { MAX_ESTIMATE_CHARS, MAX_FOOD_QUERY_CHARS } from '../log/schemas.js'
+import { targetKeySchema } from '../nutrition/targets.js'
 import { WEIGHT_HISTORY_DAYS } from '../progress-api.js'
-import { MAX_EXERCISE_HISTORY } from '../training/schemas.js'
+import {
+  MAX_EXERCISE_HISTORY,
+  MAX_SETS_PER_EXERCISE,
+  MAX_SET_DISTANCE_M,
+  MAX_SET_DURATION_S,
+  MAX_SET_REPS,
+  MAX_SET_WEIGHT_KG,
+  MAX_WORKOUT_EXERCISES,
+} from '../training/schemas.js'
 import { muscleGroupSchema } from '../training/enums.js'
 
 /**
- * Argument schemas of the coach's read tools (ai-coach skill, `references/tools.md`).
- * Strict function tools: every field is required and an optional one is `| null`, no extra
+ * Argument schemas of the coach's tools (ai-coach skill, `references/tools.md`). Strict
+ * function tools: every field is required and an optional one is `| null`, no extra
  * properties. Formats are plain regexes because Structured Outputs rejects `format: date`.
  * `userId` is never an argument: the API passes it from the session.
  */
@@ -18,6 +28,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const toolDay = z.string().regex(DAY_RE, 'Use YYYY-MM-DD')
 const toolMonth = z.string().regex(MONTH_RE, 'Use YYYY-MM')
 const toolUuid = z.string().regex(UUID_RE, 'Not an id')
+
+// --- Read tools ----------------------------------------------------------------------------
 
 export const getDayFoodArgsSchema = z.object({
   /** The user-local day, YYYY-MM-DD. */
@@ -86,6 +98,76 @@ export const getWeeklyReviewArgsSchema = z.object({
   week_end: toolDay.nullable(),
 })
 
+// --- Draft tools (slice 11b): each returns a card, nothing is written -----------------------
+
+export const draftFoodLogArgsSchema = z.object({
+  /** What was eaten, in the person's words ("2 eggs and toast"), for the estimator. */
+  text: z.string().min(1).max(MAX_ESTIMATE_CHARS),
+  /** The user-local day to log to; null for today. */
+  day: toolDay.nullable(),
+  /** The meal the person named; null to let the estimator infer it from the food and the time. */
+  meal: mealSchema.nullable(),
+})
+
+export const draftTargetChangeArgsSchema = z.object({
+  /** The target to pin, as the briefing names its key (energy_kcal, protein_g, ...). */
+  key: targetKeySchema,
+  /** The number to pin, in the target's unit; null clears the pin and the engine's number returns. */
+  value: z.number().min(0).max(100_000).nullable(),
+  /** One line on why, in the person's terms; shown on the card. */
+  reason: z.string().max(200),
+})
+
+export const draftWorkoutSetArgsSchema = z.object({
+  weight_kg: z.number().min(0).max(MAX_SET_WEIGHT_KG).nullable(),
+  reps: z.number().int().min(0).max(MAX_SET_REPS).nullable(),
+  time_s: z.number().int().min(0).max(MAX_SET_DURATION_S).nullable(),
+  distance_m: z.number().min(0).max(MAX_SET_DISTANCE_M).nullable(),
+})
+
+export const draftWorkoutExerciseArgsSchema = z.object({
+  /** An exercise id from `list_exercises`, `get_workout` or `get_lift_history`, or null to match by name. */
+  exercise_id: toolUuid.nullable(),
+  /** The exercise's name, used when `exercise_id` is null and kept as the block's label. */
+  exercise_name: z.string().min(1).max(80),
+  /** The planned sets in order; a null field is left for the person to fill in. */
+  sets: z.array(draftWorkoutSetArgsSchema).min(1).max(MAX_SETS_PER_EXERCISE),
+})
+
+export const draftWorkoutArgsSchema = z.object({
+  /** "Upper body", "Legs": the session's title. */
+  title: z.string().min(1).max(60),
+  /** The user-local day it is for; null for today. */
+  day: toolDay.nullable(),
+  exercises: z.array(draftWorkoutExerciseArgsSchema).min(1).max(MAX_WORKOUT_EXERCISES),
+  /** A line for the session's notes, or empty. */
+  notes: z.string().max(300),
+})
+
+export const draftMealItemArgsSchema = z.object({
+  /** A food id from `search_my_foods`. */
+  food_id: toolUuid,
+  /** How much, in `unit`. */
+  amount: z.number().positive().max(100_000),
+  /** Grams, or servings of the food's own serving. */
+  unit: z.enum(['g', 'serving']),
+})
+
+export const draftMealArgsSchema = z.object({
+  name: z.string().min(1).max(80),
+  items: z.array(draftMealItemArgsSchema).min(1).max(20),
+  /** The meal it is usually eaten at, or null. */
+  meal: mealSchema.nullable(),
+})
+
+/** Longest note the coach may keep. */
+export const COACH_NOTE_MAX_CHARS = 200
+
+export const rememberNoteArgsSchema = z.object({
+  /** One line in the person's words, under 200 characters ("left knee sore since Tuesday"). */
+  text: z.string().min(1).max(COACH_NOTE_MAX_CHARS),
+})
+
 export const COACH_READ_TOOLS = [
   'get_day_food',
   'get_week_food',
@@ -103,6 +185,18 @@ export const COACH_READ_TOOLS = [
 ] as const
 export type CoachReadTool = (typeof COACH_READ_TOOLS)[number]
 
+export const COACH_DRAFT_TOOLS = [
+  'draft_food_log',
+  'draft_target_change',
+  'draft_workout',
+  'draft_meal',
+  'remember_note',
+] as const
+export type CoachDraftTool = (typeof COACH_DRAFT_TOOLS)[number]
+
+export const COACH_TOOL_NAMES = [...COACH_READ_TOOLS, ...COACH_DRAFT_TOOLS] as const
+export type CoachToolName = (typeof COACH_TOOL_NAMES)[number]
+
 export const coachToolArgsSchemas = {
   get_day_food: getDayFoodArgsSchema,
   get_week_food: getWeekFoodArgsSchema,
@@ -117,6 +211,11 @@ export const coachToolArgsSchemas = {
   search_meals: searchMealsArgsSchema,
   list_exercises: listExercisesArgsSchema,
   get_weekly_review: getWeeklyReviewArgsSchema,
-} as const satisfies Record<CoachReadTool, z.ZodType>
+  draft_food_log: draftFoodLogArgsSchema,
+  draft_target_change: draftTargetChangeArgsSchema,
+  draft_workout: draftWorkoutArgsSchema,
+  draft_meal: draftMealArgsSchema,
+  remember_note: rememberNoteArgsSchema,
+} as const satisfies Record<CoachToolName, z.ZodType>
 
-export type CoachToolArgs = { [K in CoachReadTool]: z.infer<(typeof coachToolArgsSchemas)[K]> }
+export type CoachToolArgs = { [K in CoachToolName]: z.infer<(typeof coachToolArgsSchemas)[K]> }

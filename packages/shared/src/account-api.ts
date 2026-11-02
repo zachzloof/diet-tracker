@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { storedWeeklyReviewSchema } from './ai/schemas.js'
 import { PASSWORD_MAX_LENGTH, newPasswordSchema, publicUserSchema } from './auth.js'
-import { coachMessageSchema, coachThreadSchema } from './coach/schemas.js'
+import { coachMessageSchema, coachNoteSchema, coachThreadSchema } from './coach/schemas.js'
 import { dailySummarySchema, foodSchema, logEntrySchema, savedMealSchema } from './log/schemas.js'
 import { exerciseSchema, workoutSchema } from './training/schemas.js'
 import { profileSchema } from './profile.js'
@@ -61,6 +61,8 @@ export const accountExportSchema = z.object({
   dailySummaries: z.array(dailySummarySchema),
   weeklyReviews: z.array(exportedWeeklyReviewSchema),
   coachThreads: z.array(exportedCoachThreadSchema),
+  /** Lines the person asked the coach to remember (slice 11b). */
+  coachNotes: z.array(coachNoteSchema),
   aiUsage: z.object({
     calls: z.number().int().min(0),
     inputTokens: z.number().int().min(0),
@@ -70,5 +72,5 @@ export const accountExportSchema = z.object({
 })
 export type AccountExport = z.infer<typeof accountExportSchema>
 
-/** 2 added `savedMeals`; 3 added `exercises` (custom only) and `workouts` (slice 8); 4 added `coachThreads` (slice 11a). */
-export const ACCOUNT_EXPORT_SCHEMA_VERSION = 4
+/** 2 added `savedMeals`; 3 added `exercises` (custom only) and `workouts` (slice 8); 4 added `coachThreads` (slice 11a); 5 added `coachNotes` (slice 11b). */
+export const ACCOUNT_EXPORT_SCHEMA_VERSION = 5

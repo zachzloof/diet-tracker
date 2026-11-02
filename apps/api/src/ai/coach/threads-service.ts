@@ -5,6 +5,8 @@ import {
   coachThreadSchema,
   localDay,
   startOfLocalDay,
+  type CoachCard,
+  type CoachCardStateRequest,
   type CoachMessage,
   type CoachThread,
   type CoachToolTrailEntry,
@@ -186,6 +188,7 @@ export async function addUserMessage(
 
 export interface AssistantMessageInput {
   text: string
+  cards: CoachCard[]
   toolTrail: CoachToolTrailEntry[]
   aiCallIds: string[]
   error: string | null
@@ -205,7 +208,7 @@ export async function addAssistantMessage(
         threadId: thread.id,
         role: 'assistant',
         text: input.text,
-        cards: [],
+        cards: input.cards,
         toolTrail: input.toolTrail,
         aiCallIds: input.aiCallIds,
         error: input.error,
@@ -217,6 +220,40 @@ export async function addAssistantMessage(
     await tx.update(coachThreads).set({ updatedAt: now }).where(eq(coachThreads.id, thread.id))
     return toWireMessage(message)
   })
+}
+
+/**
+ * Records that the person confirmed or dismissed a card (slice 11b). The card lives in the
+ * message's `cards` JSONB; the thread is the person's own, else not found. A card already
+ * confirmed or dismissed keeps its first state: the confirm endpoint has run by then.
+ */
+export async function setCardState(
+  userId: string,
+  threadId: string,
+  cardId: string,
+  input: CoachCardStateRequest,
+): Promise<CoachMessage> {
+  await requireThread(userId, threadId)
+  const messages = await db
+    .select()
+    .from(coachMessages)
+    .where(and(eq(coachMessages.threadId, threadId), eq(coachMessages.userId, userId)))
+  const row = messages.find((m) => m.cards.some((card) => card.id === cardId))
+  if (!row) throw errors.notFound()
+  const current = row.cards.find((card) => card.id === cardId)
+  if (!current) throw errors.notFound()
+  if (current.state !== 'drafted') return toWireMessage(row)
+  const cards = row.cards.map((card) =>
+    card.id === cardId ? { ...card, state: input.state } : card,
+  )
+  const updated = await db
+    .update(coachMessages)
+    .set({ cards })
+    .where(eq(coachMessages.id, row.id))
+    .returning()
+  const saved = updated[0]
+  if (!saved) throw new Error('coach message update returned no row')
+  return toWireMessage(saved)
 }
 
 export function titleFrom(text: string): string {

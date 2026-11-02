@@ -23,6 +23,7 @@ import {
   weightRate,
   weightTrend,
   workoutSummary,
+  type CoachNote,
   type DayLogResponse,
   type DayScore,
   type Exercise,
@@ -44,6 +45,7 @@ import { weekStats } from '../../stats/stats-service.js'
 import { listExercises } from '../../training/exercises-service.js'
 import { listWorkouts } from '../../training/workouts-service.js'
 import { dayMetSentence } from '../weekly-review.js'
+import { allNotes } from './notes-service.js'
 import {
   dayLabel,
   fmt,
@@ -78,6 +80,8 @@ export interface BriefingInputs {
   gym: { current: Workout[]; previous: Workout[]; exercises: Exercise[] } | null
   weights: WeightsResponse
   recalibration: RecalibrationAssessment
+  /** Lines the person asked the coach to remember (slice 11b), oldest first. */
+  notes: CoachNote[]
 }
 
 /** The weight window the briefing summarises. */
@@ -119,7 +123,7 @@ function list(items: readonly string[]): string {
 }
 
 export function buildBriefing(inputs: BriefingInputs): string {
-  const { profile, targets, day, dayScore, week, gym, weights, recalibration } = inputs
+  const { profile, targets, day, dayScore, week, gym, weights, recalibration, notes } = inputs
   const today = localDay(inputs.now, profile.timezone)
   const time = localTimeParts(inputs.now, profile.timezone)
   const prefs = profile.preferences
@@ -247,6 +251,17 @@ export function buildBriefing(inputs: BriefingInputs): string {
       `- Proposal waiting on the Today screen: energy ${fmt(p.current.energyKcal)} → ${fmt(p.proposed.energyKcal)} kcal (${p.deltaKcal > 0 ? '+' : ''}${fmt(p.deltaKcal)}), protein ${fmt(p.proposed.proteinG)} g, carbs ${fmt(p.proposed.carbsG)} g, fat ${fmt(p.proposed.fatG)} g. The person applies or snoozes it; you do not.`,
     )
   }
+  lines.push('')
+
+  lines.push('NOTES (things the person asked you to remember; they manage them under Coach > Notes)')
+  if (notes.length === 0) {
+    lines.push('- None yet.')
+  } else {
+    for (const note of notes) {
+      const day = localDay(new Date(note.createdAt), profile.timezone)
+      lines.push(`- ${dayLabel(day)} ${day}: ${note.text}`)
+    }
+  }
 
   return lines.join('\n')
 }
@@ -364,7 +379,8 @@ export async function loadBriefingInputs(
   const today = localDay(now, profile.timezone)
   const weekStart = addDays(today, -6)
   const previousStart = addDays(today, -13)
-  const [version, day, week, workouts, exercises, weights, recalibration] = await Promise.all([
+  const [version, day, week, workouts, exercises, weights, recalibration, notes] =
+    await Promise.all([
     requireLatestVersion(userId),
     getDay(userId, today),
     weekStats(userId, profile, undefined, now),
@@ -379,6 +395,7 @@ export async function loadBriefingInputs(
       now,
     ),
     assess(userId, profile, now),
+    allNotes(userId),
   ])
   const targets = version.effective
   return {
@@ -404,5 +421,6 @@ export async function loadBriefingInputs(
       : null,
     weights,
     recalibration: recalibration.assessment,
+    notes,
   }
 }
