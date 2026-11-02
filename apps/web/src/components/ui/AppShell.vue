@@ -27,9 +27,10 @@ const showCentre = computed(() => Boolean(props.back && slots['header-centre']))
 const threeColumns = computed(() => showSwitch.value || showCentre.value)
 /**
  * A footer slot pins its content to the bottom in place of the tab bar and rides above the
- * on-screen keyboard where the browser lays the keyboard over the page (iOS).
+ * on-screen keyboard where the browser lays the keyboard over the page (iOS). The template
+ * reads `$slots.footer` directly: a slot that appears later (the coach's composer once AI is
+ * allowed) is not seen by a computed over `useSlots()`.
  */
-const hasFooter = computed(() => Boolean(slots.footer))
 const keyboardInset = useKeyboardInset()
 
 function goBack(): void {
@@ -90,7 +91,7 @@ function add(): void {
       class="mx-auto max-w-[480px] px-4"
       :style="{
         paddingTop: 'calc(3.5rem + env(safe-area-inset-top) + 1rem)',
-        paddingBottom: hasFooter
+        paddingBottom: $slots.footer
           ? `calc(5rem + max(env(safe-area-inset-bottom), ${keyboardInset}px) + 1rem)`
           : 'calc(5rem + env(safe-area-inset-bottom) + 1rem)',
       }"
@@ -99,7 +100,7 @@ function add(): void {
     </main>
 
     <div
-      v-if="hasFooter"
+      v-if="$slots.footer"
       class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg/90 backdrop-blur"
       :style="{ paddingBottom: `max(env(safe-area-inset-bottom), ${keyboardInset}px)` }"
     >
