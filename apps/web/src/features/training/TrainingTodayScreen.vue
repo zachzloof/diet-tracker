@@ -17,6 +17,7 @@ import DayStepper from '@/components/ui/DayStepper.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Icon from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
+import CoachButton from '@/features/coach/CoachButton.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { formatDay, formatDayShort } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
@@ -127,6 +128,9 @@ const failed = computed(() => workouts.isError.value && !workouts.hasData.value)
 
 <template>
   <AppShell title="Today">
+    <template #header-right>
+      <CoachButton />
+    </template>
     <DayStepper
       :label="dayLabel"
       :is-current="isToday"

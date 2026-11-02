@@ -48,6 +48,12 @@ const NAV = computed<NavItem[]>(() => [
   { name: 'profile', label: 'Profile', sub: profileSummary.value, icon: 'edit' },
   { name: 'targets', label: 'Targets', sub: targetsSummary.value, icon: 'target', accent: true },
   {
+    name: 'coach',
+    label: 'Coach',
+    sub: 'Ask about your food, targets and training',
+    icon: 'sparkles',
+  },
+  {
     name: 'progress',
     label: 'Progress',
     sub: 'Weight trend and the fortnightly plan check',

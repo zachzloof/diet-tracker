@@ -45,6 +45,7 @@ export type IconName =
   | 'shield'
   | 'utensils'
   | 'dumbbell'
+  | 'arrow-up'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -78,6 +79,7 @@ const PATHS: Record<IconName, string> = {
   bookmark: 'M6 3h12v18l-6-4-6 4z',
   pencil: 'M4 20h4L19 9a2 2 0 0 0-3-3L5 17v3z',
   droplet: 'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+  'arrow-up': 'M12 19V5M5 12l7-7 7 7',
   flame:
     'M12 3c1.5 3 5 5.5 5 10a5 5 0 0 1-10 0c0-1.7.6-3 1.5-4 .5 1.5 1.3 2.3 2.5 2.5C10.5 8.5 10 6 12 3z',
   award: 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM8.5 14L7 21l5-3 5 3-1.5-7',

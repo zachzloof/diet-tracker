@@ -1,0 +1,101 @@
+import {
+  coachEventSchema,
+  coachThreadResponseSchema,
+  coachThreadSchema,
+  coachThreadsResponseSchema,
+  type CoachEvent,
+  type CoachThread,
+  type CoachThreadResponse,
+  type CoachTurnResponse,
+} from '@diet-tracker/shared'
+import { z } from 'zod'
+import { ApiError, request, requestStream, requestVoid } from '@/lib/api'
+
+const createResponseSchema = z.object({ thread: coachThreadSchema })
+
+export interface StreamHandlers {
+  onEvent: (event: CoachEvent) => void
+  signal?: AbortSignal
+}
+
+/**
+ * `/api/v1/coach` (D41). A message answers as server-sent events read off a `fetch`
+ * body (`EventSource` cannot POST): `status` lines and text `delta`s as they arrive, then
+ * one `done` with the stored messages, or one `error`.
+ */
+export const coachApi = {
+  async threads(): Promise<CoachThread[]> {
+    const { threads } = await request('/coach/threads', coachThreadsResponseSchema)
+    return threads
+  },
+  async create(): Promise<CoachThread> {
+    const { thread } = await request('/coach/threads', createResponseSchema, { method: 'POST' })
+    return thread
+  },
+  get(id: string): Promise<CoachThreadResponse> {
+    return request(`/coach/threads/${id}`, coachThreadResponseSchema)
+  },
+  remove(id: string): Promise<void> {
+    return requestVoid(`/coach/threads/${id}`, { method: 'DELETE' })
+  },
+  async send(id: string, text: string, handlers: StreamHandlers): Promise<CoachTurnResponse> {
+    const res = await requestStream(`/coach/threads/${id}/messages`, {
+      method: 'POST',
+      body: { text },
+      signal: handlers.signal,
+    })
+    let done: CoachTurnResponse | null = null
+    for await (const event of readEvents(res)) {
+      handlers.onEvent(event)
+      if (event.event === 'done') done = event.data
+      if (event.event === 'error') throw new ApiError(503, 'ai_unavailable', event.data.message)
+    }
+    if (!done) throw new ApiError(0, 'network', 'The answer was cut off. Try again.')
+    return done
+  },
+}
+
+/** Parses `event:` / `data:` frames as they stream in. */
+async function* readEvents(res: Response): AsyncGenerator<CoachEvent> {
+  const body = res.body
+  if (!body) return
+  const reader = body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  try {
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      let split = buffer.indexOf('\n\n')
+      while (split !== -1) {
+        const frame = buffer.slice(0, split)
+        buffer = buffer.slice(split + 2)
+        const parsed = parseFrame(frame)
+        if (parsed) yield parsed
+        split = buffer.indexOf('\n\n')
+      }
+    }
+    const last = parseFrame(buffer)
+    if (last) yield last
+  } finally {
+    reader.releaseLock()
+  }
+}
+
+function parseFrame(frame: string): CoachEvent | null {
+  let event: string | undefined
+  const data: string[] = []
+  for (const rawLine of frame.split('\n')) {
+    const line = rawLine.replace(/\r$/, '')
+    if (line.startsWith('event:')) event = line.slice(6).trim()
+    else if (line.startsWith('data:')) data.push(line.slice(5).replace(/^ /, ''))
+  }
+  if (!event || data.length === 0) return null
+  try {
+    const parsed = coachEventSchema.safeParse({ event, data: JSON.parse(data.join('\n')) })
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
+}

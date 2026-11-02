@@ -65,7 +65,7 @@ export const foodEstimateSchema = z.object({
 })
 export type FoodEstimate = z.infer<typeof foodEstimateSchema>
 
-export const AI_PURPOSES = ['explain_plan', 'estimate', 'weekly_review'] as const
+export const AI_PURPOSES = ['explain_plan', 'estimate', 'weekly_review', 'coach'] as const
 export const aiPurposeSchema = z.enum(AI_PURPOSES)
 export type AiPurpose = z.infer<typeof aiPurposeSchema>
 

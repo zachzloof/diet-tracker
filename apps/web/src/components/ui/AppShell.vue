@@ -7,11 +7,14 @@ import { useUiStore } from '@/stores/ui'
 import IconButton from './IconButton.vue'
 import ModeToggle from './ModeToggle.vue'
 import TabBar from './TabBar.vue'
+import { useKeyboardInset } from './useKeyboardInset'
 
 const props = defineProps<{
   title: string
   /** Where "back" goes when this is a pushed detail screen and there is no history. */
   back?: RouteLocationRaw
+  /** A screen with its own bottom bar (the coach's composer) drops the tab bar. */
+  hideTabs?: boolean
 }>()
 
 const router = useRouter()
@@ -22,6 +25,12 @@ const showSwitch = computed(() => !props.back && available.value)
 /** A pushed screen may put its own pill in the middle (a session's Last / Best). */
 const showCentre = computed(() => Boolean(props.back && slots['header-centre']))
 const threeColumns = computed(() => showSwitch.value || showCentre.value)
+/**
+ * A footer slot pins its content to the bottom in place of the tab bar and rides above the
+ * on-screen keyboard where the browser lays the keyboard over the page (iOS).
+ */
+const hasFooter = computed(() => Boolean(slots.footer))
+const keyboardInset = useKeyboardInset()
 
 function goBack(): void {
   if (!props.back) return
@@ -81,13 +90,24 @@ function add(): void {
       class="mx-auto max-w-[480px] px-4"
       :style="{
         paddingTop: 'calc(3.5rem + env(safe-area-inset-top) + 1rem)',
-        paddingBottom: 'calc(5rem + env(safe-area-inset-bottom) + 1rem)',
+        paddingBottom: hasFooter
+          ? `calc(5rem + max(env(safe-area-inset-bottom), ${keyboardInset}px) + 1rem)`
+          : 'calc(5rem + env(safe-area-inset-bottom) + 1rem)',
       }"
     >
       <slot />
     </main>
 
-    <TabBar @add="add" />
+    <div
+      v-if="hasFooter"
+      class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg/90 backdrop-blur"
+      :style="{ paddingBottom: `max(env(safe-area-inset-bottom), ${keyboardInset}px)` }"
+    >
+      <div class="mx-auto max-w-[480px] px-4 py-2">
+        <slot name="footer" />
+      </div>
+    </div>
+    <TabBar v-else-if="!hideTabs" @add="add" />
     <QuickAddSheet />
   </div>
 </template>

@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_EXPORT_SCHEMA_VERSION,
   MAX_WORKOUTS_RANGE_DAYS,
   RETENTION_DAYS,
   accountExportSchema,
@@ -412,7 +413,7 @@ describe('retention and export', () => {
     const res = await send('GET', '/api/v1/account/export/json')
     expect(res.status).toBe(200)
     const data = accountExportSchema.parse(await res.json())
-    expect(data.app.schema).toBe(3)
+    expect(data.app.schema).toBe(ACCOUNT_EXPORT_SCHEMA_VERSION)
     expect(data.exercises).toEqual([created])
     expect(data.workouts).toEqual([saved])
   })

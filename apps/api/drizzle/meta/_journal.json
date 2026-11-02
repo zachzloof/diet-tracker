@@ -99,6 +99,13 @@
       "when": 1793445606038,
       "tag": "0013_energy_uncapped",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793628411540,
+      "tag": "0014_coach",
+      "breakpoints": true
     }
   ]
 }

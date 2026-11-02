@@ -6,6 +6,7 @@ import {
   type AccountExport,
 } from '@diet-tracker/shared'
 import { and, asc, eq, ne, sql } from 'drizzle-orm'
+import { allThreads } from '../ai/coach/threads-service.js'
 import { hashPassword, verifyPassword } from '../auth/password.js'
 import { toPublicUser } from '../auth/session-service.js'
 import { db } from '../db/client.js'
@@ -89,6 +90,7 @@ export async function exportAccount(user: User, now: Date = new Date()): Promise
     usage,
     customExercises,
     workoutDocs,
+    coachThreads,
   ] = await Promise.all([
     getProfile(user.id),
     db
@@ -129,6 +131,7 @@ export async function exportAccount(user: User, now: Date = new Date()): Promise
       .where(eq(exercises.userId, user.id))
       .orderBy(asc(exercises.createdAt)),
     allWorkouts(user.id),
+    allThreads(user.id),
   ])
   const ai = usage[0] ?? { calls: 0, inputTokens: 0, outputTokens: 0, webSearchCalls: 0 }
   return accountExportSchema.parse({
@@ -145,6 +148,7 @@ export async function exportAccount(user: User, now: Date = new Date()): Promise
     logEntries: entries.map(toWireEntry),
     dailySummaries: summaries.map((row) => toWireSummary(row, row.day)),
     weeklyReviews: reviews.map((row) => ({ isoWeek: row.isoWeek, ...row.review })),
+    coachThreads,
     aiUsage: ai,
   })
 }

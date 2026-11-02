@@ -1,4 +1,5 @@
 import {
+  COACH_UNAVAILABLE_TEXT,
   toValidationDetails,
   type ApiErrorBody,
   type ApiErrorCode,
@@ -45,6 +46,7 @@ export const AI_UNAVAILABLE_MESSAGES = {
   explain_plan: 'The explanation is unavailable right now. Your targets are not affected.',
   estimate: 'The estimator is unavailable right now. You can add this meal manually.',
   weekly_review: 'The weekly review is unavailable right now. Your numbers are not affected.',
+  coach: COACH_UNAVAILABLE_TEXT,
 } as const
 
 export const errors = {
@@ -67,6 +69,14 @@ export const errors = {
       429,
       'ai_cap_reached',
       `You've used today's ${cap} AI estimates. You can still add meals manually or from My foods; the cap resets at midnight.`,
+      { cap, used },
+    ),
+  /** D41: the coach's own daily cap, separate from the estimator's. */
+  coachCapReached: (cap: number, used: number) =>
+    new AppError(
+      429,
+      'ai_cap_reached',
+      `You've asked the coach ${cap} things today, which is the daily limit. It is back at midnight; Today and Week still have your numbers.`,
       { cap, used },
     ),
   aiUnclear: () =>

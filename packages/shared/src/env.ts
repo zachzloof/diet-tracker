@@ -52,6 +52,10 @@ export const apiEnvSchema = z.object({
    * fall back to estimates from memory alone.
    */
   AI_WEB_SEARCH: booleanFlag(true),
+  /** D41: the coach's model; defaults to `OPENAI_MODEL` so a cheaper tier can be tried for chat alone. */
+  OPENAI_COACH_MODEL: optionalString,
+  /** D41: coach turns per person per local day, separate from the estimator's call cap. */
+  AI_COACH_DAILY_TURN_CAP: z.coerce.number().int().positive().default(60),
 
   /** Absolute path of the built SPA. Defaults to apps/web/dist relative to the API. */
   WEB_DIST_DIR: optionalString,

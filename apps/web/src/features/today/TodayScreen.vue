@@ -21,6 +21,7 @@ import EntrySheet from '@/features/log/EntrySheet.vue'
 import MealGroupSheet from '@/features/log/MealGroupSheet.vue'
 import { groupMembers, type GroupRow } from '@/features/log/day-groups'
 import { useDayLog } from '@/features/log/useLog'
+import CoachButton from '@/features/coach/CoachButton.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import RecalibrationCard from '@/features/progress/RecalibrationCard.vue'
 import WeightCard from '@/features/progress/WeightCard.vue'
@@ -156,6 +157,9 @@ function retry(): void {
 
 <template>
   <AppShell title="Today">
+    <template #header-right>
+      <CoachButton />
+    </template>
     <DayStepper
       :label="dayLabel"
       :is-current="isToday"

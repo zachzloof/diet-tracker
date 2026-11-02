@@ -17,11 +17,12 @@ import { closeDb, db } from './client.js'
 import { foods, profiles, savedMeals, users } from './schema/index.js'
 import { SEED_FOODS, SEED_MEALS, SEED_USERS } from './seed-data.js'
 import { backdateTargets, seedEarlierWeek, seedWeights } from './seed-progress.js'
+import { seedWorkouts } from './seed-training.js'
 import { seedWeek } from './seed-weeks.js'
 
 /**
  * Creates Finn and Tess with their profiles, first target version, a few library foods, a
- * saved meal and a week of logged meals (slice 4). Idempotent: existing accounts, profiles,
+ * saved meal, a week of logged meals (slice 4) and a few gym sessions (slice 11a). Idempotent: existing accounts, profiles,
  * libraries, meals and logs are left alone, so re-running never overwrites a change you made
  * by hand in the app.
  */
@@ -88,6 +89,13 @@ async function seed(): Promise<void> {
     const weights = await seedWeights(user.id, email, profile.timezone)
     const backdated = await backdateTargets(user.id, profile.timezone)
     logger.info({ email, earlier, weights, backdated }, 'seed progress history')
+
+    // Slice 11a: a few gym sessions so the coach, the lift page and Gym Week have data.
+    const sessions = await seedWorkouts(user.id, email, profile.timezone)
+    logger.info(
+      { email, sessions },
+      sessions > 0 ? 'seed gym sessions' : 'seed gym sessions already present, left alone',
+    )
   }
 }
 

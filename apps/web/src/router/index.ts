@@ -51,6 +51,27 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/progress/ProgressScreen.vue'),
   },
   { path: '/you', name: 'you', component: () => import('@/features/you/YouScreen.vue') },
+  // The coach (D41) is shared by both halves, like You: no `mode`, so the tab bar stays put.
+  {
+    path: '/coach',
+    name: 'coach',
+    component: () => import('@/features/coach/CoachScreen.vue'),
+  },
+  {
+    path: '/coach/threads',
+    name: 'coach-threads',
+    component: () => import('@/features/coach/CoachThreadsScreen.vue'),
+  },
+  {
+    path: '/coach/new',
+    name: 'coach-new',
+    component: () => import('@/features/coach/CoachScreen.vue'),
+  },
+  {
+    path: '/coach/:id',
+    name: 'coach-thread',
+    component: () => import('@/features/coach/CoachScreen.vue'),
+  },
   {
     path: '/settings',
     name: 'settings',

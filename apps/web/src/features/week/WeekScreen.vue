@@ -12,6 +12,7 @@ import LineChart from '@/components/ui/LineChart.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import StatTile from '@/components/ui/StatTile.vue'
 import AiConsent from '@/features/ai/AiConsent.vue'
+import CoachButton from '@/features/coach/CoachButton.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { usePreferences } from '@/features/profile/usePreferences'
 import { useRegenerateReview, useWeekStats, useWeeklyReview } from '@/features/stats/useStats'
@@ -92,6 +93,9 @@ const todayIndex = computed(() => {
 
 <template>
   <AppShell title="Week">
+    <template #header-right>
+      <CoachButton />
+    </template>
     <DayStepper
       :label="rangeLabel"
       :is-current="isCurrent"

@@ -11,6 +11,7 @@ export interface PurgeResult {
   weeklyReviews: number
   aiCalls: number
   targetVersions: number
+  coachThreads: number
 }
 
 /**
@@ -18,7 +19,8 @@ export interface PurgeResult {
  * `RETENTION_DAYS` is deleted for everyone. The food log and its daily summaries, weigh-ins,
  * weekly reviews and AI usage rows go by their day. A target version goes only once a
  * newer version was already in force at the cutoff, so every day that is kept is still
- * scored against the targets it had. The account, the profile, the current targets and the
+ * scored against the targets it had. A coach thread goes by its last activity, messages with
+ * it (D41). The account, the profile, the current targets and the
  * saved foods and meals are not history and stay until the person deletes them. Workouts and
  * custom exercises are history but are kept on purpose (D36): a strength log is only useful
  * as a long series.
@@ -41,6 +43,7 @@ export async function purgeExpiredData(now: Date = new Date()): Promise<PurgeRes
       weightEntries: await count(sql`delete from weight_entries where day < ${cutoffDay}`),
       weeklyReviews: await count(sql`delete from weekly_reviews where week_end < ${cutoffDay}`),
       aiCalls: await count(sql`delete from ai_calls where created_at < ${cutoffInstant}`),
+      coachThreads: await count(sql`delete from coach_threads where updated_at < ${cutoffInstant}`),
       targetVersions: await count(sql`
         delete from target_versions old
         where old.effective_from < ${cutoffDay}

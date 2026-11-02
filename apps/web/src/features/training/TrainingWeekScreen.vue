@@ -17,6 +17,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import Icon from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import StatTile from '@/components/ui/StatTile.vue'
+import CoachButton from '@/features/coach/CoachButton.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { usePreferences } from '@/features/profile/usePreferences'
 import { useProfile } from '@/features/profile/useProfile'
@@ -129,6 +130,9 @@ const failed = computed(() => workouts.isError.value && !workouts.hasData.value)
 
 <template>
   <AppShell title="Week">
+    <template #header-right>
+      <CoachButton />
+    </template>
     <DayStepper
       :label="rangeLabel"
       :is-current="isCurrent"

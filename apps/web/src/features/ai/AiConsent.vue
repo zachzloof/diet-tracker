@@ -12,6 +12,8 @@ import { useAiConsentStore } from '@/stores/ai-consent'
 defineProps<{
   /** What the feature does, e.g. "Type what you ate and AI estimates the nutrients." */
   lead: string
+  /** What this feature sends on top of the usual summary (the coach: the log, workouts, weigh-ins). */
+  also?: string
 }>()
 
 const emit = defineEmits<{ navigate: [] }>()
@@ -27,8 +29,9 @@ const consent = useAiConsentStore()
     <p class="text-sm text-fg-muted">
       This uses AI from OpenAI, a separate company. When you use it, Minori sends OpenAI the food
       you describe, a summary of your profile (sex, age, height, weight, goal, activity, diet,
-      allergies and dislikes) and your targets and week's numbers. It never sends your email
-      address, and the requests are not kept to train AI models.
+      allergies and dislikes) and your targets and week's numbers.
+      <template v-if="also">{{ also }}</template>
+      It never sends your email address, and the requests are not kept to train AI models.
     </p>
     <p class="text-sm text-fg-muted">
       You can turn this off in Settings at any time.

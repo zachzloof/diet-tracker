@@ -5,6 +5,7 @@ import { cors } from 'hono/cors'
 import { requestId } from 'hono/request-id'
 import { secureHeaders } from 'hono/secure-headers'
 import { accountRoutes } from './account/routes.js'
+import { coachRoutes } from './ai/coach/routes.js'
 import { authRoutes } from './auth/routes.js'
 import { sessionMiddleware } from './auth/session-middleware.js'
 import { errors, handleError } from './errors.js'
@@ -76,6 +77,7 @@ export function createApp(): Hono<AppEnv> {
   app.route('/api/v1/exercises', exercisesRoutes)
   app.route('/api/v1/workouts', workoutsRoutes)
   app.route('/api/v1/account', accountRoutes)
+  app.route('/api/v1/coach', coachRoutes)
 
   // Unknown API paths get the JSON error format, never the SPA fallback.
   app.all('/api/*', () => {

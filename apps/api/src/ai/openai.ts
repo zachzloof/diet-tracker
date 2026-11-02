@@ -25,14 +25,14 @@ export function aiConfigured(): boolean {
   return typeof env.OPENAI_API_KEY === 'string' && env.OPENAI_API_KEY.length > 0
 }
 
-function getClient(purpose: AiPurpose): OpenAI {
+export function getClient(purpose: AiPurpose): OpenAI {
   if (!aiConfigured()) throw errors.aiUnavailable(AI_UNAVAILABLE_MESSAGES[purpose])
   client ??= new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: AI_TIMEOUT_MS, maxRetries: 0 })
   return client
 }
 
 /** Reasoning models take an effort hint; other models reject the parameter. */
-function reasoningOptions(
+export function reasoningOptions(
   model: string,
   effort: ReasoningEffort,
 ): { reasoning: { effort: ReasoningEffort } } | Record<never, never> {
@@ -93,7 +93,7 @@ export interface StructuredResult<T> {
   webSearchCalls: number
 }
 
-function isRetryable(error: unknown): boolean {
+export function isRetryable(error: unknown): boolean {
   if (error instanceof OpenAI.APIError) {
     const status = error.status ?? 0
     return status === 429 || status >= 500
@@ -103,7 +103,7 @@ function isRetryable(error: unknown): boolean {
   )
 }
 
-function describe(error: unknown): string {
+export function describeAiError(error: unknown): string {
   if (error instanceof OpenAI.APIError) return `${error.status ?? 'network'}: ${error.message}`
   if (error instanceof ZodError) {
     return `schema: ${error.issues
@@ -115,7 +115,7 @@ function describe(error: unknown): string {
   return String(error)
 }
 
-async function logCall(row: {
+export async function logCall(row: {
   userId: string | null
   purpose: AiPurpose
   model: string
@@ -228,7 +228,7 @@ export async function callStructured<T>(call: StructuredCall<T>): Promise<Struct
     } catch (error) {
       if (error instanceof Error && error.name === 'AppError') throw error
       const latencyMs = Math.round(performance.now() - start)
-      const described = describe(error).slice(0, 500)
+      const described = describeAiError(error).slice(0, 500)
       await logCall({
         userId: call.userId,
         purpose: call.purpose,

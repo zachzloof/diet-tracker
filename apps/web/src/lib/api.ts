@@ -39,6 +39,9 @@ export class ApiError extends Error {
 export interface RequestInit {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
+  /** What the caller can read; JSON unless it wants a stream. */
+  accept?: 'application/json' | 'text/event-stream'
+  signal?: AbortSignal
 }
 
 function offlineMessage(): string {
@@ -78,14 +81,16 @@ async function send(path: string, init: RequestInit): Promise<Response> {
     res = await fetch(`${BASE}${path}`, {
       method: init.method ?? 'GET',
       headers: {
-        accept: 'application/json',
+        accept: init.accept ?? 'application/json',
         ...(init.body !== undefined ? { 'content-type': 'application/json' } : {}),
         ...authHeaders(),
       },
       body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
       credentials: isNative ? 'omit' : 'same-origin',
+      signal: init.signal,
     })
-  } catch {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error
     throw new ApiError(0, 'network', offlineMessage())
   }
   if (!res.ok) {
@@ -112,6 +117,11 @@ export async function requestFile(path: string): Promise<{ text: string; filenam
   const res = await send(path, {})
   const named = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')
   return { text: await res.text(), filename: named?.[1] ?? 'minori-export.txt' }
+}
+
+/** For endpoints that answer with server-sent events: the raw response, errors already mapped. */
+export function requestStream(path: string, init: RequestInit = {}): Promise<Response> {
+  return send(path, { ...init, accept: 'text/event-stream' })
 }
 
 /** For endpoints that answer 204. */
