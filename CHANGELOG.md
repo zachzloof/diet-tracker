@@ -4,6 +4,13 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### The coach comes to you (2026-11-02, slice 11c)
+- One line at the top of Today, in both halves, says where you stand and what is left: "Protein is 40 g short with dinner to go: 110 of 150 g so far" on the food side, "2 of 4 sessions this week; last was Legs on Fri: barbell back squat 105 kg × 5" in the gym. The numbers are the ones on the screen below it; the coach's model only puts them into words, once a day per half, and the app keeps the line for the day. With nothing logged yet the line invites the first entry instead ("Nothing logged yet. Log breakfast and I'll tell you where you stand."), and changes as soon as you log.
+- Tap the line and the coach opens with it as the first thing it said, ready for your reply. It needs AI features allowed (the same permission as the coach) and a connection.
+- The weekly review is now written from the same briefing the coach reads, so the review and the coach quote the same numbers and the same "met" and "not met" days.
+- For the owner only: an AI costs row under You opens a view of every OpenAI call in the last 30 days (calls, failures, tokens in and out, web searches) by purpose and by person.
+- API: `coach_briefs` (migration 0016), `POST /coach/brief`, `POST /coach/threads` with `{ brief }`, `GET /ai/costs` behind `OWNER_EMAIL`, purpose `brief` in `ai_calls`, `owner` on `/me`, `coachBriefs` in the export (schema 6), `pnpm ai:smoke:brief`. Shared: `packages/shared/src/coach/brief.ts`, `packages/shared/src/ai/costs.ts`. Web: `features/coach/BriefCard.vue`, `features/you/CostsScreen.vue`.
+
 ### The coach drafts, you confirm (2026-11-02, slice 11b)
 - Ask the coach to do something and it drafts a card under its answer instead of doing it: "Log 2 eggs and toast for breakfast" gives the same review card as the Log sheet (tap an item to fix it, pick the meal and day, Add to meals), and "Add to breakfast" logs it; "Should I drop my calories by 200?" gives a card with the number now, the number after, every target the engine recomputes from it and the safe minimum, and Apply pins it so Targets reads "Set by you"; "Plan me an upper body session like last week" gives the session with last time's sets beside each planned one, and Start opens it filled in; "Save my oats as a meal" gives the meal with its ingredients and totals, and Save keeps it; "Remember that my left knee is sore" gives a note, and Remember keeps it.
 - Nothing happens until you tap. Dismiss leaves the card as it was; a card you acted on reads Logged, Applied, Started, Saved or Remembered, and stays that way when you come back to the chat. The coach is told to describe the card and never to claim it did the thing.
