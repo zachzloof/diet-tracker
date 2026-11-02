@@ -1,4 +1,6 @@
 import {
+  aiCostsResponseSchema,
+  coachBriefResponseSchema,
   coachCardStateResponseSchema,
   coachEventSchema,
   coachNoteResponseSchema,
@@ -6,6 +8,9 @@ import {
   coachThreadResponseSchema,
   coachThreadSchema,
   coachThreadsResponseSchema,
+  type AiCostsResponse,
+  type CoachBrief,
+  type CoachBriefHalf,
   type CoachCardStateRequest,
   type CoachEvent,
   type CoachMessage,
@@ -36,9 +41,25 @@ export const coachApi = {
     const { threads } = await request('/coach/threads', coachThreadsResponseSchema)
     return threads
   },
-  async create(): Promise<CoachThread> {
-    const { thread } = await request('/coach/threads', createResponseSchema, { method: 'POST' })
+  /** A new chat; with `brief`, one that opens with that half's brief as its first line (slice 11c). */
+  async create(brief?: CoachBriefHalf): Promise<CoachThread> {
+    const { thread } = await request('/coach/threads', createResponseSchema, {
+      method: 'POST',
+      ...(brief ? { body: { brief } } : {}),
+    })
     return thread
+  },
+  /** Today's one-line brief for a half, written once a day (slice 11c). */
+  async brief(half: CoachBriefHalf): Promise<CoachBrief> {
+    const { brief } = await request('/coach/brief', coachBriefResponseSchema, {
+      method: 'POST',
+      body: { half },
+    })
+    return brief
+  },
+  /** The owner's cost view; 404 for anyone else. */
+  costs(): Promise<AiCostsResponse> {
+    return request('/ai/costs', aiCostsResponseSchema)
   },
   get(id: string): Promise<CoachThreadResponse> {
     return request(`/coach/threads/${id}`, coachThreadResponseSchema)

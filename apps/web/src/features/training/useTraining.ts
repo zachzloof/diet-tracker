@@ -9,6 +9,7 @@ import {
   workoutKey,
   workoutsRangeKey,
 } from './keys'
+import { COACH_BRIEF_KEY } from '@/stores/coach'
 
 export { EXERCISES_KEY, WORKOUTS_KEY }
 
@@ -128,6 +129,7 @@ export function useDeleteWorkout() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: WORKOUTS_KEY })
       void queryClient.invalidateQueries({ queryKey: EXERCISES_KEY })
+      void queryClient.invalidateQueries({ queryKey: COACH_BRIEF_KEY })
     },
   })
 }

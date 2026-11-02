@@ -30,7 +30,10 @@ import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_OPERATOR, LEGAL_UPDATED } from './
       <li>Your daily targets and their history.</li>
       <li>Everything you log: meals, foods, water, weigh-ins and notes.</li>
       <li>Your saved foods and meals, and the AI's weekly reviews.</li>
-      <li>Your chats with the coach: what you asked, what it answered and what it looked at.</li>
+      <li>
+        Your chats with the coach: what you asked, what it answered and what it looked at. The
+        one-line daily brief at the top of Today, once it has been written.
+      </li>
       <li>
         For each AI request: which model answered, how many tokens it used, how long it took and
         whether it worked. Not the text.
@@ -54,9 +57,9 @@ import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_OPERATOR, LEGAL_UPDATED } from './
     <h2>How long we keep it</h2>
     <ul>
       <li>
-        Your food log, daily totals, weigh-ins, weekly reviews, coach chats, the AI usage records
-        and targets that have since been replaced are deleted automatically once they are more than
-        six months old. You can delete a chat yourself at any time.
+        Your food log, daily totals, weigh-ins, weekly reviews, coach chats, daily briefs, the AI
+        usage records and targets that have since been replaced are deleted automatically once they
+        are more than six months old. You can delete a chat yourself at any time.
       </li>
       <li>
         Your account, profile, current targets, saved foods and meals, and your workouts and
@@ -69,16 +72,16 @@ import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_OPERATOR, LEGAL_UPDATED } from './
     <p>
       The AI features are off until you allow them, and you can turn them off again in
       <RouterLink :to="{ name: 'settings' }">Settings</RouterLink>. Once allowed, when you type what
-      you ate, open your plan's explanation, open the weekly review or ask the coach, the app sends
-      a request to OpenAI, a separate company that provides the AI model. The request contains the
-      text you typed, a summary of your profile (sex, age, height, weight, goal, activity, diet
-      pattern, allergies and dislikes) and your targets or your week's numbers. The coach also sends
-      your chat so far, today's and this week's numbers, this week's gym sessions, your recent
-      weigh-ins, and, when it looks something up for you, the food you logged on the days it reads,
-      your sessions, your saved foods and meals. It never contains your email address or any account
-      identifier. Requests are sent with storage switched off, so OpenAI does not keep them to train
-      models. For a named product the AI may search the web for the label; the search query is the
-      product name, nothing else.
+      you ate, open your plan's explanation, open the weekly review, open Today (for the one-line
+      brief, once a day per half) or ask the coach, the app sends a request to OpenAI, a separate
+      company that provides the AI model. The request contains the text you typed, a summary of your
+      profile (sex, age, height, weight, goal, activity, diet pattern, allergies and dislikes) and
+      your targets or your week's numbers. The coach also sends your chat so far, today's and this
+      week's numbers, this week's gym sessions, your recent weigh-ins, and, when it looks something
+      up for you, the food you logged on the days it reads, your sessions, your saved foods and
+      meals. It never contains your email address or any account identifier. Requests are sent with
+      storage switched off, so OpenAI does not keep them to train models. For a named product the AI
+      may search the web for the label; the search query is the product name, nothing else.
     </p>
 
     <h2>On your phone</h2>

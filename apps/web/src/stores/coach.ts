@@ -1,4 +1,5 @@
 import type {
+  CoachBriefHalf,
   CoachCard,
   CoachCardState,
   CoachMessage,
@@ -15,6 +16,11 @@ export const COACH_KEY = ['coach'] as const
 export const COACH_THREADS_KEY = ['coach', 'threads'] as const
 export const coachThreadKey = (id: string) => ['coach', 'thread', id] as const
 export const COACH_NOTES_KEY = ['coach', 'notes'] as const
+/** Today's brief per half (slice 11c); dropped whenever the log or a session changes. */
+export const COACH_BRIEF_KEY = ['coach', 'brief'] as const
+/** Keyed by the person's local day too, so a cached line never outlives its day on screen. */
+export const coachBriefKey = (half: CoachBriefHalf, day: string) =>
+  ['coach', 'brief', half, day] as const
 
 /** The turn in flight: what the person asked and what has streamed back so far. */
 export interface PendingTurn {

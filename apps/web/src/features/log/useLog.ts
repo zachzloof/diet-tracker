@@ -19,6 +19,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/v
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { MEALS_KEY } from '@/features/meals/keys'
 import { STATS_KEY } from '@/features/stats/useStats'
+import { COACH_BRIEF_KEY } from '@/stores/coach'
 import { ApiError } from '@/lib/api'
 import { useQueueStore } from '@/stores/queue'
 import { foodsApi, logApi } from './api'
@@ -86,6 +87,7 @@ function applySummaries(
   return Promise.all([
     ...summaries.map((summary) => queryClient.invalidateQueries({ queryKey: dayKey(summary.day) })),
     queryClient.invalidateQueries({ queryKey: STATS_KEY }),
+    queryClient.invalidateQueries({ queryKey: COACH_BRIEF_KEY }),
   ])
 }
 
@@ -139,6 +141,7 @@ export function useCreateEntries() {
       )
       await queryClient.invalidateQueries({ queryKey: dayKey(input.day) })
       await queryClient.invalidateQueries({ queryKey: STATS_KEY })
+      await queryClient.invalidateQueries({ queryKey: COACH_BRIEF_KEY })
       if (result.foodsSaved > 0 || input.entries.some((e) => e.foodId)) {
         await queryClient.invalidateQueries({ queryKey: FOODS_KEY })
       }

@@ -1,7 +1,14 @@
-import type { CoachNote, CoachThread, CoachThreadResponse } from '@diet-tracker/shared'
+import type {
+  AiCostsResponse,
+  CoachBrief,
+  CoachBriefHalf,
+  CoachNote,
+  CoachThread,
+  CoachThreadResponse,
+} from '@diet-tracker/shared'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
-import { COACH_NOTES_KEY, COACH_THREADS_KEY, coachThreadKey } from '@/stores/coach'
+import { COACH_NOTES_KEY, COACH_THREADS_KEY, coachBriefKey, coachThreadKey } from '@/stores/coach'
 import { coachApi } from './api'
 
 export function threadsQueryOptions() {
@@ -99,4 +106,61 @@ export function useDeleteThread() {
       return queryClient.invalidateQueries({ queryKey: COACH_THREADS_KEY })
     },
   })
+}
+
+/**
+ * Today's one-line brief for a half (slice 11c). The server caches it for the day once
+ * the model has written it, so refetching is cheap; the key is dropped by log and session
+ * writes so an empty day's invitation gives way to the real line as soon as something is
+ * logged. Runs only once AI features are allowed.
+ */
+export function useCoachBrief(
+  half: MaybeRefOrGetter<CoachBriefHalf>,
+  day: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  const query = useQuery(
+    computed(() => ({
+      queryKey: coachBriefKey(toValue(half), toValue(day)),
+      queryFn: (): Promise<CoachBrief> => coachApi.brief(toValue(half)),
+      enabled: toValue(enabled),
+      staleTime: 60_000,
+      retry: false,
+    })),
+  )
+  return {
+    brief: computed(() => query.data.value ?? null),
+    isLoading: computed(() => query.isPending.value && query.fetchStatus.value === 'fetching'),
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+  }
+}
+
+/** Opens (or reopens) the chat that starts with a half's brief and returns the thread. */
+export function useOpenBrief() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (half: CoachBriefHalf) => coachApi.create(half),
+    onSuccess: (thread) => queryClient.removeQueries({ queryKey: coachThreadKey(thread.id) }),
+  })
+}
+
+/** The owner's AI cost view (slice 11c). */
+export function useAiCosts() {
+  const query = useQuery(
+    queryOptions({
+      queryKey: ['ai', 'costs'] as const,
+      queryFn: (): Promise<AiCostsResponse> => coachApi.costs(),
+      staleTime: 60_000,
+      retry: false,
+    }),
+  )
+  return {
+    data: computed(() => query.data.value ?? null),
+    isLoading: query.isPending,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+  }
 }

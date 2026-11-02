@@ -17,6 +17,7 @@ import DayStepper from '@/components/ui/DayStepper.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Icon from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
+import BriefCard from '@/features/coach/BriefCard.vue'
 import CoachButton from '@/features/coach/CoachButton.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { formatDay, formatDayShort } from '@/lib/format'
@@ -177,6 +178,8 @@ const failed = computed(() => workouts.isError.value && !workouts.hasData.value)
           {{ summaryLine ?? (isToday ? 'Rest day so far.' : 'No session logged.') }}
         </p>
       </div>
+
+      <BriefCard v-if="isToday" half="training" />
 
       <p
         v-if="drafts.pending.length > 0"

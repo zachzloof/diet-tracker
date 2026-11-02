@@ -51,6 +51,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/progress/ProgressScreen.vue'),
   },
   { path: '/you', name: 'you', component: () => import('@/features/you/YouScreen.vue') },
+  // The owner's AI cost view (slice 11c); the API answers 404 for anyone else.
+  {
+    path: '/you/costs',
+    name: 'ai-costs',
+    component: () => import('@/features/you/CostsScreen.vue'),
+  },
   // The coach (D41) is shared by both halves, like You: no `mode`, so the tab bar stays put.
   {
     path: '/coach',

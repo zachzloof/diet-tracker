@@ -66,6 +66,17 @@ const NAV = computed<NavItem[]>(() => [
     sub: 'Preferences, gym on or off, theme, units, reminders, export',
     icon: 'settings',
   },
+  // Only the account named by OWNER_EMAIL (slice 11c).
+  ...(session.user.value?.owner
+    ? [
+        {
+          name: 'ai-costs',
+          label: 'AI costs',
+          sub: 'Calls, tokens and searches by person, last 30 days',
+          icon: 'trending-up' as const,
+        },
+      ]
+    : []),
 ])
 </script>
 

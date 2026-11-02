@@ -21,6 +21,7 @@ import EntrySheet from '@/features/log/EntrySheet.vue'
 import MealGroupSheet from '@/features/log/MealGroupSheet.vue'
 import { groupMembers, type GroupRow } from '@/features/log/day-groups'
 import { useDayLog } from '@/features/log/useLog'
+import BriefCard from '@/features/coach/BriefCard.vue'
 import CoachButton from '@/features/coach/CoachButton.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import RecalibrationCard from '@/features/progress/RecalibrationCard.vue'
@@ -206,6 +207,7 @@ function retry(): void {
           :is-today="isToday"
         />
       </div>
+      <BriefCard v-if="isToday" half="diet" />
       <InstallHint v-if="isToday" />
 
       <p

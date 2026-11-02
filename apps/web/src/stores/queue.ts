@@ -11,6 +11,7 @@ import { logApi } from '@/features/log/api'
 import { FOODS_KEY, dayKey } from '@/features/log/keys'
 import { MEALS_KEY } from '@/features/meals/keys'
 import { STATS_KEY } from '@/features/stats/useStats'
+import { COACH_BRIEF_KEY } from '@/stores/coach'
 import { ApiError } from '@/lib/api'
 import { queryClient } from '@/lib/query-client'
 import { useUiStore } from './ui'
@@ -201,6 +202,7 @@ export const useQueueStore = defineStore('queue', () => {
       await Promise.all([
         ...[...touched].map((day) => queryClient.invalidateQueries({ queryKey: dayKey(day) })),
         queryClient.invalidateQueries({ queryKey: STATS_KEY }),
+        queryClient.invalidateQueries({ queryKey: COACH_BRIEF_KEY }),
         queryClient.invalidateQueries({ queryKey: FOODS_KEY }),
         queryClient.invalidateQueries({ queryKey: MEALS_KEY }),
       ])

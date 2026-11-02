@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { workoutsApi } from '@/features/training/api'
 import { EXERCISES_KEY, WORKOUTS_KEY, workoutKey } from '@/features/training/keys'
+import { COACH_BRIEF_KEY } from '@/stores/coach'
 import { ApiError } from '@/lib/api'
 import { queryClient } from '@/lib/query-client'
 
@@ -175,6 +176,7 @@ export const useWorkoutDraftStore = defineStore('workout-draft', () => {
       queryClient.setQueryData(workoutKey(id), workout)
       void queryClient.invalidateQueries({ queryKey: WORKOUTS_KEY })
       void queryClient.invalidateQueries({ queryKey: EXERCISES_KEY })
+      void queryClient.invalidateQueries({ queryKey: COACH_BRIEF_KEY })
       return true
     } catch (error) {
       const current = drafts.value[id]
