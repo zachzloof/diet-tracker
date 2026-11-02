@@ -24,6 +24,8 @@ Migrations run before the server on every deploy so schema and code cannot disag
 | OPENAI_MODEL | e.g. `gpt-5`; changing it needs no code change |
 | AI_DAILY_CALL_CAP | per-user daily OpenAI call cap; default 150 |
 | AI_WEB_SEARCH | `true` (default) lets the estimator read a named product's label with OpenAI's web search tool, billed per search (D16); `false` switches it off without a deploy |
+| OPENAI_COACH_MODEL | Optional. The coach's model (D41); unset, it uses `OPENAI_MODEL`. Set it to try a cheaper tier for chat without touching estimation |
+| AI_COACH_DAILY_TURN_CAP | Coach turns per person per local day; default 60. Separate from `AI_DAILY_CALL_CAP` so a long chat never blocks logging |
 | NODE_ENV / LOG_LEVEL | `production` / `info` |
 | WEB_DIST_DIR | Optional. Absolute path of the built SPA; the Dockerfile sets `/app/public`. Unset locally (the API finds `apps/web/dist`) |
 

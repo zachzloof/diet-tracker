@@ -4,6 +4,14 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### The coach (2026-11-02, slice 11a)
+- A sparkles button on Today and Week in both halves, and a Coach row under You, open `/coach`: one place to ask anything about your food, targets and training. The coach knows what the app knows (today so far, this week, your targets and why, this week's sessions and week on week, your weight trend, the plan check, the gaps) and answers in plain words with your numbers.
+- The first time it shows the AI permission card, which now also says the coach sends the food log for the days it looks at, your workouts and your weigh-ins. Allow it once; Settings turns it off again and the card comes back.
+- Answers stream in as they are written. When the coach looks something up ("Looking at your last 5 squat sessions", "Looking at yesterday") the line shows above the answer and stays there, so you can tell data from opinion. It can read any day, any week, a month, a lift's history, your weigh-ins, your targets' history, My foods, your meals, the exercise list and the weekly review. It cannot log, change a target or plan a session yet (that is the next part); it says so and points at the screen.
+- Chats are kept: the clock icon lists them, newest first, with a bin to delete one; New chat starts another. A chat holds 40 questions, and the coach answers 60 questions a day per person. Offline, the box says "The coach needs a connection." If the coach fails, your question stays with a Try again.
+- Chats live in your account like everything else: in the export, deleted with the account, and dropped after six months like the food log.
+- API: `coach_threads` and `coach_messages` (migration 0014), `GET/POST /api/v1/coach/threads`, `GET/DELETE /coach/threads/:id`, `POST /coach/threads/:id/messages` (server-sent events, or JSON with `?stream=false`); `OPENAI_COACH_MODEL` and `AI_COACH_DAILY_TURN_CAP` in the env; purpose `coach` in `ai_calls`, one row per model round; `pnpm ai:smoke:coach`; the seed now gives Finn and Tess a few gym sessions. Shared: `packages/shared/src/coach`. Web: `features/coach`, `stores/coach.ts`, `AppShell` gains a `footer` slot and `hide-tabs`.
+
 ### Uncapped energy (2026-10-31)
 - The energy target can be uncapped: going over never counts as "Over" and never costs the day. It is met from 95% of the target up, close from 90%, short below. The number itself, and the macros built from it, do not change.
 - Where: tap the energy card under Targets and flip the Uncapped switch (the card then says "Uncapped", or "Set by you · Uncapped" with your own number); the Profile form has the same switch under Goal; onboarding offers it on the pace step when the goal is Gain muscle, off to start, and the review row says "uncapped".

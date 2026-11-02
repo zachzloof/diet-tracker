@@ -33,15 +33,15 @@ Rendered as labelled lines, not JSON, in the system prompt (lines cost fewer tok
 | `get_targets` | `{}` | every target with reason and pin, the version history (dates and what changed) | `targets-service` |
 | `get_gym_week` | `{ week_end }` | sessions (title, day, sets, kg, minutes), week totals, week on week per lift | `workouts-service.listWorkouts`, `compareWeeks` |
 | `get_workout` | `{ id }` or `{ day }` | the session document: exercises, sets (weight, reps, time, distance), notes, feel | `workouts-service.getWorkout` |
-| `get_lift_history` | `{ exercise_id \| exercise_name, sessions: 1..20 }` | best set per session on the person's basis, best ever, latest, estimated trend | `workouts-service`, `bestSetBy` |
-| `get_weight_history` | `{ days: 7..183 }` | weigh-ins, trend per week, change | `weight-service.listWeights`, `weightTrend` |
+| `get_lift_history` | `{ exercise_id \| exercise_name, sessions: 1..20 (null = 5) }` | the exercise matched by id or by a name fragment (recently used first, exact name wins, other matches listed), best set per session on the person's basis (`liftMetric`, as the lift page), best, latest, the change first to last in the window | `exercises-service.exerciseHistory`, `bestSetBy` |
+| `get_weight_history` | `{ days: 7..183 (null = 28) }` | weigh-ins (last 40 points), the seven-day trend, rate in kg a week, change, goal weight, expected pace | `weight-service.listWeights`, `weightTrend`, `weightRate` |
 | `get_recalibration` | `{}` | the assessment: enough data?, proposal, reasons | `recalibration-service.assess` |
 | `search_my_foods` | `{ query }` | up to 20 verified foods: name, serving, kcal, protein per serving | `foods-service` |
 | `search_meals` | `{ query }` | up to 20 saved meals: name, items, totals | `saved-meals-service` |
 | `list_exercises` | `{ query \| muscle_group }` | catalogue and own exercises | `exercises-service` |
 | `get_weekly_review` | `{ week_end }` | the cached AI review if one exists (never generates one) | `weekly_reviews` |
 
-Result caps: 20 entries, 20 sessions, 20 foods; numbers rounded as the screens round them; units in labels; `{ empty: true, reason }` when there is nothing.
+Result caps: 20 entries, 20 sessions, 20 foods, 20 meals, 30 exercises, 40 weigh-in points, 12,000 characters per output; numbers rounded as the screens round them (whole kcal and grams, one decimal on kg); units in labels; `{ empty: true, reason }` when there is nothing, for a future day, for another person's id and for a name that matches no exercise. Every argument with a default is `| null` (strict tools): `week_end: null` is the week ending today, `month: null` this month.
 
 ## Draft tools (return cards; nothing is written)
 
@@ -58,13 +58,27 @@ Card schemas are zod in `packages/shared/src/coach/cards.ts`; the client renders
 ## Threads and messages
 
 ```
-coach_threads   { id uuid v7, user_id, title (first message, trimmed), created_at, updated_at, turns int }
-coach_messages  { id, thread_id, role 'user' | 'assistant', text, cards jsonb, tool_trail jsonb
-                  [{ name, arguments, summary, ms }], ai_call_ids uuid[], error text | null,
-                  replay jsonb (the exact Responses output items of the assistant turn, incl. reasoning), created_at }
+coach_threads   { id uuid v7, user_id, title (first message, cut to 60 chars), turns int (user messages), created_at, updated_at }
+coach_messages  { id, user_id (repeated for the cap count and scoping), thread_id, role 'user' | 'assistant', text,
+                  cards jsonb (empty until 11b), tool_trail jsonb [{ name, arguments, summary, ms, ok }],
+                  ai_call_ids uuid[], error text | null (the failure, text then holds the failure copy), created_at }
 coach_notes     { id, user_id, text, created_at }   // phase 2
 ```
-Retention: `coach_threads` by `updated_at` older than `RETENTION_DAYS` (cascade to messages); notes kept until deleted. Export: both tables as JSON (D24). Indexes: `(user_id, updated_at)`, `(thread_id, created_at)`.
+There is no `replay` column: earlier turns go back to the model as plain messages (SKILL.md, "State"). Retention: `coach_threads` by `updated_at` older than `RETENTION_DAYS` (cascade to messages); notes kept until deleted. Export: `coachThreads` (each thread with its messages, schema 4; D24). Indexes: `(user_id, updated_at)`, `(thread_id, created_at)`, `(user_id, created_at)` on messages. The list hides threads with `turns = 0` (created, nothing sent) and shows at most 50.
+
+## Routes
+
+| Route | Answer |
+|---|---|
+| `GET /api/v1/coach/threads` | `{ threads }`, newest activity first |
+| `POST /api/v1/coach/threads` | 201 `{ thread }` (empty; the web creates one on the first send) |
+| `GET /api/v1/coach/threads/:id` | `{ thread, messages }` oldest first; 404 for another person's |
+| `DELETE /api/v1/coach/threads/:id` | 204 |
+| `POST /api/v1/coach/threads/:id/messages` `{ text }` | SSE `status*`, `delta*`, `done`; `?stream=false` → `CoachTurnResponse` JSON |
+
+## Status lines (what the person sees while a tool runs; kept as `tool_trail.summary`)
+
+`get_day_food` "Looking at yesterday" / "Looking at Tue 27 Oct"; `get_week_food` "Looking at this week" / "Looking at the week ending ..."; `get_month_food` "Looking at October 2026"; `get_targets` "Checking your targets"; `get_gym_week` "Looking at this week's sessions"; `get_workout` "Opening that session" / "Looking at yesterday's session"; `get_lift_history` "Looking at your last 5 squat sessions"; `get_weight_history` "Looking at your last 28 days of weigh-ins"; `get_recalibration` "Checking the plan check"; `search_my_foods` "Searching My foods for "...""; `search_meals` "Looking at your meals"; `list_exercises` "Looking through exercises"; `get_weekly_review` "Reading the weekly review".
 
 ## Responses API mechanics (checked 2026-11-01 against the installed SDK 7.23.0 and developers.openai.com)
 

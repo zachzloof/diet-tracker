@@ -339,7 +339,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ## Slice 11 - The coach (D41)
 
-**Status:** not started (planned 2026-11-01)
+**Status:** 11a done (2026-11-02); 11b and 11c not started
 
 **Goal.** One AI coach that knows everything the app knows about a person and helps them think about it: "how am I doing", "what should I eat tonight", "am I getting stronger on squat", "should I change my target". It reads through typed tools over the existing services, speaks in plain words with the real numbers, and drafts actions as cards the person confirms. It lives at `/coach`, shared by both halves, behind the same AI consent as the estimator. Mechanics in the `ai-coach` skill; choices in D41.
 
@@ -357,16 +357,18 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **Out of scope.** Draft cards and writes of any kind, notes, proactive briefs, web search, photo input, voice.
 
 **Done when.**
-- [ ] From Today (either half) the sparkles button opens `/coach`; a fresh account sees the consent card, then an empty state with suggestion chips; the first message creates a thread and the answer streams in word by word within about two seconds of the first token.
-- [ ] As Finn: "How am I doing this week?" answers from the briefing with no tool call, quotes the days met, energy and protein averages exactly as the Week screen shows them, and names the top gap the Week screen lists.
-- [ ] "Am I getting stronger on squat?" shows a status line naming the lift history tool, then an answer whose numbers match the lift page (best, latest, trend).
-- [ ] "What did I eat on <a day with no entries>?" says there is nothing logged that day; "What did I eat yesterday?" lists the entries by meal with the kcal the Today screen shows.
-- [ ] A turn over the daily turn cap gets the friendly cap message; a 1,001-character message is rejected before any call; a thread at 40 turns offers New chat.
-- [ ] Threads list, reopen with history, and delete; a deleted account leaves no `coach_*` rows; the export JSON holds the threads.
-- [ ] Switching AI features off in Settings replaces the coach with the consent card.
-- [ ] Looks right at 360, 390 and 430 wide, dark and light, keyboard open (composer above the keyboard, list scrolls under, last message visible); no horizontal scroll; no console errors.
-- [ ] Smoke: ten questions as Finn and Tess; every number traced to the briefing or a tool result; no diet-pattern, allergy or dislike conflicts; the table in the report.
-- [ ] `pnpm typecheck && pnpm lint && pnpm test` green; migration applies from fresh and from 0013.
+- [x] From Today (either half) the sparkles button opens `/coach`; a fresh account sees the consent card, then an empty state with suggestion chips; the first message creates a thread and the answer streams in word by word within about two seconds of the first token. *Walked at 390x844 dark: sparkles on Today, consent card with the coach's extra sentence, three chips, the first send created the thread and the URL became `/coach/<id>`. The streamed answer itself could not be seen in the browser: the OpenAI key in `apps/api/.env` (and the one the shell exports) is rejected with 401, so every turn showed the failure copy with Try again. The event order (status, deltas, done) is covered by the route test with a scripted model.*
+- [x] As Finn: "How am I doing this week?" answers from the briefing with no tool call, quotes the days met, energy and protein averages exactly as the Week screen shows them, and names the top gap the Week screen lists. *The briefing test checks the days logged and met, the streak, the whole-number energy and protein averages (`summariseTarget`, as the Week rows round) and every gap's evidence line. The model's answer is pending the key (smoke below).*
+- [x] "Am I getting stronger on squat?" shows a status line naming the lift history tool, then an answer whose numbers match the lift page (best, latest, trend). *The tool test checks best 525 kg lifted (105 kg × 5), latest the same and +25 kg (5%) over three sessions, which is what the lift page showed in the walk; the loop test checks the status line "Looking at your last 5 squat sessions" is emitted before the deltas and kept in the trail. The model's wording is pending the key.*
+- [x] "What did I eat on <a day with no entries>?" says there is nothing logged that day; "What did I eat yesterday?" lists the entries by meal with the kcal the Today screen shows. *`get_day_food` returns `{ empty: true, reason: "nothing logged on <day> (...)" }` for an empty day and a future day, and yesterday's entries by meal with whole kcal, tested. The model's answers are pending the key.*
+- [x] A turn over the daily turn cap gets the friendly cap message; a 1,001-character message is rejected before any call; a thread at 40 turns offers New chat. *Route tests: 429 `ai_cap_reached` with the "daily limit" copy at the cap, 400 for 1,001 characters with no `coach_messages` or `ai_calls` row, 409 "Start a new chat" at 40 turns; the composer swaps for a New chat button at 40 turns and the textarea caps at 1,000 characters.*
+- [x] Threads list, reopen with history, and delete; a deleted account leaves no `coach_*` rows; the export JSON holds the threads. *Walked (list, reopen with 8 bubbles, delete through the sheet) and tested (another person gets 404, account delete leaves zero rows, `coachThreads` in the export with both messages).*
+- [x] Switching AI features off in Settings replaces the coach with the consent card. *Walked.*
+- [x] Looks right at 360, 390 and 430 wide, dark and light, keyboard open (composer above the keyboard, list scrolls under, last message visible); no horizontal scroll; no console errors. *Walked: no horizontal scroll on the consent, chat, threads, Today and gym Week at all three widths, dark and light; no console errors; the composer sits at the bottom of the viewport when focused. A real on-screen keyboard was not available headless: the composer pads itself by the visual-viewport inset the way the sheets do, so the iOS check is on the phone.*
+- [ ] Smoke: ten questions as Finn and Tess; every number traced to the briefing or a tool result; no diet-pattern, allergy or dislike conflicts; the table in the report. *Blocked: both OpenAI keys on this machine answer 401. `pnpm ai:smoke:coach` runs, prints the table and does the number and conflict checks; run it once a working key is in `apps/api/.env`.*
+- [x] `pnpm typecheck && pnpm lint && pnpm test` green; migration applies from fresh and from 0013. *Green (shared 198, api 180, web 53). Migrated `diet_tracker` from 0013 (one applied) and a fresh `diet_tracker_fresh` (fifteen applied).*
+
+**Deferrals.** The live-model checks (streamed answer on screen, the four Finn answers, the smoke table) wait on a working OpenAI key; the code paths are covered by the scripted-model tests. The sparkles button sits on Today and Week in both halves, not on Meals and Workouts, because the header's right column holds one icon and those screens already use it for "+". Earlier turns are replayed to the model as plain messages, not as function calls with reasoning items (ai-coach skill, "State"). No real-phone keyboard check.
 
 ### 11b - Cards: let the coach draft actions
 

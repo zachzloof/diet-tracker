@@ -683,4 +683,4 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** A throughout, built in three parts (PLAN.md, Slice 11): the read-only coach with streaming and the briefing; then the draft cards and notes; then a proactive one-line brief on Today. If the AI bill per active friend is more than a few pence a day after the first week, try `OPENAI_COACH_MODEL` on a smaller tier before anything else.
 
-**Status.** `accepted` (2026-11-02): A throughout, confirmed by the owner. Build starts with Slice 11a.
+**Status.** `accepted` (2026-11-02): A throughout, confirmed by the owner. Slice 11a shipped the same day (read-only coach, streaming, threads in Postgres). One detail settled in the build: earlier turns are replayed to the model as plain user and assistant messages, not as function calls with their reasoning items, because the Responses API refuses a replayed function call without the reasoning item that preceded it and carrying both costs input tokens on every later turn; a follow-up re-reads a lift or a day through a tool instead. The `ai-coach` skill records it.
