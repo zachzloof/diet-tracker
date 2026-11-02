@@ -1,8 +1,11 @@
 import {
   COACH_MAX_TURNS,
+  coachBriefRequestSchema,
   coachCardStateRequestSchema,
   coachNoteInputSchema,
   coachSendRequestSchema,
+  coachThreadCreateSchema,
+  type CoachBriefResponse,
   type CoachCardStateResponse,
   type CoachEvent,
   type CoachNoteResponse,
@@ -16,12 +19,13 @@ import { streamSSE } from 'hono/streaming'
 import { z } from 'zod'
 import { requireAuth } from '../../auth/session-middleware.js'
 import { env } from '../../env.js'
-import { AI_UNAVAILABLE_MESSAGES, errors } from '../../errors.js'
+import { AI_UNAVAILABLE_MESSAGES, errors, validationDetails } from '../../errors.js'
 import { jsonBody, requireJson } from '../../middleware/validate.js'
 import { getProfile } from '../../profile/profile-service.js'
 import type { AppEnv } from '../../types.js'
 import { aiConfigured } from '../openai.js'
 import { runTurn } from './agent.js'
+import { getBrief } from './brief.js'
 import { createNote, deleteNote, listNotes } from './notes-service.js'
 import {
   addAssistantMessage,
@@ -31,6 +35,7 @@ import {
   getThread,
   listMessages,
   listThreads,
+  openBriefThread,
   requireThread,
   setCardState,
   toWireThread,
@@ -85,10 +90,31 @@ export const coachRoutes = new Hono<AppEnv>()
     return c.json(body, 200)
   })
 
+  /**
+   * Today's one-line brief for a half (slice 11c): cached for the day once the model has
+   * written it; the app's own line (an invitation when nothing is logged) otherwise.
+   */
+  .post('/brief', requireJson, jsonBody(coachBriefRequestSchema), async (c) => {
+    const { user } = requireAuth(c)
+    const profile = await requireProfile(user.id)
+    const body: CoachBriefResponse = {
+      brief: await getBrief(user.id, profile, c.req.valid('json').half),
+    }
+    return c.json(body, 200)
+  })
+
+  /** A new chat; with `{ brief }` in the body, one that opens with that half's brief. */
   .post('/threads', async (c) => {
     const { user } = requireAuth(c)
-    await requireProfile(user.id)
-    const thread = await createThread(user.id)
+    const profile = await requireProfile(user.id)
+    const raw: unknown = (c.req.header('content-type') ?? '').includes('application/json')
+      ? await c.req.json().catch(() => ({}))
+      : {}
+    const parsed = coachThreadCreateSchema.safeParse(raw ?? {})
+    if (!parsed.success) throw errors.validation(validationDetails(parsed.error))
+    const thread = parsed.data.brief
+      ? await openBriefThread(user.id, (await getBrief(user.id, profile, parsed.data.brief)).text)
+      : await createThread(user.id)
     return c.json({ thread }, 201)
   })
 

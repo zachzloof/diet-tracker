@@ -1,24 +1,10 @@
 import {
-  DIET_PATTERN_LABELS,
-  FOOD_GROUPS,
-  GOAL_LABELS,
-  dayMetRule,
-  energyUncapped,
   MIN_REVIEW_DAYS,
-  NUTRIENTS,
-  ageOn,
   isoWeek,
   localDay,
-  shownTargetKeys,
-  summariseTarget,
   weeklyReviewSchema,
-  type FoodGroupKey,
-  type NutrientKey,
-  type Preferences,
   type Profile,
-  type ScoredDay,
   type StoredWeeklyReview,
-  type TargetKey,
   type Targets,
   type WeekStatsResponse,
   type WeeklyReview,
@@ -32,6 +18,7 @@ import { env } from '../env.js'
 import { errors } from '../errors.js'
 import { requireLatestVersion } from '../profile/targets-service.js'
 import { weekStats } from '../stats/stats-service.js'
+import { personLines, targetLines, weekLines } from './coach/briefing.js'
 import { callsToday } from './estimate.js'
 import { callStructured } from './openai.js'
 
@@ -39,7 +26,9 @@ import { callStructured } from './openai.js'
  * Purpose `weekly_review` (ai-food-estimation skill): the model reads seven scored days,
  * the ranked gaps with their evidence and the targets, and writes a short review. It
  * never sees a number it can change; every claim must trace back to the supplied lines.
- * Cached per ISO week and regenerated at most once a day (decision D17).
+ * Cached per ISO week and regenerated at most once a day (decision D17). Since slice 11c
+ * the lines are the coach's own briefing sections (`coach/briefing.ts`), so the review and
+ * the coach quote the same numbers and the same verdicts.
  */
 
 export const WEEKLY_REVIEW_SYSTEM_PROMPT = `You are a friendly, precise sports dietitian reviewing one week of a person's food diary. A deterministic engine has already scored each day against the person's targets and ranked the areas they are lacking, with evidence. Your job is to turn that into a short, specific review.
@@ -47,156 +36,30 @@ export const WEEKLY_REVIEW_SYSTEM_PROMPT = `You are a friendly, precise sports d
 Rules:
 - Base every claim on the supplied numbers. Quote them as given (kcal, g, mg, mcg, serves, percentages, day counts). Never invent a number, a day or a food the person ate.
 - The two changes are the top two gaps in the list, in that order, unless a "high" gap further down makes one change obviously more important; then say why. Each change has a title (a few words), a why (one sentence quoting the evidence) and a how (one or two concrete, food-level actions).
-- Suggest only foods that fit the person's diet pattern, allergies and dislikes. The suggestions listed under each gap have already been filtered for this person; prefer them.
+- Suggest only foods that fit the person's diet pattern, allergies and dislikes. The suggestions listed under each gap ("Fits this person") have already been filtered for this person; prefer them.
 - Wins come from what the numbers show went well: days met, a streak, targets hit on most days. One to three, each one sentence.
 - The summary is two sentences on how the week went overall, including the days-met count.
 - The encouragement is one sentence, specific to this week, not saccharine.
 - Second person, warm but plain. No hype, no medical claims, no diagnosis. Today is in progress: do not judge it.
 - Be brief: the whole answer is at most 170 words.`
 
-function label(key: TargetKey): string {
-  return key in NUTRIENTS
-    ? NUTRIENTS[key as NutrientKey].label
-    : FOOD_GROUPS[key as FoodGroupKey].label
-}
-
-function unit(key: TargetKey): string {
-  return key in NUTRIENTS ? NUTRIENTS[key as NutrientKey].unitLabel : 'serves'
-}
-
-function fmt(value: number): string {
-  const rounded = Math.round(value * 10) / 10
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
-}
-
-function pct(ratio: number | null): string {
-  return ratio === null ? '' : ` (${Math.round(ratio * 100)}%)`
-}
-
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-function dayLabel(day: string): string {
-  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
-  const date = new Date(Date.UTC(y, m - 1, d))
-  return `${WEEKDAYS[(date.getUTCDay() + 6) % 7]} ${d} ${MONTHS[m - 1]}`
-}
-
-const DAY_LINE_KEYS: readonly TargetKey[] = [
-  'energy_kcal',
-  'protein_g',
-  'carbs_g',
-  'fat_g',
-  'fiber_g',
-  'sodium_mg',
-  'water_ml',
-]
-const AVERAGE_KEYS: readonly TargetKey[] = [
-  ...DAY_LINE_KEYS,
-  'saturated_fat_g',
-  'added_sugar_g',
-  'vegetables',
-  'fruit',
-  'whole_grains',
-  'protein_foods',
-  'dairy_or_alt',
-]
-
-function dayLine(scored: ScoredDay, today: string, prefs: Preferences): string {
-  const { day, score } = scored
-  const energy = score.scores.energy_kcal
-  if (day === today && !score.logged) {
-    return `- ${dayLabel(day)}: today, in progress (${fmt(energy?.actual ?? 0)} kcal so far)`
-  }
-  if (!score.logged) return `- ${dayLabel(day)}: nothing logged`
-  const parts = shownTargetKeys(DAY_LINE_KEYS, prefs).flatMap((key) => {
-    const s = score.scores[key]
-    if (!s) return []
-    return [`${label(key).toLowerCase()} ${fmt(s.actual)} / ${fmt(s.target)} ${unit(key)}`]
-  })
-  const problems = Object.values(score.scores)
-    .filter((s) => s.status === 'short' || s.status === 'over')
-    .filter((s) => s.kind === 'goal' || s.kind === 'limit')
-    .map((s) => `${label(s.key).toLowerCase()} ${s.status}`)
-  const verdict = score.dayMet
-    ? 'met'
-    : `missed${problems.length ? ` (${problems.join(', ')})` : ''}`
-  return `- ${dayLabel(day)}${day === today ? ' (today)' : ''}: ${parts.join(', ')}: ${verdict}`
-}
-
-/** The goal's "day met" rule in words, so the review never cites a limit the rule ignores. */
-export function dayMetSentence(targets: Targets): string {
-  const uncapped = energyUncapped(targets)
-  const rule = dayMetRule(targets.meta.goalApplied, uncapped)
-  const energy = uncapped
-    ? 'energy is at least 90% of target (the energy target is uncapped: eating over it is fine and never a problem to raise)'
-    : 'energy is within 10% of target'
-  const protein = rule.proteinCloseOk
-    ? 'protein is at least 75% of target'
-    : 'protein is at least 90% of target'
-  const limits =
-    rule.decidingLimits.length === 0
-      ? 'no limit affects whether the day is met for this goal'
-      : `${rule.decidingLimits.map((k) => label(k).toLowerCase()).join(', ')} ${rule.decidingLimits.length === 1 ? 'is' : 'are'} not more than 5% over the limit`
-  return `A day is met (for the goal "${GOAL_LABELS[rule.goal].label.toLowerCase()}") when ${energy}, ${protein} and ${limits}.`
-}
-
 export function buildWeeklyReviewUserMessage(
   profile: Profile,
   stats: WeekStatsResponse,
   targets: Targets,
 ): string {
-  const lines: string[] = []
-  lines.push('PERSON')
-  lines.push(
-    `- ${profile.sex === 'male' ? 'Male' : profile.sex === 'female' ? 'Female' : 'Adult'}, age ${ageOn(profile.dob, stats.today)}, ${fmt(profile.weightKg)} kg, goal: ${GOAL_LABELS[profile.goal].label.toLowerCase()}`,
-  )
-  lines.push(`- Diet pattern: ${DIET_PATTERN_LABELS[profile.dietPattern].label}`)
-  lines.push(
-    `- Allergies or intolerances: ${profile.allergies.length ? profile.allergies.join(', ') : 'none'}`,
-  )
-  lines.push(`- Dislikes: ${profile.dislikes.length ? profile.dislikes.join(', ') : 'none'}`)
-  lines.push('')
-  lines.push(
-    `WEEK (${dayLabel(stats.start)} to ${dayLabel(stats.end)}; today is ${dayLabel(stats.today)})`,
-  )
-  lines.push(
-    `- Days logged: ${stats.daysLogged} of 7. Days met: ${stats.daysMet}. Current streak: ${stats.streak} day${stats.streak === 1 ? '' : 's'}.`,
-  )
-  lines.push(`- ${dayMetSentence(targets)}`)
-  lines.push(
+  const prefs = profile.preferences
+  return [
+    ...personLines(profile, stats.today),
+    '',
+    ...targetLines(targets, prefs),
+    '',
+    ...weekLines(stats, stats.today, prefs, 'full'),
+    '',
+    'REVIEW NOTES',
     '- A day with under two entries and under 40% of energy counts as not logged. Limits that do not decide the day are still worth a mention when they are over most days.',
-  )
-  lines.push('')
-  lines.push('DAYS (actual / target)')
-  for (const day of stats.days) lines.push(dayLine(day, stats.today, profile.preferences))
-  lines.push('')
-  lines.push('AVERAGES OVER LOGGED DAYS (actual / target)')
-  // Hidden features (D37) stay out of the prompt, or the review would advise on them.
-  for (const key of shownTargetKeys(AVERAGE_KEYS, profile.preferences)) {
-    const week = summariseTarget(stats.days, key)
-    if (week.average === null || week.target === null) continue
-    lines.push(
-      `- ${label(key)}: ${fmt(week.average)} / ${fmt(week.target)} ${unit(key)}${pct(week.averageRatio)}, met on ${week.daysMet} of ${week.daysLogged} days`,
-    )
-  }
-  lines.push('')
-  lines.push('KEY TARGETS')
-  for (const key of ['energy_kcal', 'protein_g', 'carbs_g', 'fat_g', 'fiber_g'] as const) {
-    const entry = targets.entries.find((e) => e.key === key)
-    if (entry) lines.push(`- ${label(key)}: ${fmt(entry.value)} ${unit(key)}. ${entry.reason}`)
-  }
-  lines.push('')
-  if (stats.gaps.length === 0) {
-    lines.push('GAPS: none. Every rule passed this week.')
-  } else {
-    lines.push('GAPS, RANKED (the two changes come from the top of this list)')
-    stats.gaps.forEach((gap, i) => {
-      lines.push(`${i + 1}. [${gap.severity}] ${gap.title}: ${gap.evidence}`)
-      if (gap.suggestions.length) lines.push(`   Suggestions: ${gap.suggestions.join('; ')}`)
-    })
-  }
-  return lines.join('\n')
+    '- The two changes come from the top of the gap list.',
+  ].join('\n')
 }
 
 function trim(review: WeeklyReview): WeeklyReview {

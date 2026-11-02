@@ -6,6 +6,7 @@ import { requestId } from 'hono/request-id'
 import { secureHeaders } from 'hono/secure-headers'
 import { accountRoutes } from './account/routes.js'
 import { coachRoutes } from './ai/coach/routes.js'
+import { aiCostsRoutes } from './ai/costs.js'
 import { authRoutes } from './auth/routes.js'
 import { sessionMiddleware } from './auth/session-middleware.js'
 import { errors, handleError } from './errors.js'
@@ -71,6 +72,7 @@ export function createApp(): Hono<AppEnv> {
   app.route('/api/v1/log', logRoutes)
   app.route('/api/v1/ai', aiRoutes)
   app.route('/api/v1/ai', weeklyReviewRoutes)
+  app.route('/api/v1/ai', aiCostsRoutes)
   app.route('/api/v1/stats', statsRoutes)
   app.route('/api/v1/weight', weightRoutes)
   app.route('/api/v1/recalibration', recalibrationRoutes)

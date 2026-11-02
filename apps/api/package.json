@@ -19,7 +19,8 @@
     "ai:smoke": "node --conditions=development --import tsx src/scripts/ai-smoke.ts",
     "ai:smoke:plan": "node --conditions=development --import tsx src/scripts/ai-smoke-plan.ts",
     "ai:smoke:week": "node --conditions=development --import tsx src/scripts/ai-smoke-week.ts",
-    "ai:smoke:coach": "node --conditions=development --import tsx src/scripts/ai-smoke-coach.ts"
+    "ai:smoke:coach": "node --conditions=development --import tsx src/scripts/ai-smoke-coach.ts",
+    "ai:smoke:brief": "node --conditions=development --import tsx src/scripts/ai-smoke-brief.ts"
   },
   "dependencies": {
     "@diet-tracker/shared": "workspace:*",

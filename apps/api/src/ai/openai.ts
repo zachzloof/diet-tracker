@@ -79,6 +79,8 @@ export interface StructuredCall<T> {
   timeoutMs?: number
   /** Defaults to `low`; searches read better at `medium`. */
   reasoningEffort?: ReasoningEffort
+  /** The model to call; defaults to `OPENAI_MODEL` (the coach's brief uses the coach's model). */
+  model?: string
 }
 
 export interface StructuredResult<T> {
@@ -154,7 +156,7 @@ function countWebSearches(output: OpenAI.Responses.ResponseOutputItem[]): number
 
 export async function callStructured<T>(call: StructuredCall<T>): Promise<StructuredResult<T>> {
   const openai = getClient(call.purpose)
-  const model = env.OPENAI_MODEL
+  const model = call.model ?? env.OPENAI_MODEL
   const unavailable = () => errors.aiUnavailable(AI_UNAVAILABLE_MESSAGES[call.purpose])
   let user = call.user
 

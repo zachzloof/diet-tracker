@@ -12,6 +12,8 @@ import {
   biggestDrop,
   biggestGain,
   compareWeeks,
+  dayMetRule,
+  energyUncapped,
   evaluateDay,
   isWaterEntry,
   localDay,
@@ -29,8 +31,10 @@ import {
   type Exercise,
   type ExerciseMeasure,
   type LiftChange,
+  type Preferences,
   type Profile,
   type RecalibrationAssessment,
+  type ScoredDay,
   type TargetKey,
   type Targets,
   type WeekStatsResponse,
@@ -44,7 +48,6 @@ import { listWeights } from '../../progress/weight-service.js'
 import { weekStats } from '../../stats/stats-service.js'
 import { listExercises } from '../../training/exercises-service.js'
 import { listWorkouts } from '../../training/workouts-service.js'
-import { dayMetSentence } from '../weekly-review.js'
 import { allNotes } from './notes-service.js'
 import {
   dayLabel,
@@ -65,6 +68,10 @@ import {
  * targets, gym, weight and plan check, as labelled lines under the system prompt. Built in
  * code every turn from the same services the screens read, rounded as the screens round,
  * so the coach quotes what the person sees. `buildBriefing` is pure given its inputs.
+ *
+ * Since slice 11c the sections are exported one by one: the weekly review is written from
+ * the same PERSON, TARGETS and THIS WEEK lines (`weekly-review.ts`), and the daily brief
+ * (`brief.ts`) reads the same inputs, so the three never disagree on a number.
  */
 
 export interface BriefingInputs {
@@ -95,6 +102,16 @@ const TODAY_KEYS: readonly TargetKey[] = [
   'fiber_g',
   'water_ml',
 ]
+/** The per-day numbers in the full week lines (the review's), as the Week rows list them. */
+const DAY_LINE_KEYS: readonly TargetKey[] = [
+  'energy_kcal',
+  'protein_g',
+  'carbs_g',
+  'fat_g',
+  'fiber_g',
+  'sodium_mg',
+  'water_ml',
+]
 const WEEK_KEYS: readonly TargetKey[] = [
   ...TODAY_KEYS,
   'sodium_mg',
@@ -122,25 +139,31 @@ function list(items: readonly string[]): string {
   return items.length ? items.join(', ') : 'none'
 }
 
-export function buildBriefing(inputs: BriefingInputs): string {
-  const { profile, targets, day, dayScore, week, gym, weights, recalibration, notes } = inputs
-  const today = localDay(inputs.now, profile.timezone)
-  const time = localTimeParts(inputs.now, profile.timezone)
+/** Serves keep one decimal (2.5 of 6), as the gap evidence does; nutrient units are whole. */
+function amount(value: number, key: TargetKey): string {
+  return keyUnit(key) === 'serves' ? fmt(value) : String(whole(value))
+}
+
+/** The goal's "day met" rule in words, so neither the coach nor the review cites a limit the rule ignores. */
+export function dayMetSentence(targets: Targets): string {
+  const uncapped = energyUncapped(targets)
+  const rule = dayMetRule(targets.meta.goalApplied, uncapped)
+  const energy = uncapped
+    ? 'energy is at least 90% of target (the energy target is uncapped: eating over it is fine and never a problem to raise)'
+    : 'energy is within 10% of target'
+  const protein = rule.proteinCloseOk
+    ? 'protein is at least 75% of target'
+    : 'protein is at least 90% of target'
+  const limits =
+    rule.decidingLimits.length === 0
+      ? 'no limit affects whether the day is met for this goal'
+      : `${rule.decidingLimits.map((k) => keyLabel(k).toLowerCase()).join(', ')} ${rule.decidingLimits.length === 1 ? 'is' : 'are'} not more than 5% over the limit`
+  return `A day is met (for the goal "${GOAL_LABELS[rule.goal].label.toLowerCase()}") when ${energy}, ${protein} and ${limits}.`
+}
+
+export function personLines(profile: Profile, today: string): string[] {
   const prefs = profile.preferences
-  const lines: string[] = []
-
-  lines.push('BRIEFING (built by the app just now; every number is the one on screen)')
-  lines.push(
-    `- Today is ${weekdayLong(today)} ${today}, ${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')} in ${profile.timezone}. Yesterday was ${addDays(today, -1)}.`,
-  )
-  lines.push(
-    `- Last seven days: ${Array.from({ length: 7 }, (_, i) => addDays(today, i - 6))
-      .map((d) => `${weekdayShort(d)} ${d}`)
-      .join(', ')}.`,
-  )
-  lines.push('')
-
-  lines.push('PERSON')
+  const lines: string[] = ['PERSON']
   const sex = profile.sex === 'male' ? 'Male' : profile.sex === 'female' ? 'Female' : 'Adult'
   const pace = profile.pace ? `, ${PACE_LABELS[profile.pace].label.toLowerCase()} pace` : ''
   lines.push(
@@ -158,9 +181,13 @@ export function buildBriefing(inputs: BriefingInputs): string {
     ...(prefs.nutrientDetail === 'macros' ? ['everything beyond the macros'] : []),
   ]
   if (hidden.length) lines.push(`- Switched off in Preferences: ${hidden.join(', ')}.`)
-  lines.push('')
+  return lines
+}
 
-  lines.push('TARGETS (the engine sets these; "pinned" means the person set that number)')
+export function targetLines(targets: Targets, prefs: Preferences): string[] {
+  const lines: string[] = [
+    'TARGETS (the engine sets these; "pinned" means the person set that number)',
+  ]
   for (const key of shownTargetKeys(TARGET_KEYS, prefs)) {
     const entry = targets.entries.find((e) => e.key === key)
     if (!entry) continue
@@ -174,54 +201,87 @@ export function buildBriefing(inputs: BriefingInputs): string {
     )
   }
   lines.push(`- ${dayMetSentence(targets)}`)
-  lines.push('')
+  return lines
+}
 
-  lines.push('TODAY SO FAR')
+export function todayLines(day: DayLogResponse, dayScore: DayScore, prefs: Preferences): string[] {
+  const lines: string[] = ['TODAY SO FAR']
   const foodEntries = day.entries.filter((e) => !isWaterEntry(e))
   if (foodEntries.length === 0) {
     lines.push('- Nothing logged yet today.')
-  } else {
-    const meals = MEALS.filter((meal) => foodEntries.some((e) => e.meal === meal)).map((meal) =>
-      MEAL_LABELS[meal].toLowerCase(),
-    )
-    lines.push(
-      `- ${foodEntries.length} item${foodEntries.length === 1 ? '' : 's'} logged across ${list(meals)}.`,
-    )
-    for (const key of shownTargetKeys(TODAY_KEYS, prefs)) {
-      const score = dayScore.scores[key]
-      if (!score) continue
-      lines.push(
-        `- ${keyLabel(key)}: ${whole(score.actual)} / ${whole(score.target)} ${keyUnit(key)}${pct(score.ratio)}, ${score.status}${score.kind === 'limit' ? ' (limit)' : ''}.`,
-      )
-    }
-    lines.push(`- Day so far: ${dayScore.dayMet ? 'met' : 'not met yet'}.`)
+    return lines
   }
-  lines.push('')
+  const meals = MEALS.filter((meal) => foodEntries.some((e) => e.meal === meal)).map((meal) =>
+    MEAL_LABELS[meal].toLowerCase(),
+  )
+  lines.push(
+    `- ${foodEntries.length} item${foodEntries.length === 1 ? '' : 's'} logged across ${list(meals)}.`,
+  )
+  for (const key of shownTargetKeys(TODAY_KEYS, prefs)) {
+    const score = dayScore.scores[key]
+    if (!score) continue
+    lines.push(
+      `- ${keyLabel(key)}: ${whole(score.actual)} / ${whole(score.target)} ${keyUnit(key)}${pct(score.ratio)}, ${score.status}${score.kind === 'limit' ? ' (limit)' : ''}.`,
+    )
+  }
+  lines.push(`- Day so far: ${dayScore.dayMet ? 'met' : 'not met yet'}.`)
+  return lines
+}
 
-  lines.push(`THIS WEEK (${dayLabel(week.start)} to ${dayLabel(week.end)}, today included)`)
+/** One day of the week. `full` adds every Week-row number and what went wrong; `compact` is the coach's. */
+function dayLine(scored: ScoredDay, today: string, prefs: Preferences, detail: WeekDetail): string {
+  const { day, score } = scored
+  const energy = score.scores.energy_kcal
+  const label = `${weekdayShort(day)} ${day}`
+  if (day === today)
+    return `- ${label}: today, in progress (${whole(energy?.actual ?? 0)} kcal so far).`
+  if (!score.logged) return `- ${label}: nothing logged.`
+  const verdict = score.dayMet ? 'met' : 'not met'
+  if (detail === 'compact') {
+    const protein = score.scores.protein_g
+    return `- ${label}: ${whole(energy?.actual ?? 0)} kcal, ${whole(protein?.actual ?? 0)} g protein, ${verdict}.`
+  }
+  const parts = shownTargetKeys(DAY_LINE_KEYS, prefs).flatMap((key) => {
+    const s = score.scores[key]
+    if (!s) return []
+    return [
+      `${keyLabel(key).toLowerCase()} ${whole(s.actual)} / ${whole(s.target)} ${keyUnit(key)}`,
+    ]
+  })
+  const problems = Object.values(score.scores)
+    .filter((s) => s.status === 'short' || s.status === 'over')
+    .filter((s) => s.kind === 'goal' || s.kind === 'limit')
+    .map((s) => `${keyLabel(s.key).toLowerCase()} ${s.status}`)
+  return `- ${label}: ${parts.join(', ')}: ${verdict}${!score.dayMet && problems.length ? ` (${problems.join(', ')})` : ''}.`
+}
+
+export type WeekDetail = 'compact' | 'full'
+
+/**
+ * THIS WEEK: the seven days, the averages over logged days and the ranked gaps, exactly as
+ * the Week screen shows them. The coach reads it compact on every turn; the weekly review
+ * reads it in full, so the two quote the same numbers and the same verdicts.
+ */
+export function weekLines(
+  week: WeekStatsResponse,
+  today: string,
+  prefs: Preferences,
+  detail: WeekDetail = 'compact',
+): string[] {
+  const lines: string[] = []
+  lines.push(
+    `THIS WEEK (${dayLabel(week.start)} to ${dayLabel(week.end)}${week.end === today ? ', today included' : ''}; today is ${dayLabel(today)})`,
+  )
   lines.push(
     `- Days logged: ${week.daysLogged} of 7. Days met: ${week.daysMet}. Streak: ${week.streak} day${week.streak === 1 ? '' : 's'}.`,
   )
-  for (const scored of week.days) {
-    const energy = scored.score.scores.energy_kcal
-    const protein = scored.score.scores.protein_g
-    const label = `${weekdayShort(scored.day)} ${scored.day}`
-    if (scored.day === today) {
-      lines.push(`- ${label}: today, in progress (${whole(energy?.actual ?? 0)} kcal so far).`)
-    } else if (!scored.score.logged) {
-      lines.push(`- ${label}: nothing logged.`)
-    } else {
-      lines.push(
-        `- ${label}: ${whole(energy?.actual ?? 0)} kcal, ${whole(protein?.actual ?? 0)} g protein, ${scored.score.dayMet ? 'met' : 'not met'}.`,
-      )
-    }
-  }
+  for (const scored of week.days) lines.push(dayLine(scored, today, prefs, detail))
   lines.push('- Averages over logged days (actual / target, met on N days):')
   for (const key of shownTargetKeys(WEEK_KEYS, prefs)) {
     const summary = summariseTarget(week.days, key)
     if (summary.average === null || summary.target === null) continue
     lines.push(
-      `  - ${keyLabel(key)}: ${whole(summary.average)} / ${whole(summary.target)} ${keyUnit(key)}${pct(summary.averageRatio)}, met on ${summary.daysMet} of ${summary.daysLogged}.`,
+      `  - ${keyLabel(key)}: ${amount(summary.average, key)} / ${amount(summary.target, key)} ${keyUnit(key)}${pct(summary.averageRatio)}, met on ${summary.daysMet} of ${summary.daysLogged}.`,
     )
   }
   if (week.gaps.length === 0) {
@@ -233,17 +293,13 @@ export function buildBriefing(inputs: BriefingInputs): string {
       if (gap.suggestions.length) lines.push(`     Fits this person: ${gap.suggestions.join('; ')}`)
     })
   }
-  lines.push('')
+  return lines
+}
 
-  if (gym) {
-    lines.push(...gymLines(gym, today, profile))
-    lines.push('')
-  }
-
-  lines.push(...weightLines(weights, today))
-  lines.push('')
-
-  lines.push('PLAN CHECK (recalibration, every 14 days from logged days and weigh-ins)')
+export function planCheckLines(recalibration: RecalibrationAssessment): string[] {
+  const lines: string[] = [
+    'PLAN CHECK (recalibration, every 14 days from logged days and weigh-ins)',
+  ]
   lines.push(`- Status: ${recalibration.status.replace(/_/g, ' ')}. ${recalibration.reason}`)
   if (recalibration.proposal) {
     const p = recalibration.proposal
@@ -251,20 +307,49 @@ export function buildBriefing(inputs: BriefingInputs): string {
       `- Proposal waiting on the Today screen: energy ${fmt(p.current.energyKcal)} → ${fmt(p.proposed.energyKcal)} kcal (${p.deltaKcal > 0 ? '+' : ''}${fmt(p.deltaKcal)}), protein ${fmt(p.proposed.proteinG)} g, carbs ${fmt(p.proposed.carbsG)} g, fat ${fmt(p.proposed.fatG)} g. The person applies or snoozes it; you do not.`,
     )
   }
-  lines.push('')
+  return lines
+}
 
-  lines.push(
+export function notesLines(notes: readonly CoachNote[], timeZone: string): string[] {
+  const lines: string[] = [
     'NOTES (things the person asked you to remember; they manage them under Coach > Notes)',
-  )
+  ]
   if (notes.length === 0) {
     lines.push('- None yet.')
   } else {
     for (const note of notes) {
-      const day = localDay(new Date(note.createdAt), profile.timezone)
+      const day = localDay(new Date(note.createdAt), timeZone)
       lines.push(`- ${dayLabel(day)} ${day}: ${note.text}`)
     }
   }
+  return lines
+}
 
+export function buildBriefing(inputs: BriefingInputs): string {
+  const { profile, targets, day, dayScore, week, gym, weights, recalibration, notes } = inputs
+  const today = localDay(inputs.now, profile.timezone)
+  const time = localTimeParts(inputs.now, profile.timezone)
+  const prefs = profile.preferences
+  const lines: string[] = []
+
+  lines.push('BRIEFING (built by the app just now; every number is the one on screen)')
+  lines.push(
+    `- Today is ${weekdayLong(today)} ${today}, ${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')} in ${profile.timezone}. Yesterday was ${addDays(today, -1)}.`,
+  )
+  lines.push(
+    `- Last seven days: ${Array.from({ length: 7 }, (_, i) => addDays(today, i - 6))
+      .map((d) => `${weekdayShort(d)} ${d}`)
+      .join(', ')}.`,
+  )
+  lines.push('')
+  lines.push(...personLines(profile, today), '')
+  lines.push(...targetLines(targets, prefs), '')
+  lines.push(...todayLines(day, dayScore, prefs), '')
+  lines.push(...weekLines(week, today, prefs, 'compact'), '')
+  if (gym) lines.push(...gymLines(gym, today, profile), '')
+  lines.push(...weightLines(weights, today), '')
+  lines.push(...planCheckLines(recalibration), '')
+  lines.push(...notesLines(notes, profile.timezone))
   return lines.join('\n')
 }
 
@@ -285,7 +370,31 @@ export function measuresOf(
   return found?.measures ?? ['weight', 'reps']
 }
 
-function gymLines(
+/** The week-on-week comparison the gym Week card draws, on the person's "best" basis. */
+export function gymComparison(gym: NonNullable<BriefingInputs['gym']>, profile: Profile) {
+  const measureOf = (exerciseId: string | null, exerciseName: string) => {
+    const found = exerciseId ? gym.exercises.find((e) => e.id === exerciseId) : undefined
+    const byName = found ?? gym.exercises.find((e) => e.name === exerciseName)
+    return byName ? primaryMeasure(byName.measures) : null
+  }
+  return compareWeeks(gym.current, gym.previous, {
+    measureOf,
+    basis: profile.preferences.bestBy,
+  })
+}
+
+/** The gym Week card's "biggest gain" as one line, or null with nothing to compare. */
+export function biggestGainLine(
+  gym: NonNullable<BriefingInputs['gym']>,
+  profile: Profile,
+): string | null {
+  const comparison = gymComparison(gym, profile)
+  if (comparison.previous.sessions === 0) return null
+  const gain = biggestGain(comparison)
+  return gain ? liftLine(gain, gym.exercises) : null
+}
+
+export function gymLines(
   gym: NonNullable<BriefingInputs['gym']>,
   today: string,
   profile: Profile,
@@ -311,15 +420,7 @@ function gymLines(
       `- ${weekdayShort(workout.day)} ${workout.day}: ${workout.title || 'Workout'}${workout.endedAt ? '' : ' (still open)'}: ${list(names)}; ${summary.workingSets} working sets, ${whole(summary.volumeKg)} kg${summary.durationMin !== null ? `, ${summary.durationMin} min` : ''}.`,
     )
   }
-  const measureOf = (exerciseId: string | null, exerciseName: string) => {
-    const found = exerciseId ? gym.exercises.find((e) => e.id === exerciseId) : undefined
-    const byName = found ?? gym.exercises.find((e) => e.name === exerciseName)
-    return byName ? primaryMeasure(byName.measures) : null
-  }
-  const comparison = compareWeeks(gym.current, gym.previous, {
-    measureOf,
-    basis: profile.preferences.bestBy,
-  })
+  const comparison = gymComparison(gym, profile)
   const gain = biggestGain(comparison)
   const drop = biggestDrop(comparison)
   if (comparison.previous.sessions === 0) {
@@ -347,7 +448,7 @@ function gymLines(
   return lines
 }
 
-function weightLines(weights: WeightsResponse, today: string): string[] {
+export function weightLines(weights: WeightsResponse, today: string): string[] {
   const lines: string[] = []
   const start = addDays(today, -(BRIEFING_WEIGHT_DAYS - 1))
   lines.push(`WEIGHT (last ${BRIEFING_WEIGHT_DAYS} days, ${dayLabel(start)} to ${dayLabel(today)})`)

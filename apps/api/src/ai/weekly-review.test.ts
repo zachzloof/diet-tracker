@@ -16,11 +16,8 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { seedWeekTotals } from '../db/seed-weeks.js'
 import { buildTargetInput } from '../profile/profile-service.js'
-import {
-  WEEKLY_REVIEW_SYSTEM_PROMPT,
-  buildWeeklyReviewUserMessage,
-  dayMetSentence,
-} from './weekly-review.js'
+import { dayMetSentence } from './coach/briefing.js'
+import { WEEKLY_REVIEW_SYSTEM_PROMPT, buildWeeklyReviewUserMessage } from './weekly-review.js'
 
 const TODAY = '2026-09-26'
 
@@ -76,6 +73,7 @@ describe('weekly-review prompt', () => {
   it('tells the model to use only the supplied numbers and to take the top two gaps', () => {
     expect(WEEKLY_REVIEW_SYSTEM_PROMPT).toMatch(/Base every claim on the supplied numbers/)
     expect(WEEKLY_REVIEW_SYSTEM_PROMPT).toMatch(/top two gaps/)
+    expect(WEEKLY_REVIEW_SYSTEM_PROMPT).toMatch(/Fits this person/)
     expect(WEEKLY_REVIEW_SYSTEM_PROMPT).toMatch(/at most 170 words/)
   })
 
@@ -92,34 +90,41 @@ describe('weekly-review prompt', () => {
     )
   })
 
-  it('lists every day with its numbers and verdict, the averages, the targets and the ranked gaps', () => {
+  it('is written from the coach briefing sections: every day with its numbers and verdict, the averages, the targets and the ranked gaps', () => {
     const stats = statsFromSeed(finn, 'finn@example.com', TODAY)
     const targets = computeTargets(buildTargetInput(finn, TODAY))
     const message = buildWeeklyReviewUserMessage(finn, stats, targets)
-    expect(message).toMatch(/Male, age 28, 75 kg, goal: gain muscle/)
+    expect(message).toMatch(
+      /Male, 28, 178 cm, 75 kg\. Goal: gain muscle, lean gain pace, goal weight 80 kg\./,
+    )
     expect(message).toMatch(/no limit affects whether the day is met for this goal/)
     expect(message).toMatch(/Diet pattern: Omnivore/)
     expect(message).toMatch(/Dislikes: liver/)
-    expect(message).toMatch(/WEEK \(Sun 20 Sep to Sat 26 Sep; today is Sat 26 Sep\)/)
+    expect(message).toMatch(
+      /THIS WEEK \(Sun 20 Sep to Sat 26 Sep, today included; today is Sat 26 Sep\)/,
+    )
     expect(message).toMatch(/energy is within 10% of target/)
-    expect(message).toMatch(/Days logged: 6 of 7\. Days met: 2\. Current streak: 0 days\./)
+    expect(message).toMatch(/Days logged: 6 of 7\. Days met: 2\. Streak: 0 days\./)
     // Alcohol was logged on this day but is hidden (D34): it never appears in the prompt.
     expect(message).toMatch(
-      /- Sun 20 Sep: energy 2570 \/ 3250 kcal, protein 108 \/ 150 g, .*: missed \(energy short, protein short, carbs short, sodium over, water short\)/,
+      /- Sun 2026-09-20: energy 2570 \/ 3250 kcal, protein 108 \/ 150 g, .*: not met \(energy short, protein short, carbs short, sodium over, water short\)\./,
     )
     expect(message).not.toMatch(/alcohol/i)
-    expect(message).toMatch(/- Wed 23 Sep: energy 3100 \/ 3250 kcal, .*: met/)
-    expect(message).toMatch(/- Sat 26 Sep: today, in progress \(700 kcal so far\)/)
-    expect(message).toMatch(/- Energy: 2770 \/ 3250 kcal \(85%\), met on 1 of 6 days/)
-    expect(message).toMatch(/- Vegetables: 2\.5 \/ 6 serves \(42%\), met on 0 of 6 days/)
-    expect(message).toMatch(/KEY TARGETS\n- Energy: 3250 kcal\./)
+    expect(message).toMatch(/- Wed 2026-09-23: energy 3100 \/ 3250 kcal, .*: met\./)
+    expect(message).toMatch(/- Sat 2026-09-26: today, in progress \(700 kcal so far\)\./)
+    expect(message).toMatch(/ {2}- Energy: 2770 \/ 3250 kcal \(85%\), met on 1 of 6\./)
+    expect(message).toMatch(/ {2}- Vegetables: 2\.5 \/ 6 serves \(42%\), met on 0 of 6\./)
+    expect(message).toMatch(
+      /TARGETS \(the engine sets these.*\)\n- Energy: 3250 kcal \(floor 1730 kcal\)\. /,
+    )
+    expect(message).toMatch(/REVIEW NOTES\n- A day with under two entries/)
     expect(message).toMatch(
       /1\. \[medium\] Not enough vegetables: Vegetables were under 60% of target on 4 of 6 logged days/,
     )
     expect(message).toMatch(/2\. \[medium\] Fibre short/)
-    expect(message).toMatch(/Suggestions: Frozen mixed vegetables/)
+    expect(message).toMatch(/Fits this person: Frozen mixed vegetables/)
     // Finn dislikes liver: it appears in the profile line only, never as a suggestion.
-    expect(message.split('GAPS, RANKED')[1]).not.toMatch(/liver/i)
+    expect(message.split('Gaps, ranked')[1]).not.toMatch(/liver/i)
   })
 })
 

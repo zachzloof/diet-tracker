@@ -71,6 +71,38 @@ export async function createThread(userId: string, now: Date = new Date()): Prom
   return toWireThread(row)
 }
 
+/**
+ * The chat a tapped brief opens (slice 11c): a thread whose first line is the brief, as an
+ * assistant message, so the coach knows what it said and the person can reply to it. A
+ * brief thread the person has not answered yet (no turns, same first line) is reused rather
+ * than piled up; once answered it is an ordinary thread.
+ */
+export async function openBriefThread(
+  userId: string,
+  text: string,
+  now: Date = new Date(),
+): Promise<CoachThread> {
+  const unanswered = await db
+    .select({ id: coachThreads.id })
+    .from(coachThreads)
+    .where(and(eq(coachThreads.userId, userId), eq(coachThreads.turns, 0)))
+    .orderBy(desc(coachThreads.createdAt))
+    .limit(10)
+  for (const candidate of unanswered) {
+    const first = (await listMessages(candidate.id))[0]
+    if (first && first.role === 'assistant' && first.text === text) {
+      return toWireThread(await requireThread(userId, candidate.id))
+    }
+  }
+  const thread = await createThread(userId, now)
+  await addAssistantMessage(
+    { id: thread.id, userId },
+    { text, cards: [], toolTrail: [], aiCallIds: [], error: null },
+    now,
+  )
+  return toWireThread(await requireThread(userId, thread.id))
+}
+
 export async function requireThread(userId: string, id: string): Promise<CoachThreadRow> {
   const rows = await db
     .select()

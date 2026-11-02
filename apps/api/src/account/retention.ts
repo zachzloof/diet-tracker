@@ -12,12 +12,13 @@ export interface PurgeResult {
   aiCalls: number
   targetVersions: number
   coachThreads: number
+  coachBriefs: number
 }
 
 /**
  * The retention rule the privacy policy promises: dated history older than
  * `RETENTION_DAYS` is deleted for everyone. The food log and its daily summaries, weigh-ins,
- * weekly reviews and AI usage rows go by their day. A target version goes only once a
+ * weekly reviews, daily briefs and AI usage rows go by their day. A target version goes only once a
  * newer version was already in force at the cutoff, so every day that is kept is still
  * scored against the targets it had. A coach thread goes by its last activity, messages with
  * it (D41). The account, the profile, the current targets and the
@@ -44,6 +45,7 @@ export async function purgeExpiredData(now: Date = new Date()): Promise<PurgeRes
       weeklyReviews: await count(sql`delete from weekly_reviews where week_end < ${cutoffDay}`),
       aiCalls: await count(sql`delete from ai_calls where created_at < ${cutoffInstant}`),
       coachThreads: await count(sql`delete from coach_threads where updated_at < ${cutoffInstant}`),
+      coachBriefs: await count(sql`delete from coach_briefs where day < ${cutoffDay}`),
       targetVersions: await count(sql`
         delete from target_versions old
         where old.effective_from < ${cutoffDay}

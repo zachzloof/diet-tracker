@@ -56,6 +56,11 @@ export const apiEnvSchema = z.object({
   OPENAI_COACH_MODEL: optionalString,
   /** D41: coach turns per person per local day, separate from the estimator's call cap. */
   AI_COACH_DAILY_TURN_CAP: z.coerce.number().int().positive().default(60),
+  /**
+   * Slice 11c (D42): the email of the account that may read `GET /api/v1/ai/costs`. Unset
+   * means nobody; the route then answers 404 for everyone.
+   */
+  OWNER_EMAIL: optionalString,
 
   /** Absolute path of the built SPA. Defaults to apps/web/dist relative to the API. */
   WEB_DIST_DIR: optionalString,

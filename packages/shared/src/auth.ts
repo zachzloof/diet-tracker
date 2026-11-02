@@ -36,6 +36,8 @@ export const publicUserSchema = z.object({
   id: z.uuid(),
   email: z.string(),
   createdAt: z.iso.datetime(),
+  /** The account named by `OWNER_EMAIL` (slice 11c): sees the AI cost view. Absent reads as false. */
+  owner: z.boolean().default(false),
 })
 export type PublicUser = z.infer<typeof publicUserSchema>
 

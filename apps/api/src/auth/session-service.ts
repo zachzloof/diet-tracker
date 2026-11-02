@@ -7,6 +7,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { db } from '../db/client.js'
 import { sessions, users, type Session, type User } from '../db/schema/index.js'
 import { env } from '../env.js'
+import { isOwner } from './owner.js'
 
 /**
  * Sessions live in Postgres so they survive redeploys. The browser holds a random token
@@ -29,7 +30,12 @@ export function hashToken(token: string): string {
 }
 
 export function toPublicUser(user: Pick<User, 'id' | 'email' | 'createdAt'>): PublicUser {
-  return { id: user.id, email: user.email, createdAt: user.createdAt.toISOString() }
+  return {
+    id: user.id,
+    email: user.email,
+    createdAt: user.createdAt.toISOString(),
+    owner: isOwner(user.email),
+  }
 }
 
 export async function createSession(

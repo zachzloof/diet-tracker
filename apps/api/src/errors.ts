@@ -47,6 +47,7 @@ export const AI_UNAVAILABLE_MESSAGES = {
   estimate: 'The estimator is unavailable right now. You can add this meal manually.',
   weekly_review: 'The weekly review is unavailable right now. Your numbers are not affected.',
   coach: COACH_UNAVAILABLE_TEXT,
+  brief: 'The daily brief is unavailable right now. Your numbers are not affected.',
 } as const
 
 export const errors = {
