@@ -1,6 +1,8 @@
 import {
   DEFAULT_MEASURES,
+  MAX_EXERCISE_HISTORY,
   coachToolArgsSchemas,
+  lastDoneSession,
   type Exercise,
   type ExerciseMeasure,
   type WorkoutCard,
@@ -78,8 +80,10 @@ export const draftWorkout = defineTool({
           durationS: set.time_s,
           distanceM: set.distance_m,
         }))
-        const history = exercise ? await exerciseHistory(ctx.userId, exercise.id, 1) : []
-        const last = history[0]
+        const history = exercise
+          ? await exerciseHistory(ctx.userId, exercise.id, MAX_EXERCISE_HISTORY)
+          : []
+        const last = lastDoneSession(history)
         return {
           exerciseId: exercise?.id ?? null,
           exerciseName: exercise?.name ?? block.exercise_name.trim(),

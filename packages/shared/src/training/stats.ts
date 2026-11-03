@@ -194,6 +194,29 @@ export function bestSetAt(
   return bestSetBy(candidates, metric)
 }
 
+/** A set with any number in it; finishing a session drops the rest. */
+export function isRecordedSet(set: WorkoutSet): boolean {
+  return (
+    set.weightKg !== null || set.reps !== null || set.durationS !== null || set.distanceM !== null
+  )
+}
+
+/**
+ * The session the "Last" column reads, from past sessions newest first: the latest where the
+ * exercise was done (a set ticked), else the latest with any numbers (a plan copied forward
+ * and never ticked). A session where it was skipped, with no sets or only blank ones, is
+ * passed over; null when every one was.
+ */
+export function lastDoneSession<T extends { sets: readonly WorkoutSet[] }>(
+  history: readonly T[],
+): T | null {
+  return (
+    history.find((entry) => entry.sets.some(isWorkingSet)) ??
+    history.find((entry) => entry.sets.some(isRecordedSet)) ??
+    null
+  )
+}
+
 export interface RepeatOptions {
   day: string
   startedAt: string

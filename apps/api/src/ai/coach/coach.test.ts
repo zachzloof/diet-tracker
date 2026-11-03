@@ -18,6 +18,7 @@ import {
 } from '@diet-tracker/shared'
 import { eq, sql } from 'drizzle-orm'
 import type * as Responses from 'openai/resources/responses/responses'
+import { v7 as uuidv7 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { db } from '../../db/client.js'
 import { aiCalls, coachMessages, coachNotes, coachThreads } from '../../db/schema/index.js'
@@ -27,7 +28,7 @@ import { resetRateLimits } from '../../middleware/rate-limit.js'
 import { requireLatestVersion } from '../../profile/targets-service.js'
 import { weekStats } from '../../stats/stats-service.js'
 import { ensureExerciseCatalogue } from '../../training/exercises-service.js'
-import { listWorkouts } from '../../training/workouts-service.js'
+import { listWorkouts, upsertWorkout } from '../../training/workouts-service.js'
 import { coachModel, replayHistory, runTurn } from './agent.js'
 import type { DraftResult } from './tools/index.js'
 import { buildBriefing, loadBriefingInputs } from './briefing.js'
@@ -407,6 +408,40 @@ describe('the draft tools (slice 11b)', () => {
     const first = (result.summary.exercises as { sets: string[]; last_time: string }[])[0]!
     expect(first.sets).toEqual(['77.5 kg × 5', '77.5 kg × 5'])
     expect(first.last_time).toContain('75 kg × 5')
+
+    // Yesterday bench was in the session but skipped: last time is still the session it was done.
+    const benchId = card.exercises[0]!.exerciseId!
+    await upsertWorkout(finnAccount.id, uuidv7(), {
+      day: addDays(today(), -1),
+      startedAt: new Date(Date.now() - 86_400_000).toISOString(),
+      endedAt: new Date(Date.now() - 86_400_000 + 3_600_000).toISOString(),
+      title: 'Upper',
+      notes: '',
+      feel: null,
+      exercises: [
+        {
+          id: uuidv7(),
+          exerciseId: benchId,
+          exerciseName: 'Barbell bench press',
+          notes: '',
+          sets: [],
+        },
+      ],
+    })
+    const again = (await run('draft_workout', ctx, {
+      title: 'Upper body',
+      day: null,
+      exercises: [
+        {
+          exercise_id: benchId,
+          exercise_name: 'Barbell bench press',
+          sets: [{ weight_kg: 77.5, reps: 5, time_s: null, distance_m: null }],
+        },
+      ],
+      notes: '',
+    })) as DraftResult
+    if (again.card.kind !== 'workout') throw new Error('expected a workout card')
+    expect(again.card.exercises[0]!.last).toMatchObject({ day: addDays(today(), -2) })
 
     expect(
       await run('draft_workout', ctx, {

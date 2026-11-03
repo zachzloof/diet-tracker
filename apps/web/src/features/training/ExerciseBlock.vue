@@ -3,6 +3,7 @@ import {
   MAX_EXERCISE_HISTORY,
   MAX_SETS_PER_EXERCISE,
   bestSetAt,
+  lastDoneSession,
   liftMetric,
   nextSet,
   primaryMeasure,
@@ -44,7 +45,8 @@ const history = useExerciseHistory(() => props.block.exerciseId, MAX_EXERCISE_HI
 const others = computed(() =>
   history.history.value.filter((entry) => entry.workoutId !== props.workoutId),
 )
-const previous = computed(() => others.value[0] ?? null)
+// The last session it was done in: one where it was skipped would leave the column blank.
+const previous = computed(() => lastDoneSession(others.value))
 
 /** What "best" ranks on for this exercise (D39): kg lifted in a set, else its first measure. */
 const metric = computed<SetMetric>(() =>

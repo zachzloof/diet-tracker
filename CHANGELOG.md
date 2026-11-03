@@ -4,6 +4,11 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### "Last" skips sessions where you skipped the exercise (2026-11-03)
+- The Last column beside each set now shows the last time you actually did that exercise. Before, if you skipped leg press in your previous session, the next one showed Last as blank; now it reaches back to the session where you last ticked a leg press set, and the line under the exercise names that day.
+- The coach's planned-session card reads "last time" the same way.
+- Shared: `lastDoneSession` and `isRecordedSet` in `packages/shared/src/training/stats.ts`.
+
 ### A running tally on a session (2026-11-03)
 - A session now has a strip at the top with the time so far, the sets done and the kilograms lifted. The clock runs from when you started ("12:34", "1:02:03" past the hour), and the sets and kilograms move the moment you tick a set. The strip stays pinned under the header as you scroll down through your exercises.
 - Once you finish, the strip keeps the totals with the time in minutes ("48 min"), and the line under the session name says when it started and finished. The separate Finished card at the bottom is gone, since the strip shows the same numbers. Reopen a session and the clock runs again from the original start.

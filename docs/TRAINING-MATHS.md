@@ -79,8 +79,12 @@ tie) is this ranking on `weight`.
 A session shows one greyed set beside each of yours, chosen by the Last / Best switch in the
 header (remembered on the phone, "Last" to begin with):
 
-- **Last**: the set at the same position in the most recent earlier session with this
-  exercise, done or not, so a plan copied forward is still shown.
+- **Last**: the set at the same position in the most recent earlier session where this
+  exercise was done (`lastDoneSession`): the latest with a set ticked, else, when no earlier
+  session ticked one, the latest with any numbers in it, so a plan copied forward and never
+  ticked is still shown. A session where the exercise was skipped (no sets, or only blank
+  rows) is passed over, so it never blanks the column. Within the session chosen, its sets
+  show done or not. The coach's workout card reads "last time" the same way.
 - **Best**: the best working set at that position across the last 20 sessions with this
   exercise (`bestSetAt`), by the metric above. Set 3's best is compared with set 3; a session
   with fewer sets has no candidate for the later positions, and an unticked set at that
@@ -148,6 +152,11 @@ written up here first (the week-on-week card only looks one week back). Training
 review and recalibration are slice 10 and will be written up in `NUTRITION-MATHS.md`.
 
 ## Change log
+
+- **2026-11-03**: **Rule change:** "Last" beside a set reads the most recent earlier session
+  where the exercise was done (`lastDoneSession`: a set ticked, else any numbers), not the
+  most recent session that merely contained it. Skipping leg press in one session used to
+  leave its Last column blank in the next.
 
 - **2026-11-03**: the running clock on an open session (`workoutElapsedS`) for the session
   screen's tally. No existing rule changed.

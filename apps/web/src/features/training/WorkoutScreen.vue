@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   MAX_WORKOUT_EXERCISES,
+  isRecordedSet,
   nextSet,
   repeatWorkout,
   type Exercise,
@@ -146,13 +147,7 @@ function finish(): void {
     // An untouched set at the end was never done; drop blank ones rather than count them.
     exercises: current.exercises.map((block) => ({
       ...block,
-      sets: block.sets.filter(
-        (set) =>
-          set.weightKg !== null ||
-          set.reps !== null ||
-          set.durationS !== null ||
-          set.distanceM !== null,
-      ),
+      sets: block.sets.filter(isRecordedSet),
     })),
   }))
   ui.toast('Session finished. It is on Today.', 'success')

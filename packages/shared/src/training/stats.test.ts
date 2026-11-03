@@ -5,6 +5,7 @@ import {
   bestSetAt,
   bestSetBy,
   emptyWorkout,
+  lastDoneSession,
   liftMetric,
   primaryMeasure,
   setMetricValue,
@@ -241,6 +242,29 @@ describe('bestSetAt', () => {
     expect(bestSetAt(sessions, 2, 'reps')?.reps).toBe(5)
     expect(bestSetAt(sessions, 3, 'volume')).toBeNull()
     expect(bestSetAt([], 0, 'volume')).toBeNull()
+  })
+})
+
+describe('lastDoneSession', () => {
+  const done = { day: '2026-10-27', sets: [set({ weightKg: 120, reps: 10 })] }
+  const skippedEmpty = { day: '2026-10-30', sets: [] }
+  const skippedBlank = { day: '2026-11-01', sets: [set({ completed: false })] }
+  const copiedForward = {
+    day: '2026-10-29',
+    sets: [set({ weightKg: 120, reps: 10, completed: false })],
+  }
+  it('passes over sessions where the exercise was skipped', () => {
+    expect(lastDoneSession([skippedBlank, skippedEmpty, done])).toBe(done)
+  })
+  it('prefers a session with a ticked set over a later plan never ticked', () => {
+    expect(lastDoneSession([skippedBlank, copiedForward, done])).toBe(done)
+  })
+  it('falls back to the latest numbers when nothing was ever ticked', () => {
+    expect(lastDoneSession([skippedEmpty, copiedForward])).toBe(copiedForward)
+  })
+  it('is null when every session skipped it, or there are none', () => {
+    expect(lastDoneSession([skippedBlank, skippedEmpty])).toBeNull()
+    expect(lastDoneSession([])).toBeNull()
   })
 })
 
