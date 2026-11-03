@@ -61,13 +61,18 @@ export const exercisesRoutes = new Hono<AppEnv>()
     return c.body(null, 204)
   })
 
-  /** Recent sessions with this exercise, newest first: "last time" on the session screen. */
+  /** Recent sessions with this exercise, newest first: Last and Best on a session, a lift's trend. */
   .get('/:id/history', async (c) => {
     const { user } = requireAuth(c)
     const query = exerciseHistoryQuerySchema.safeParse(c.req.query())
     if (!query.success) throw errors.validation(validationDetails(query.error))
     const body: ExerciseHistoryResponse = {
-      history: await exerciseHistory(user.id, idParam(c.req.param('id')), query.data.limit),
+      history: await exerciseHistory(
+        user.id,
+        idParam(c.req.param('id')),
+        query.data.limit,
+        query.data.from,
+      ),
     }
     return c.json(body, 200)
   })

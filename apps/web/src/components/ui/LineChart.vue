@@ -7,6 +7,9 @@ import { areaPath, linePath, makeScale, niceDomain, niceMax, type ChartBox } fro
  * 2 px surface ring, a 10% area wash, an optional solid hairline target, an optional
  * secondary series drawn as a thicker muted line (the weight trend), and a tap-or-hover
  * readout. Nulls leave gaps. `domain="auto"` hugs the data instead of starting at zero.
+ * A dense series (a year of weigh-ins or sessions, points closer than one marker) is drawn
+ * as one joined line with only the latest, highlighted and touched points marked: a dot
+ * per point would chain into crescents and hide the trend under it.
  */
 const props = withDefaults(
   defineProps<{
@@ -86,16 +89,46 @@ const range = computed(() =>
 const scale = computed(() =>
   makeScale(props.points.length, range.value.max, box.value, range.value.min),
 )
-const line = computed(() => linePath(props.points, scale.value))
-const area = computed(() => (props.area ? areaPath(props.points, scale.value) : ''))
-// The secondary series is a trend through sparse points, so it is drawn across the gaps.
-const secondaryLine = computed(() =>
-  props.secondary ? linePath(props.secondary, scale.value, true) : '',
-)
+/** The point under the finger or pointer, for the readout. */
+const active = ref<number | null>(null)
 const marks = computed(() =>
   props.points.flatMap((value, i) =>
     value === null ? [] : [{ i, x: scale.value.x(i), y: scale.value.y(value), value }],
   ),
+)
+/** A marker is 8 px across; points closer than that on average overlap. */
+const MARK_WIDTH = 8
+const dense = computed(() => {
+  const first = marks.value[0]
+  const last = marks.value[marks.value.length - 1]
+  if (!first || !last || marks.value.length < 2) return false
+  return (last.x - first.x) / (marks.value.length - 1) < MARK_WIDTH
+})
+const lastMark = computed(() => marks.value[marks.value.length - 1]?.i ?? null)
+/**
+ * The point the readout shows. In a dense series a column is under a pixel wide, so a finger
+ * lands between points; it snaps to the nearest one with a value.
+ */
+const shown = computed(() => {
+  const i = active.value
+  if (i === null || !dense.value || props.points[i] != null) return i
+  let nearest: number | null = null
+  for (const m of marks.value) {
+    if (nearest === null || Math.abs(m.i - i) < Math.abs(nearest - i)) nearest = m.i
+  }
+  return nearest
+})
+/** Whether point `i` gets its dot: every point, or in a dense series only the ones that matter. */
+function marked(i: number): boolean {
+  if (!props.markers) return props.highlight === i
+  if (!dense.value) return true
+  return i === lastMark.value || i === props.highlight || i === shown.value
+}
+const line = computed(() => linePath(props.points, scale.value, dense.value))
+const area = computed(() => (props.area ? areaPath(props.points, scale.value) : ''))
+// The secondary series is a trend through sparse points, so it is drawn across the gaps.
+const secondaryLine = computed(() =>
+  props.secondary ? linePath(props.secondary, scale.value, true) : '',
 )
 const targetY = computed(() => (props.target === null ? null : scale.value.y(props.target)))
 const columnWidth = computed(() =>
@@ -111,9 +144,8 @@ const axisLabels = computed(() =>
   })),
 )
 
-const active = ref<number | null>(null)
 const readout = computed(() => {
-  const i = active.value
+  const i = shown.value
   if (i === null) return null
   const value = props.points[i]
   const label = props.labels[i] ?? ''
@@ -188,7 +220,7 @@ function format(value: number): string {
         :opacity="secondary ? 0.7 : 1"
       />
       <g v-for="m in marks" :key="m.i">
-        <template v-if="markers || highlight === m.i">
+        <template v-if="marked(m.i)">
           <circle :cx="m.x" :cy="m.y" r="6" fill="var(--surface)" />
           <circle :cx="m.x" :cy="m.y" :r="secondary ? 3 : 4" :fill="color" />
         </template>

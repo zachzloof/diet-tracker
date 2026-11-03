@@ -6,3 +6,5 @@ export const workoutsRangeKey = (from: string, to: string) =>
 export const workoutKey = (id: string) => [...WORKOUTS_KEY, 'one', id] as const
 export const exerciseHistoryKey = (exerciseId: string, limit: number) =>
   [...EXERCISES_KEY, 'history', exerciseId, limit] as const
+export const exerciseTrendKey = (exerciseId: string, from: string, to: string) =>
+  [...EXERCISES_KEY, 'history', exerciseId, 'range', from, to] as const

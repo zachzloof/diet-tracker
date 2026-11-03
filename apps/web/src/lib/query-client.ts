@@ -17,7 +17,8 @@ export const queryClient = new QueryClient({
  * mirrored into localStorage, so a cold start in airplane mode shows the last known day,
  * targets and week instead of a spinner. Only successful answers are kept, for a week,
  * and the whole mirror is thrown away when the app version changes. API responses are
- * never cached by the service worker; this is the one place they persist.
+ * never cached by the service worker; this is the one place they persist. A query under
+ * one of these prefixes opts out with `meta: { mirror: false }` (the long history ranges).
  */
 const PERSISTED_PREFIXES: readonly (readonly string[])[] = [
   ['me'],
@@ -38,6 +39,7 @@ const PERSIST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 function shouldPersist(query: Query): boolean {
   if (query.state.status !== 'success') return false
+  if (query.meta?.mirror === false) return false
   const key = query.queryKey
   return PERSISTED_PREFIXES.some((prefix) => prefix.every((part, i) => key[i] === part))
 }

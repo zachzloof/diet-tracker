@@ -1,4 +1,5 @@
 import {
+  MAX_RANGE_DAYS,
   addDays,
   apiErrorSchema,
   applyRecalibrationResponseSchema,
@@ -110,6 +111,18 @@ describe('weight', () => {
 
     const list = weightsResponseSchema.parse(await (await send('GET', '/api/v1/weight')).json())
     expect(list.entries.map((e) => e.weightKg)).toEqual([51, 49.6])
+  })
+
+  it('reads up to a year back (D27)', async () => {
+    await send('PUT', '/api/v1/weight', { day: addDays(today(), -300), weightKg: 53 })
+    const short = weightsResponseSchema.parse(await (await send('GET', '/api/v1/weight')).json())
+    expect(short.entries.map((e) => e.weightKg)).not.toContain(53)
+    const year = weightsResponseSchema.parse(
+      await (await send('GET', `/api/v1/weight?days=${MAX_RANGE_DAYS}`)).json(),
+    )
+    expect(year.entries[0]?.weightKg).toBe(53)
+    expect(year.entries).toHaveLength(short.entries.length + 1)
+    expect((await send('GET', `/api/v1/weight?days=${MAX_RANGE_DAYS + 1}`)).status).toBe(400)
   })
 
   it('refuses a future day or an impossible weight', async () => {

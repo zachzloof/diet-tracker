@@ -49,6 +49,8 @@ Loading = skeletons in the layout's shape, never a spinner in the middle. Empty 
 ## Charts
 Rings and bars are small hand-written SVG components with tokens for colour; no chart library for those. Line charts (weight trend in slice 5) use a tiny custom SVG too unless it gets painful, then `unovis` or `chart.js` via a decision. Before drawing any chart, load the `dataviz` skill for form and colour rules, then map its palette onto the tokens above rather than introducing new colours.
 
+History screens (Progress, the Workouts list, a lift's page) put a `SegmentedControl` of ranges at the top, taken from `HISTORY_RANGES` in `apps/web/src/lib/ranges.ts` (4 weeks, 3 months, 6 months, 1 year; the longest is `MAX_RANGE_DAYS`, the year the app keeps). A read longer than three months passes `meta: { mirror: false }` so it stays out of the offline mirror. `LineChart` decides density itself: when points sit closer than one marker on average it draws one joined line, marks only the latest, highlighted and touched points, and snaps the readout to the nearest point with a value, so no screen passes a flag for it.
+
 ## Accessibility baseline
 Touch targets 44 px minimum, colour never the only signal (status has an icon or text), contrast AA in both themes, every icon-only button has an `aria-label`, focus visible for keyboard users on desktop, `aria-live` on the quick-add result. A button with visible text must not get an `aria-label` that starts differently (Lighthouse "label-content-name-mismatch"); add an `sr-only` span for the extra context instead. Every page has one `<main>` (the auth and legal layouts included).
 

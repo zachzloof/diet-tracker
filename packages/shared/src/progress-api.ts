@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MAX_RANGE_DAYS } from './dates.js'
 import { recalibrationAssessmentSchema } from './nutrition/recalibration.js'
 import { WEIGHT_KG } from './profile.js'
 import { targetVersionSchema } from './targets-api.js'
@@ -14,7 +15,7 @@ export const weightEntrySchema = z.object({
 })
 export type WeightEntry = z.infer<typeof weightEntrySchema>
 
-export const WEIGHT_HISTORY_DAYS = { default: 90, min: 7, max: 183 } as const
+export const WEIGHT_HISTORY_DAYS = { default: 90, min: 7, max: MAX_RANGE_DAYS } as const
 
 export const weightsQuerySchema = z.object({
   /** How many days back to return, ending today. */

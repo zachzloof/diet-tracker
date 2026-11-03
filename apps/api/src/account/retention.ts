@@ -27,7 +27,7 @@ export interface PurgeResult {
  * as a long series.
  *
  * The cutoff is a UTC calendar day; a person's local day differs by at most a day, which
- * does not matter at six months.
+ * does not matter at a year.
  */
 export async function purgeExpiredData(now: Date = new Date()): Promise<PurgeResult> {
   const cutoffDay = addDays(now.toISOString().slice(0, 10), -RETENTION_DAYS)

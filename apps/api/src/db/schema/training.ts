@@ -37,7 +37,7 @@ export const exercises = pgTable(
   (t) => [index('exercises_user_name_idx').on(t.userId, t.name)],
 )
 
-/** One gym session on one user-local day. Kept until deleted (D36), not purged at six months. */
+/** One gym session on one user-local day. Kept until deleted (D36), not purged with the food log. */
 export const workouts = pgTable(
   'workouts',
   {

@@ -98,8 +98,9 @@ the row.
 The per-lift trend (Gym > Week > Lifts) plots one working set per session, the best on the
 metric above: kilograms lifted or the heaviest weight for a lift (by the preference), the
 most reps, the longest time, the furthest distance. Sets that did not record it are skipped;
-null when nothing counts. "Best" on the lift page is the highest of those values over the
-last 20 sessions, "Latest" the most recent session's.
+null when nothing counts. The page reads a range of 4 weeks, 3 months (the default), 6
+months or a year. "Best" on the lift page is the highest of those values over the sessions
+in that range, "Latest" the most recent session's.
 
 ## Week totals
 
@@ -152,6 +153,10 @@ written up here first (the week-on-week card only looks one week back). Training
 review and recalibration are slice 10 and will be written up in `NUTRITION-MATHS.md`.
 
 ## Change log
+
+- **2026-11-03**: **Rule change:** "Best" on a lift's page is the best over the chosen
+  range (4 weeks to a year, 3 months to start), not over the last 20 sessions. Last and Best
+  beside a set still read the last 20 sessions.
 
 - **2026-11-03**: **Rule change:** "Last" beside a set reads the most recent earlier session
   where the exercise was done (`lastDoneSession`: a set ticked, else any numbers), not the

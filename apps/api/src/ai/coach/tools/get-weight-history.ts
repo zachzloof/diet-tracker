@@ -1,4 +1,9 @@
-import { coachToolArgsSchemas, weightRate, weightTrend } from '@diet-tracker/shared'
+import {
+  WEIGHT_HISTORY_DAYS,
+  coachToolArgsSchemas,
+  weightRate,
+  weightTrend,
+} from '@diet-tracker/shared'
 import { listWeights } from '../../../progress/weight-service.js'
 import { fmt, weekdayShort } from '../format.js'
 import { defineTool, empty } from './types.js'
@@ -9,8 +14,7 @@ const MAX_POINTS = 40
 /** Weigh-ins over a window with the seven-day trend and the rate, as the Progress screen shows them. */
 export const getWeightHistory = defineTool({
   name: 'get_weight_history',
-  description:
-    'Weigh-ins over the last N days (7 to 183) with the seven-day trend, the rate in kg a week, the change over the window, the goal weight and the pace the plan expects. The briefing has the last 28 days; use this for a longer or shorter window.',
+  description: `Weigh-ins over the last N days (${WEIGHT_HISTORY_DAYS.min} to ${WEIGHT_HISTORY_DAYS.max}) with the seven-day trend, the rate in kg a week, the change over the window, the goal weight and the pace the plan expects. The briefing has the last 28 days; use this for a longer or shorter window.`,
   schema: coachToolArgsSchemas.get_weight_history,
   status: (args) => `Looking at your last ${args.days ?? DEFAULT_DAYS} days of weigh-ins`,
   async run(ctx, args) {

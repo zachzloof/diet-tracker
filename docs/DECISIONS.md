@@ -293,7 +293,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Options.**
 - **A. Service-worker runtime caching of API responses (Workbox NetworkFirst) plus Background Sync.** The textbook answer, but the worker would cache authenticated JSON on disk regardless of who is signed in, Background Sync is Chrome-only (no iOS), and the app could not show "waiting to send".
-- **B. TanStack Query's persister into localStorage plus an app-level queue.** Built. An allowlist of queries (session, profile, targets, day logs, week and month stats, foods, weigh-ins, recalibration) is mirrored with a seven-day age limit, cleared on logout and delete, and busted by the app version. `POST /log/entries` made offline, or failing with a network error, goes into a per-user queue in localStorage; the day log and the ring count the queued entries as pending; the queue is sent in order on the next `online` event, at app start and after login. Works on iOS Safari. The AI "Describe" path stays disabled offline; My foods and manual entries queue.
+- **B. TanStack Query's persister into localStorage plus an app-level queue.** Built. An allowlist of queries (session, profile, targets, day logs, week and month stats, foods, weigh-ins, recalibration) is mirrored with a seven-day age limit, cleared on logout and delete, and busted by the app version. `POST /log/entries` made offline, or failing with a network error, goes into a per-user queue in localStorage; the day log and the ring count the queued entries as pending; the queue is sent in order on the next `online` event, at app start and after login. Works on iOS Safari. The AI "Describe" path stays disabled offline; My foods and manual entries queue. Since 2026-11-03 a range read longer than three months (the 6-month and 1-year views of the Workouts list and a lift's trend) opts out with `meta: { mirror: false }`, because a year of sessions is hundreds of kilobytes in the one localStorage entry the mirror rewrites after every change.
 - **C. A local database with sync (IndexedDB, conflict rules).** The right end state for a native app; far more than slice 5 needs.
 
 **Recommendation.** B. Move to C only when two devices per person becomes common.
@@ -374,17 +374,17 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 ---
 
-## D27. Dated history is deleted after six months (owner's decision)
+## D27. Dated history is deleted after a year (owner's decision)
 
-**Context.** UK GDPR wants a stated retention period. The owner chose six months and asked for it to be enforced.
+**Context.** UK GDPR wants a stated retention period. The owner chose six months and asked for it to be enforced. On 2026-11-03 the owner moved it to a year, for long-term progress analysis, and asked for every history view to reach a year.
 
-**What is deleted** (`purgeExpiredData`, `apps/api/src/account/retention.ts`, run at boot and every 24 hours): `log_entries`, `daily_summaries` and `weight_entries` by `day`, `weekly_reviews` by `week_end`, `ai_calls` by `created_at`, all older than `RETENTION_DAYS` (183), and any target version that had already been replaced by the cutoff, so every kept day is still scored against the targets it had.
+**What is deleted** (`purgeExpiredData`, `apps/api/src/account/retention.ts`, run at boot and every 24 hours): `log_entries`, `daily_summaries` and `weight_entries` by `day`, `weekly_reviews` by `week_end`, `ai_calls` by `created_at`, `coach_threads` by `updated_at` and `coach_briefs` by `day` (slices 11a and 11c), all older than `RETENTION_DAYS` (365; 183 until 2026-11-03), and any target version that had already been replaced by the cutoff, so every kept day is still scored against the targets it had.
 
-**What is kept** until the person deletes it: the account, the profile, the current targets, saved foods and saved meals. Sessions already expire after 30 days.
+**What is kept** until the person deletes it: the account, the profile, the current targets, saved foods and saved meals, coach notes, and workouts with custom exercises (D36). Sessions already expire after 30 days.
 
-**Consequences.** History and Progress show at most six months (the Progress range "1 year" became "6 months", and the weigh-in API caps `days` at 183). Deletion is permanent; the export in Settings is how someone keeps older data. Railway backups, if enabled, hold deleted rows until they rotate.
+**Consequences.** Every history view reads at most a year at once (`MAX_RANGE_DAYS`, 365, never more than `RETENTION_DAYS`). Progress offers 4 weeks, 3 months, 6 months and 1 year, and the weigh-in API caps `days` at 365 (it was 183 with a "6 months" range, from 2026-10-01 to 2026-11-03). The gym side reads up to a year too though its history is kept for longer: the Workouts list offers 3 months, 6 months and 1 year (`GET /workouts` takes up to 365 days), and a lift's page offers 4 weeks, 3 months, 6 months and 1 year (`GET /exercises/:id/history?from=`, up to `MAX_EXERCISE_HISTORY_SESSIONS`, 400) instead of its last 20 sessions. Range reads longer than three months stay out of the offline mirror (D21). The coach's weigh-in tool reads up to a year; its lift tool still reads at most 20 sessions, because every session's sets go to the model. Deletion is permanent; the export in Settings is how someone keeps older data. Railway backups, if enabled, hold deleted rows until they rotate.
 
-**Status.** `accepted` (2026-10-01).
+**Status.** `accepted` (2026-10-01) at six months. Changed by the owner on 2026-11-03 to a year. Nothing had been purged before the change: the oldest data was from late September 2026.
 
 ---
 
@@ -593,14 +593,14 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Status.** `adopted` (2026-10-08), please confirm; the tab question stays open until real use.
 
-## D36. Workouts are kept until deleted, not purged at six months (adopted, please confirm)
+## D36. Workouts are kept until deleted, not purged with the food log (adopted, please confirm)
 
-**Context.** D27 deletes dated history after six months: the food log, totals, weigh-ins, reviews and replaced targets. A strength log is only useful as a long series ("what did I squat last January"), so the same rule would hollow out the feature.
+**Context.** D27 deletes dated history after six months (a year since 2026-11-03): the food log, totals, weigh-ins, reviews and replaced targets. A strength log is only useful as a long series ("what did I squat last January"), so the same rule would hollow out the feature.
 
 **Options.**
 - **A. Exempt workouts and custom exercises from the purge.** Built. The privacy page lists them beside saved foods and meals as kept until the person deletes them or the account. Account deletion still removes everything through the cascades.
 - **B. Purge the sets and keep a per-exercise best.** Keeps the headline numbers, loses the sessions; more code for less.
-- **C. Purge at six months like everything else.** Consistent, useless for progress.
+- **C. Purge with the food log like everything else.** Consistent, useless for progress.
 
 **Recommendation.** A. The data is small (a set is one short row), it is the person's own training diary, and D27's reason (not holding more health data than the product uses) does not apply to history the product shows on purpose.
 

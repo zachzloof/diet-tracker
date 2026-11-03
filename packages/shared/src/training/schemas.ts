@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MAX_RANGE_DAYS } from '../dates.js'
 import {
   exerciseKindSchema,
   exerciseMeasureSchema,
@@ -17,9 +18,12 @@ export const MAX_SET_WEIGHT_KG = 1000
 export const MAX_SET_REPS = 1000
 export const MAX_SET_DURATION_S = 24 * 60 * 60
 export const MAX_SET_DISTANCE_M = 1_000_000
-/** The longest range one `GET /workouts` may ask for, in days. */
-export const MAX_WORKOUTS_RANGE_DAYS = 92
+/** The longest range one `GET /workouts` may ask for, in days: a year. */
+export const MAX_WORKOUTS_RANGE_DAYS = MAX_RANGE_DAYS
+/** Sessions behind Last and Best on a session and the coach's lift tool. */
 export const MAX_EXERCISE_HISTORY = 20
+/** The most sessions one history read returns: a lift's year, done daily, with room to spare. */
+export const MAX_EXERCISE_HISTORY_SESSIONS = 400
 
 // --- Exercises ----------------------------------------------------------------------------
 
@@ -156,7 +160,9 @@ export const exerciseHistoryEntrySchema = z.object({
 export type ExerciseHistoryEntry = z.infer<typeof exerciseHistoryEntrySchema>
 
 export const exerciseHistoryQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(MAX_EXERCISE_HISTORY).default(5),
+  limit: z.coerce.number().int().min(1).max(MAX_EXERCISE_HISTORY_SESSIONS).default(5),
+  /** Only sessions on or after this user-local day: a lift's trend over a range. */
+  from: z.iso.date().optional(),
 })
 export const exerciseHistoryResponseSchema = z.object({
   history: z.array(exerciseHistoryEntrySchema),

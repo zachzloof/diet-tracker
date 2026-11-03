@@ -83,7 +83,7 @@ async function assemble(tx: Tx, rows: WorkoutRow[]): Promise<Workout[]> {
   return rows.map((row) => toWireWorkout(row, blocks, sets))
 }
 
-/** Sessions between two user-local days inclusive, newest first. At most 92 days at once. */
+/** Sessions between two user-local days inclusive, newest first. At most a year at once. */
 export async function listWorkouts(userId: string, query: WorkoutsQuery): Promise<Workout[]> {
   const span = daysBetween(query.from, query.to)
   if (span < 0 || span >= MAX_WORKOUTS_RANGE_DAYS) {

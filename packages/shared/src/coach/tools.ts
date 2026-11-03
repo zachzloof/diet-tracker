@@ -70,7 +70,7 @@ export const getLiftHistoryArgsSchema = z.object({
 })
 
 export const getWeightHistoryArgsSchema = z.object({
-  /** Days back from today, 7 to 183; null for 28. */
+  /** Days back from today, 7 to 365; null for 28. */
   days: z.number().int().min(WEIGHT_HISTORY_DAYS.min).max(WEIGHT_HISTORY_DAYS.max).nullable(),
 })
 

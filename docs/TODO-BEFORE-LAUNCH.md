@@ -101,7 +101,7 @@ Nothing here affects the web app on Railway, which friends keep using throughout
 ## Already done (for reference)
 
 Permission before health data is stored and before anything goes to the AI; history older
-than six months deleted automatically; export, correction and deletion in the app; privacy
+than a year deleted automatically; export, correction and deletion in the app; privacy
 policy with lawful basis, retention, transfers and the right to complain; terms with
 governing law (England and Wales) and consumer-rights wording; calorie floors, capped
 deficits, adults only, maintenance-only targets and an eating-disorder charity link for

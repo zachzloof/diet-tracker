@@ -4,6 +4,15 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### A year of history (2026-11-03)
+- Your food log, daily totals, weigh-ins, weekly reviews, coach chats and daily briefs are now kept for a year instead of six months. The privacy policy says so. Workouts were already kept until you delete them.
+- Progress has a 1 year range next to 4 weeks, 3 months and 6 months.
+- A lift's page (Gym > Week > Lifts) has the same four ranges, starting on 3 months, instead of always showing the last 20 sessions. Best is the best in the range. A lift you have not done lately says when you last did it.
+- The Workouts list can show 3 months, 6 months or a year of sessions.
+- Charts with many points, such as a year of weigh-ins or sessions, draw one line with the latest point marked instead of a dot per point that hid the trend line. Tap anywhere on the line to read the nearest weigh-in or session.
+- The 6-month and 1-year views need a connection; the shorter views still work offline.
+- API: `GET /api/v1/weight?days` up to 365, `GET /api/v1/workouts` up to 365 days, `GET /api/v1/exercises/:id/history?from=` with `limit` up to 400. Shared: `RETENTION_DAYS` 365, `MAX_RANGE_DAYS`, `MAX_EXERCISE_HISTORY_SESSIONS`. Web: `lib/ranges.ts`, `useExerciseTrend`, the dense mode of `LineChart`.
+
 ### "Last" skips sessions where you skipped the exercise (2026-11-03)
 - The Last column beside each set now shows the last time you actually did that exercise. Before, if you skipped leg press in your previous session, the next one showed Last as blank; now it reaches back to the session where you last ticked a leg press set, and the line under the exercise names that day.
 - The coach's planned-session card reads "last time" the same way.

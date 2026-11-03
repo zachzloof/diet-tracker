@@ -6,7 +6,7 @@ import {
   type ExerciseHistoryEntry,
   type ExerciseInput,
 } from '@diet-tracker/shared'
-import { and, asc, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, or, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import { db } from '../db/client.js'
 import { EXERCISE_CATALOGUE } from '../db/exercise-catalogue.js'
@@ -134,12 +134,14 @@ export async function usableExerciseIds(
 
 /**
  * The person's recent sessions with this exercise, newest first, each with its sets in
- * order. The session screen shows the newest as "last time"; progress charts read more.
+ * order: at most `limit`, and none before `from` when it is given. The session screen
+ * reads the newest few for Last and Best; the lift page reads a range of up to a year.
  */
 export async function exerciseHistory(
   userId: string,
   exerciseId: string,
   limit: number,
+  from?: string,
 ): Promise<ExerciseHistoryEntry[]> {
   const blocks = await db
     .select({
@@ -150,7 +152,13 @@ export async function exerciseHistory(
     })
     .from(workoutExercises)
     .innerJoin(workouts, eq(workouts.id, workoutExercises.workoutId))
-    .where(and(eq(workoutExercises.userId, userId), eq(workoutExercises.exerciseId, exerciseId)))
+    .where(
+      and(
+        eq(workoutExercises.userId, userId),
+        eq(workoutExercises.exerciseId, exerciseId),
+        from === undefined ? undefined : gte(workouts.day, from),
+      ),
+    )
     .orderBy(desc(workouts.day), desc(workouts.startedAt), desc(workoutExercises.position))
     .limit(limit)
   if (blocks.length === 0) return []
@@ -164,12 +172,18 @@ export async function exerciseHistory(
       ),
     )
     .orderBy(asc(workoutSets.position))
+  const setsByBlock = new Map<string, typeof sets>()
+  for (const set of sets) {
+    const list = setsByBlock.get(set.workoutExerciseId)
+    if (list) list.push(set)
+    else setsByBlock.set(set.workoutExerciseId, [set])
+  }
   return blocks.map((block) =>
     exerciseHistoryEntrySchema.parse({
       workoutId: block.workoutId,
       day: block.day,
       title: block.title,
-      sets: sets.filter((set) => set.workoutExerciseId === block.blockId).map(toWireSet),
+      sets: (setsByBlock.get(block.blockId) ?? []).map(toWireSet),
     }),
   )
 }

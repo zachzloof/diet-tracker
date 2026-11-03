@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import LegalLayout from './LegalLayout.vue'
-import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_OPERATOR, LEGAL_UPDATED } from './legal'
+import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_OPERATOR, PRIVACY_UPDATED } from './legal'
 </script>
 
 <template>
-  <LegalLayout title="Privacy policy" :updated="LEGAL_UPDATED">
+  <LegalLayout title="Privacy policy" :updated="PRIVACY_UPDATED">
     <p>
       {{ APP_NAME }} is a free nutrition tracker. This page says what it stores about you, what
       leaves the server, and how to take your data with you or delete it. It is written in plain
@@ -59,7 +59,7 @@ import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_OPERATOR, LEGAL_UPDATED } from './
       <li>
         Your food log, daily totals, weigh-ins, weekly reviews, coach chats, daily briefs, the AI
         usage records and targets that have since been replaced are deleted automatically once they
-        are more than six months old. You can delete a chat yourself at any time.
+        are more than a year old. You can delete a chat yourself at any time.
       </li>
       <li>
         Your account, profile, current targets, saved foods and meals, and your workouts and

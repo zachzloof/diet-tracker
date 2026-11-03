@@ -1,4 +1,5 @@
 import {
+  RETENTION_DAYS,
   accountExportSchema,
   addDays,
   aiCostsResponseSchema,
@@ -283,7 +284,7 @@ describe('/api/v1/coach/brief and the chat it opens', () => {
   it('exports the briefs with the account and purges them under retention', async () => {
     briefModel.override = writer('Protein is on track; keep going.')
     await brief(finnAccount.cookie, 'diet')
-    const old = addDays(today(), -200)
+    const old = addDays(today(), -(RETENTION_DAYS + 17))
     await db.insert(coachBriefs).values({
       id: uuidv7(),
       userId: finnAccount.id,

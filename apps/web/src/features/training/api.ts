@@ -34,9 +34,11 @@ export const exercisesApi = {
   remove(id: string): Promise<void> {
     return requestVoid(`/exercises/${id}`, { method: 'DELETE' })
   },
-  async history(id: string, limit: number): Promise<ExerciseHistoryEntry[]> {
+  /** Newest first, at most `limit`, none before `from` when it is given. */
+  async history(id: string, limit: number, from?: string): Promise<ExerciseHistoryEntry[]> {
+    const query = from === undefined ? `limit=${limit}` : `limit=${limit}&from=${from}`
     const { history } = await request(
-      `/exercises/${id}/history?limit=${limit}`,
+      `/exercises/${id}/history?${query}`,
       exerciseHistoryResponseSchema,
     )
     return history

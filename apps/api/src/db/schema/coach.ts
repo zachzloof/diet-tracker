@@ -22,7 +22,7 @@ const day = (name: string) => date(name, { mode: 'string' })
 
 /**
  * The coach's conversations (D41, option A: state in our Postgres, requests sent with
- * `store: false`). A thread is purged by `updated_at` under the six-month retention (D27),
+ * `store: false`). A thread is purged by `updated_at` under the one-year retention (D27),
  * exported with the account (D24) and cascades from `users`. `turns` counts user messages.
  */
 export const coachThreads = pgTable(
@@ -95,7 +95,7 @@ export const coachNotes = pgTable(
  * The one-line daily brief on Today (slice 11c), one row per person, half and local day,
  * written only when the model wrote the sentence (the app's own fallback sentence is
  * rebuilt on each open and never stored). Dated history: purged by `day` under the
- * six-month retention (D27), in the export as `coachBriefs`, cascades from `users`.
+ * one-year retention (D27), in the export as `coachBriefs`, cascades from `users`.
  */
 export const coachBriefs = pgTable(
   'coach_briefs',

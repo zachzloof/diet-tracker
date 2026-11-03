@@ -1,4 +1,11 @@
-import type { Exercise, ExerciseInput, Workout } from '@diet-tracker/shared'
+import {
+  MAX_EXERCISE_HISTORY_SESSIONS,
+  daysBetween,
+  type Exercise,
+  type ExerciseHistoryEntry,
+  type ExerciseInput,
+  type Workout,
+} from '@diet-tracker/shared'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { exercisesApi, workoutsApi } from './api'
@@ -6,9 +13,11 @@ import {
   EXERCISES_KEY,
   WORKOUTS_KEY,
   exerciseHistoryKey,
+  exerciseTrendKey,
   workoutKey,
   workoutsRangeKey,
 } from './keys'
+import { MIRRORED_RANGE_DAYS } from '@/lib/ranges'
 import { COACH_BRIEF_KEY } from '@/stores/coach'
 
 export { EXERCISES_KEY, WORKOUTS_KEY }
@@ -76,17 +85,72 @@ export function useExerciseHistory(exerciseId: MaybeRefOrGetter<string | null>, 
   }
 }
 
+/** Whether a `from`..`to` read is short enough for the offline mirror (D21). */
+const mirrored = (from: string, to: string) => daysBetween(from, to) < MIRRORED_RANGE_DAYS
+
+/**
+ * Every session with this exercise from `from` to today, newest first: a lift's trend over
+ * a range of up to a year. `to` keys the read to the day it was made and decides whether
+ * it is short enough for the offline mirror.
+ */
+export function useExerciseTrend(
+  exerciseId: MaybeRefOrGetter<string>,
+  from: MaybeRefOrGetter<string>,
+  to: MaybeRefOrGetter<string>,
+) {
+  const query = useQuery(
+    computed(() => {
+      const id = toValue(exerciseId)
+      const start = toValue(from)
+      const end = toValue(to)
+      return {
+        queryKey: exerciseTrendKey(id, start, end),
+        queryFn: () => exercisesApi.history(id, MAX_EXERCISE_HISTORY_SESSIONS, start),
+        enabled: id !== '',
+        staleTime: 5 * 60_000,
+        meta: { mirror: mirrored(start, end) },
+        // Keep the last range on screen while a longer one loads, never another lift's.
+        placeholderData: (
+          previous: ExerciseHistoryEntry[] | undefined,
+          previousQuery: { queryKey: readonly unknown[] } | undefined,
+        ) => (previousQuery?.queryKey[2] === id ? previous : undefined),
+      }
+    }),
+  )
+  return {
+    history: computed(() => query.data.value ?? []),
+    isLoading: query.isPending,
+    isFetching: query.isFetching,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+  }
+}
+
 export function workoutsRangeQueryOptions(from: string, to: string) {
   return queryOptions({
     queryKey: workoutsRangeKey(from, to),
     queryFn: (): Promise<Workout[]> => workoutsApi.list(from, to),
     staleTime: 60_000,
+    meta: { mirror: mirrored(from, to) },
   })
 }
 
-/** Sessions between two user-local days inclusive, newest first. */
-export function useWorkouts(from: MaybeRefOrGetter<string>, to: MaybeRefOrGetter<string>) {
-  const query = useQuery(computed(() => workoutsRangeQueryOptions(toValue(from), toValue(to))))
+/**
+ * Sessions between two user-local days inclusive, newest first. `keepPrevious` holds the
+ * last range on screen while a new one loads (the Workouts list's range control).
+ */
+export function useWorkouts(
+  from: MaybeRefOrGetter<string>,
+  to: MaybeRefOrGetter<string>,
+  keepPrevious = false,
+) {
+  const query = useQuery(
+    computed(() => ({
+      ...workoutsRangeQueryOptions(toValue(from), toValue(to)),
+      placeholderData: keepPrevious ? (previous: Workout[] | undefined) => previous : undefined,
+    })),
+  )
   return {
     workouts: computed(() => query.data.value ?? []),
     hasData: computed(() => query.data.value !== undefined),

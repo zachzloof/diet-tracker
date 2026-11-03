@@ -225,7 +225,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **In scope.**
 - Four new tables (`exercises`, `workouts`, `workout_exercises`, `workout_sets`) in `apps/api/src/db/schema/training.ts`, one migration, and a shared exercise catalogue of common lifts with a null user id (D35). Custom exercises per user.
 - Shared: enums (exercise kind, muscle group, measure), zod schemas for the catalogue, a workout document and its wire shapes, and the first pure training functions (volume, working sets, duration) with tests. `docs/TRAINING-MATHS.md` starts, with the same update rule as the nutrition page.
-- API: `GET/POST/PATCH/DELETE /api/v1/exercises`, `GET /api/v1/exercises/:id/history` (recent sets for one exercise, for the "last time" numbers), `GET /api/v1/workouts?from&to`, `GET/PUT/DELETE /api/v1/workouts/:id`. A workout is one document, upserted by its client-generated UUID v7 (D35), written in one transaction. Workouts are exempt from the six-month purge (D36) and included in the account export.
+- API: `GET/POST/PATCH/DELETE /api/v1/exercises`, `GET /api/v1/exercises/:id/history` (recent sets for one exercise, for the "last time" numbers), `GET /api/v1/workouts?from&to`, `GET/PUT/DELETE /api/v1/workouts/:id`. A workout is one document, upserted by its client-generated UUID v7 (D35), written in one transaction. Workouts are exempt from the dated purge (D36) and included in the account export.
 - Web: a Workout card on Today (that day's sessions with duration, sets and volume, or "Rest day" with "Log a workout"); the session screen at `/workouts/:id` (title, exercise blocks, set rows with weight and reps steppers, a done toggle (the warm-up toggle was removed on 2026-10-30), "last time" under each exercise, add set copies the last set, finish); an exercise picker sheet with search, recent first and "add your own"; `/workouts/new` offers "repeat a recent session"; a Workouts list under You. The draft lives in local storage and autosaves with a debounced PUT, so a session survives a dead signal and a closed tab.
 
 **Out of scope.** Per-exercise charts, PRs and estimated one-rep max (slice 9). Training days feeding water, protein, the weekly review or recalibration (slice 10). AI "describe your workout". Templates, supersets, rest timers, a Workout tab. Cardio distance is stored but has no UI yet. Apple Health workouts.
@@ -286,7 +286,7 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 - [x] Workouts off in Preferences hides the switch, shows food's tabs and sends `/gym` to Today. *Checked.*
 - [x] Looks right at 360, 390 and 430 wide, dark and light; no horizontal scroll; no console errors. *All three widths, every screen above.*
 
-**Deferrals.** No real-phone check (headless only). The day stepper moving into the body costs 44 px of vertical space on Today and Week, both halves; worth judging on a phone. The lift trend plots the last 20 sessions only (`MAX_EXERCISE_HISTORY`) and knows no personal records or estimated one-rep max (slice 9). The gym half has no history calendar and no AI review. The Food / Gym labels are a first guess at the words.
+**Deferrals.** No real-phone check (headless only). The day stepper moving into the body costs 44 px of vertical space on Today and Week, both halves; worth judging on a phone. The lift trend plots the last 20 sessions only (`MAX_EXERCISE_HISTORY`; a chosen range of up to a year since 2026-11-03) and knows no personal records or estimated one-rep max (slice 9). The gym half has no history calendar and no AI review. The Food / Gym labels are a first guess at the words.
 
 **Decisions it depends on.** D38 (the split itself, the switch's placement and what is shared), D35, D37.
 
@@ -422,6 +422,31 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 **Deferrals.** The live model has not written a brief (dead key, see 11a); `pnpm ai:smoke:brief` prints both halves for Finn and Tess with the number check once a key is in. The brief is written once a day per half, so a line written at breakfast still reads "with lunch and dinner to go" at night; the empty-day invitation is the one line that changes during the day (it is never cached). The weekly review was not regenerated against the live model; its prompt now carries all nine TARGETS lines (not five key targets) and the full day lines, so read the first live review for length. No real-phone check. The costs view shows counts and tokens, not money (prices change; D42 notes the option).
 
 **Decisions it depends on.** D41 (accepted 2026-11-02: one agent, our database for state, cards not writes, streaming, header placement), D25 (consent copy extended), D27 (retention), D24 (export), D6 and D11 (model), D38 (placement across halves), D40 (uncapped energy in the briefing).
+
+---
+
+## Follow-up - A year of history (D27)
+
+**Status:** done (2026-11-03)
+
+**Goal.** The owner asked for the food side's history to be kept for a year instead of six months, and for every history view to reach a year, for long-term progress analysis.
+
+**Shipped.** Shared: `RETENTION_DAYS` 365 (was 183); `MAX_RANGE_DAYS` 365, which caps the weigh-in API's `days` (was 183), `MAX_WORKOUTS_RANGE_DAYS` (was 92) and the coach's `get_weight_history`; `GET /exercises/:id/history` takes `from` and a `limit` up to `MAX_EXERCISE_HISTORY_SESSIONS` (400). Web: `lib/ranges.ts` holds the ranges. Progress offers 4 weeks, 3 months, 6 months and 1 year. The Workouts list offers 3 months (the default, as before), 6 months and 1 year, and says "No sessions in the last 6 months" rather than "No sessions yet" when older sessions exist. A lift's page offers 4 weeks, 3 months (the default), 6 months and 1 year instead of its last 20 sessions (`useExerciseTrend`), and a lift not done in the range says "Not done in the last 3 months. You last did it on 6 Jun 2026." `LineChart` draws a dense series (points closer than one marker on average) as one joined line with only the latest, today's and the touched point marked, and its readout snaps to the nearest point with a value. Range reads over three months stay out of the offline mirror (D21). The privacy policy says a year and has its own updated date (3 November 2026). Written up in D27, D21, D36 and `docs/TRAINING-MATHS.md`.
+
+**Done when.**
+- [x] The purge keeps a year of the food log, weigh-ins, reviews, chats, briefs and AI rows. *`retention.test.ts` cuts at `RETENTION_DAYS`; `brief.test.ts` seeds its expired brief at `RETENTION_DAYS + 17` (it used 200 days, which a year keeps); the API's boot purge ran with the new cutoff and deleted nothing.*
+- [x] Progress at 1 year shows a year of weigh-ins with the trend visible, the Change tile reads "over 1 year", and a tap reads out the nearest weigh-in. *Walked with Playwright at 390x844 dark, 360x780 light and 430x932 dark against Vite (:5177) and a fresh API (:3201), with a user seeded through the API: weigh-ins every 4 days for 11 months and daily for the last month, 103 squat sessions across the year, one 400 days back, bench only 200 and 150 days back.*
+- [x] A lift's page starts on 3 months and its session count grows with the range (8, 25, 52, 103), the year holding every session in the year and not the one 400 days back; Best is the best in the range; about five dates under the chart at a year. *Walked at all three widths.*
+- [x] Bench, last done 150 days ago, reads "Not done in the last 3 months. You last did it on 6 Jun 2026. Pick a longer range above." and shows its two sessions at 1 year. *Walked.*
+- [x] The Workouts list shows 25, 52 and 104 days of sessions at 3 months, 6 months and a year, with "Showing the last year." under the year. *Walked.*
+- [x] After visiting the year views, the offline mirror holds only the ranges under three months (about 90,000 characters). *Read from `localStorage` in the walk.*
+- [x] At 4 weeks the weight chart keeps a dot per weigh-in; at 3 months and longer with daily weigh-ins it draws the line with the latest point. *Screenshots read at 390 dark and 360 light.*
+- [x] No horizontal scroll and no console errors on every screen above, both themes.
+- [x] Tests: `progress.test.ts` (a 300-day-old weigh-in read at `days=365`, 366 refused), `training.test.ts` (a 365-day `GET /workouts` with a 300-day-old session, the history `from` filter with `limit`, a `limit` of 401 and a bad `from` refused).
+
+**Deferrals.** No real-phone check. The coach's `get_lift_history` still reads at most 20 sessions; a year would put every session's sets into each coach turn. The food Week and History screens step back a week or a month at a time without a limit, as before; past a year they are empty. There is no single chart of calories, protein or day scores over months; the long views are weight, lifts and the session list. With a mouse, clicking the chart clears the readout that hovering opened (the hover handler runs first); a finger works. This predates the change.
+
+**Decisions it depends on.** D27, D36, D21.
 
 ---
 

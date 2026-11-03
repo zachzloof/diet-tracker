@@ -34,7 +34,7 @@ Rendered as labelled lines, not JSON, in the system prompt (lines cost fewer tok
 | `get_gym_week` | `{ week_end }` | sessions (title, day, sets, kg, minutes), week totals, week on week per lift | `workouts-service.listWorkouts`, `compareWeeks` |
 | `get_workout` | `{ id }` or `{ day }` | the session document: exercises, sets (weight, reps, time, distance), notes, feel | `workouts-service.getWorkout` |
 | `get_lift_history` | `{ exercise_id \| exercise_name, sessions: 1..20 (null = 5) }` | the exercise matched by id or by a name fragment (recently used first, exact name wins, other matches listed), best set per session on the person's basis (`liftMetric`, as the lift page), best, latest, the change first to last in the window | `exercises-service.exerciseHistory`, `bestSetBy` |
-| `get_weight_history` | `{ days: 7..183 (null = 28) }` | weigh-ins (last 40 points), the seven-day trend, rate in kg a week, change, goal weight, expected pace | `weight-service.listWeights`, `weightTrend`, `weightRate` |
+| `get_weight_history` | `{ days: 7..365 (null = 28) }` | weigh-ins (last 40 points), the seven-day trend, rate in kg a week, change, goal weight, expected pace | `weight-service.listWeights`, `weightTrend`, `weightRate` |
 | `get_recalibration` | `{}` | the assessment: enough data?, proposal, reasons | `recalibration-service.assess` |
 | `search_my_foods` | `{ query }` | up to 20 verified foods: name, serving, kcal, protein per serving | `foods-service` |
 | `search_meals` | `{ query }` | up to 20 saved meals: name, items, totals | `saved-meals-service` |

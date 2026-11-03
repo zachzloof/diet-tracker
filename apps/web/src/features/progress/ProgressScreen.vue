@@ -15,6 +15,7 @@ import { useLocalDay } from '@/features/log/useLocalDay'
 import { useProfile } from '@/features/profile/useProfile'
 import { ApiError } from '@/lib/api'
 import { formatDay, formatDayShort, formatNumber, formatWeight } from '@/lib/format'
+import { HISTORY_RANGES, rangeLabel } from '@/lib/ranges'
 import { useUiStore } from '@/stores/ui'
 import RecalibrationCard from './RecalibrationCard.vue'
 import WeightSheet from './WeightSheet.vue'
@@ -29,11 +30,6 @@ const ui = useUiStore()
 const { today } = useLocalDay()
 const profile = useProfile()
 
-const RANGES = [
-  { value: '28', label: '4 weeks' },
-  { value: '90', label: '3 months' },
-  { value: '183', label: '6 months' },
-]
 const range = ref('28')
 const days = computed(() => Number(range.value))
 
@@ -109,7 +105,7 @@ const recent = computed(() => [...entries.value].reverse().slice(0, 14))
 <template>
   <AppShell title="Progress" :back="{ name: 'week' }">
     <div class="space-y-4">
-      <SegmentedControl v-model="range" label="Range" :options="RANGES" />
+      <SegmentedControl v-model="range" label="Range" :options="HISTORY_RANGES" />
 
       <div v-if="weights.isLoading.value" class="space-y-4" aria-busy="true">
         <div class="grid grid-cols-3 gap-2">
@@ -138,7 +134,7 @@ const recent = computed(() => [...entries.value].reverse().slice(0, 14))
           <StatTile
             label="Change"
             :value="change === null ? '–' : signed(change)"
-            :sub="`over ${RANGES.find((r) => r.value === range)?.label ?? ''}`"
+            :sub="`over ${rangeLabel(range)}`"
           />
           <StatTile
             label="Per week"

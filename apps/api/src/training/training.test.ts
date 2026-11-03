@@ -1,5 +1,6 @@
 import {
   ACCOUNT_EXPORT_SCHEMA_VERSION,
+  MAX_EXERCISE_HISTORY_SESSIONS,
   MAX_WORKOUTS_RANGE_DAYS,
   RETENTION_DAYS,
   accountExportSchema,
@@ -315,6 +316,26 @@ describe('GET /api/v1/workouts', () => {
       `/api/v1/workouts?from=${addDays(DAY, -MAX_WORKOUTS_RANGE_DAYS)}&to=${DAY}`,
     )
     expect(wide.status).toBe(400)
+    await putWorkout(
+      uuidv7(),
+      pushDay({
+        day: addDays(DAY, -300),
+        startedAt: '2025-12-12T17:00:00.000Z',
+        endedAt: '2025-12-12T18:00:00.000Z',
+        title: 'Winter',
+      }),
+    )
+    const year = await send(
+      'GET',
+      `/api/v1/workouts?from=${addDays(DAY, -(MAX_WORKOUTS_RANGE_DAYS - 1))}&to=${DAY}`,
+    )
+    expect(year.status).toBe(200)
+    expect(workoutsResponseSchema.parse(await year.json()).workouts.map((w) => w.title)).toEqual([
+      'Push A',
+      'Pull',
+      'Old',
+      'Winter',
+    ])
     const backwards = await send('GET', `/api/v1/workouts?from=${DAY}&to=${addDays(DAY, -1)}`)
     expect(backwards.status).toBe(400)
     expect((await send('GET', '/api/v1/workouts?from=2026-10-01')).status).toBe(400)
@@ -350,6 +371,42 @@ describe('GET /api/v1/exercises/:id/history', () => {
       await (await send('GET', `/api/v1/exercises/${uuidv7()}/history`)).json(),
     )
     expect(never.history).toEqual([])
+  })
+
+  it('reads a range of up to a year with from (a lift trend)', async () => {
+    await putWorkout(
+      uuidv7(),
+      pushDay({
+        day: addDays(DAY, -300),
+        startedAt: '2025-12-12T17:00:00.000Z',
+        endedAt: '2025-12-12T18:00:00.000Z',
+        title: 'Winter',
+      }),
+    )
+    await putWorkout(
+      uuidv7(),
+      pushDay({ day: addDays(DAY, -7), startedAt: '2026-10-01T17:00:00.000Z', title: 'Last week' }),
+    )
+    await putWorkout(uuidv7(), pushDay())
+    const read = async (query: string) =>
+      exerciseHistoryResponseSchema
+        .parse(await (await send('GET', `/api/v1/exercises/${squatId}/history?${query}`)).json())
+        .history.map((h) => h.title)
+
+    const limit = `limit=${MAX_EXERCISE_HISTORY_SESSIONS}`
+    expect(await read(`${limit}&from=${addDays(DAY, -89)}`)).toEqual(['Push A', 'Last week'])
+    expect(await read(`${limit}&from=${addDays(DAY, -364)}`)).toEqual([
+      'Push A',
+      'Last week',
+      'Winter',
+    ])
+    expect(await read(`limit=1&from=${addDays(DAY, -364)}`)).toEqual(['Push A'])
+    expect(await read(`${limit}&from=${DAY}`)).toEqual(['Push A'])
+    const tooMany = `limit=${MAX_EXERCISE_HISTORY_SESSIONS + 1}`
+    expect((await send('GET', `/api/v1/exercises/${squatId}/history?${tooMany}`)).status).toBe(400)
+    expect((await send('GET', `/api/v1/exercises/${squatId}/history?from=last-year`)).status).toBe(
+      400,
+    )
   })
 })
 
@@ -400,7 +457,7 @@ describe('deleting', () => {
 })
 
 describe('retention and export', () => {
-  it('keeps workouts past the six-month purge (D36)', async () => {
+  it('keeps workouts past the dated purge (D36)', async () => {
     const old = addDays(DAY, -(RETENTION_DAYS + 30))
     await putWorkout(uuidv7(), pushDay({ day: old, startedAt: `${old}T07:00:00.000Z` }))
     await purgeExpiredData(new Date(`${DAY}T12:00:00.000Z`))

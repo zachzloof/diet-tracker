@@ -73,13 +73,21 @@ export function startOfLocalDay(day: string, timeZone: string): Date {
   return guess
 }
 
-/** `day` shifted by `days` calendar days (negative for earlier). */
 /**
- * How long dated history is kept: the food log, weigh-ins, weekly reviews, AI usage rows
- * and superseded targets older than this are deleted automatically (about six months).
+ * How long dated history is kept: the food log, weigh-ins, weekly reviews, coach chats and
+ * briefs, AI usage rows and superseded targets older than this are deleted automatically
+ * (a year, D27). Workouts are exempt (D36).
  */
-export const RETENTION_DAYS = 183
+export const RETENTION_DAYS = 365
 
+/**
+ * The longest window any screen or API reads at once: a year (Progress, the Workouts list,
+ * a lift's trend, the weigh-in API, the coach's weigh-in tool). Never longer than
+ * `RETENTION_DAYS`, so a full window of food history always exists.
+ */
+export const MAX_RANGE_DAYS = 365
+
+/** `day` shifted by `days` calendar days (negative for earlier). */
 export function addDays(day: string, days: number): string {
   if (!DAY_RE.test(day)) throw new Error('addDays expects YYYY-MM-DD')
   const [y, m, d] = day.split('-').map(Number) as [number, number, number]
