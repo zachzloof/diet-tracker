@@ -75,8 +75,8 @@ export const getLiftHistory = defineTool({
     const trend =
       first && last && first !== last && first.value !== null && last.value !== null
         ? {
-            from: `${metricValueText(first.value, metric)} on ${first.entry.day}`,
-            to: `${metricValueText(last.value, metric)} on ${last.entry.day}`,
+            from: `${metricValueText(first.value, metric)} on ${dayLabel(first.entry.day)}`,
+            to: `${metricValueText(last.value, metric)} on ${dayLabel(last.entry.day)}`,
             change: `${last.value - first.value > 0 ? '+' : ''}${fmt(last.value - first.value)} ${METRIC_UNITS[metric]}`,
             change_pct:
               first.value > 0

@@ -220,8 +220,21 @@ export function todayLines(day: DayLogResponse, dayScore: DayScore, prefs: Prefe
   for (const key of shownTargetKeys(TODAY_KEYS, prefs)) {
     const score = dayScore.scores[key]
     if (!score) continue
+    // What is left (or over) is spelled out so the coach quotes it rather than subtracting.
+    const left = whole(Math.max(0, score.target - score.actual))
+    const over = whole(Math.max(0, score.actual - score.target))
+    const rest =
+      score.kind === 'limit'
+        ? over > 0
+          ? `, ${over} ${keyUnit(key)} over the limit`
+          : `, ${left} ${keyUnit(key)} under the limit`
+        : left > 0
+          ? `, ${left} ${keyUnit(key)} left`
+          : over > 0
+            ? `, ${over} ${keyUnit(key)} over`
+            : ''
     lines.push(
-      `- ${keyLabel(key)}: ${whole(score.actual)} / ${whole(score.target)} ${keyUnit(key)}${pct(score.ratio)}, ${score.status}${score.kind === 'limit' ? ' (limit)' : ''}.`,
+      `- ${keyLabel(key)}: ${whole(score.actual)} / ${whole(score.target)} ${keyUnit(key)}${pct(score.ratio)}, ${score.status}${score.kind === 'limit' ? ' (limit)' : ''}${rest}.`,
     )
   }
   lines.push(`- Day so far: ${dayScore.dayMet ? 'met' : 'not met yet'}.`)

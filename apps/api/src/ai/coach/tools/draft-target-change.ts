@@ -24,7 +24,7 @@ const MOVED = 0.05
 export const draftTargetChange = defineTool({
   name: 'draft_target_change',
   description:
-    'Draft a change to one target as a card the person applies with a tap: the number now, the number after, the targets the engine recomputes from it (fat and carbs when energy or protein moves), and any floor or range warning. value null clears a pin so the engine’s number comes back. Nothing changes until the person taps Apply. Use when they ask to change, raise, lower, set or reset a target; never pin a value under the safety floor.',
+    'Draft a change to one target as a card the person applies with a tap: the number now, the number after, the targets the engine recomputes from it (fat and carbs when energy or protein moves), and any floor or range warning. value null clears a pin so the engine’s number comes back. Nothing changes until the person taps Apply. Use when they ask to change, raise, lower, set or reset a target; never pin a value under the safety floor. reason is one short line shown on the card, written to the person ("You asked for 200 kcal less"), never about them ("User asked...").',
   schema: coachToolArgsSchemas.draft_target_change,
   status: (args) =>
     args.value === null

@@ -190,7 +190,7 @@ function trainingDraft(inputs: BriefingInputs, today: string): BriefDraft {
   if (last) {
     const lift = topLift(last, inputs)
     facts.push(
-      `- Last session: ${last.title || 'Workout'} on ${weekdayShort(last.day)} ${dayLabel(last.day)}${lift ? `, top lift ${lift}` : ''}.`,
+      `- Last session: ${last.title || 'Workout'} on ${dayLabel(last.day)}${lift ? `, top lift ${lift}` : ''}.`,
     )
   }
   const gain = biggestGainLine(gym, profile)
@@ -244,7 +244,8 @@ Rules:
 - One sentence, under 120 characters, plain words, second person or no person. No greeting, no name, no emoji, no exclamation marks.
 - Use only numbers that appear in the facts, copied exactly with their units. Never add a number, a food, an exercise or a day.
 - The day is in progress: say where things stand and what is left, never whether it was good or bad. No advice, no praise, no warnings.
-- Lead with the thing that matters most: what is short and what is still to go, or the session done and the week's count.`
+- Lead with the thing that matters most: what is short and what is still to go, or the session done and the week's count.
+- In the gym, keep the last session's top lift (exercise, weight and reps) when the facts name one.`
 
 export interface BriefWriter {
   write(args: { userId: string; user: string }): Promise<{ sentence: string; model: string } | null>

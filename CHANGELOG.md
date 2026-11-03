@@ -4,6 +4,10 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### The coach, checked against the live model (2026-11-03, slice 11 wrap-up)
+- The coach, the daily brief, the estimate behind "log 2 eggs" and the weekly review were run against the real model for the first time (the key was dead for the three slice 11 sessions). Everything worked; what changed from reading the answers: the coach says days the way the app prints them ("Tue 27 Oct", not 2026-10-27), lists today's foods by name when asked what you ate (it used to answer from the totals), keeps allergies and dislikes out of its suggestions without naming them, and is told how much of each target is left today so it quotes that instead of doing the sum. The gym brief keeps the last session's top lift ("1 of 4 sessions done this week; last top lift was barbell back squat 105 kg × 5") and no longer reads "on Sat Sat 31 Oct" in its facts.
+- `pnpm ai:smoke:coach` no longer spends a second estimator call per run and counts the question's own numbers and the estimate card's totals as traced.
+
 ### The coach comes to you (2026-11-02, slice 11c)
 - One line at the top of Today, in both halves, says where you stand and what is left: "Protein is 40 g short with dinner to go: 110 of 150 g so far" on the food side, "2 of 4 sessions this week; last was Legs on Fri: barbell back squat 105 kg × 5" in the gym. The numbers are the ones on the screen below it; the coach's model only puts them into words, once a day per half, and the app keeps the line for the day. With nothing logged yet the line invites the first entry instead ("Nothing logged yet. Log breakfast and I'll tell you where you stand."), and changes as soon as you log.
 - Tap the line and the coach opens with it as the first thing it said, ready for your reply. It needs AI features allowed (the same permission as the coach) and a connection.

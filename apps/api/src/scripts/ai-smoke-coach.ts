@@ -9,6 +9,7 @@ import { eq, inArray } from 'drizzle-orm'
 import { runTurn } from '../ai/coach/agent.js'
 import { buildBriefing, loadBriefingInputs } from '../ai/coach/briefing.js'
 import { toolByName, type ToolContext } from '../ai/coach/tools/index.js'
+import { COACH_DRAFT_TOOLS } from '@diet-tracker/shared'
 import { closeDb, db } from '../db/client.js'
 import { aiCalls, users } from '../db/schema/index.js'
 import { SEED_USERS } from '../db/seed-data.js'
@@ -69,6 +70,7 @@ interface Row {
 }
 
 const rows: Row[] = []
+const draftToolNames: ReadonlySet<string> = new Set(COACH_DRAFT_TOOLS)
 
 function numbersIn(text: string): string[] {
   return [...text.matchAll(/\d[\d,]*(?:\.\d+)?/g)].map((m) => m[0].replace(/,/g, ''))
@@ -143,11 +145,15 @@ for (const seed of SEED_USERS) {
     const tokensIn = calls.reduce((sum, c) => sum + (c.inputTokens ?? 0), 0)
     const tokensOut = calls.reduce((sum, c) => sum + (c.outputTokens ?? 0), 0)
 
-    // Re-run the tools with the recorded arguments so the number check sees what the model saw.
-    let seen = briefing
+    // Re-run the read tools with the recorded arguments so the number check sees what the
+    // model saw. Draft tools are not re-run (the estimator would be spent again and answer
+    // differently); their cards below carry what the model was told. The question's own
+    // numbers count as seen too.
+    let seen = `${briefing}\n${question}`
     for (const entry of result.toolTrail) {
       const tool = toolByName(entry.name)
       if (!tool || !entry.ok) continue
+      if (draftToolNames.has(entry.name)) continue
       try {
         seen += `\n${JSON.stringify(await tool.run(ctx, tool.schema.parse(entry.arguments) as never))}`
       } catch {
@@ -160,8 +166,16 @@ for (const seed of SEED_USERS) {
       !expected ||
       cardKinds.includes(expected.kind) ||
       (expected.optional && cardKinds.length === 0)
-    // Every number a card shows is one the model was told, so the trace covers them too.
+    // Every number a card shows is one the model was told, so the trace covers them too,
+    // with the estimate card's whole-number items and totals as `draft_food_log` summarised them.
     seen += `\n${JSON.stringify(result.cards)}`
+    for (const card of result.cards) {
+      if (card.kind !== 'estimate') continue
+      const items = card.result.estimate.items
+      const whole = (n: number) => String(Math.round(n))
+      seen += `\n${items.map((i) => `${whole(i.grams)} ${whole(i.nutrients.energy_kcal)} ${whole(i.nutrients.protein_g)} ${whole(i.nutrients.carbs_g)} ${whole(i.nutrients.fat_g)}`).join(' ')}`
+      seen += ` ${whole(items.reduce((s, i) => s + i.nutrients.energy_kcal, 0))} ${whole(items.reduce((s, i) => s + i.nutrients.protein_g, 0))}`
+    }
     const seenNumbers = new Set(numbersIn(seen))
     const unmatched = [...new Set(numbersIn(result.text))].filter((num) => !seenNumbers.has(num))
     const conflicts = conflictsIn(result.text, profile)
