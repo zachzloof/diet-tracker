@@ -44,6 +44,18 @@ export function workoutDurationMin(
   return Math.max(0, Math.round(ms / 60_000))
 }
 
+/**
+ * Whole seconds since the start: to the finish once there is one, else to `now` (epoch ms),
+ * the running clock on an open session. Never negative, like the duration.
+ */
+export function workoutElapsedS(
+  workout: Pick<WorkoutInput, 'startedAt' | 'endedAt'>,
+  now: number,
+): number {
+  const end = workout.endedAt ? Date.parse(workout.endedAt) : now
+  return Math.max(0, Math.floor((end - Date.parse(workout.startedAt)) / 1000))
+}
+
 export interface WorkoutSummary {
   volumeKg: number
   workingSets: number

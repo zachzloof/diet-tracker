@@ -1,6 +1,7 @@
 import type { WorkoutSet } from '@diet-tracker/shared'
 import { describe, expect, it } from 'vitest'
 import {
+  formatClock,
   formatDuration,
   formatMetricValue,
   metricDeltaLabel,
@@ -84,6 +85,11 @@ describe('formatDuration and parseNumber', () => {
     expect(formatDuration(48)).toBe('48 min')
     expect(formatDuration(60)).toBe('1 h')
     expect(formatDuration(75)).toBe('1 h 15 min')
+  })
+  it('reads the running clock as a stopwatch', () => {
+    expect(formatClock(7)).toBe('0:07')
+    expect(formatClock(754)).toBe('12:34')
+    expect(formatClock(3723)).toBe('1:02:03')
   })
   it('parses typed numbers leniently', () => {
     expect(parseNumber(' 102,5 ')).toBe(102.5)

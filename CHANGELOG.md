@@ -4,6 +4,11 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### A running tally on a session (2026-11-03)
+- A session now has a strip at the top with the time so far, the sets done and the kilograms lifted. The clock runs from when you started ("12:34", "1:02:03" past the hour), and the sets and kilograms move the moment you tick a set. The strip stays pinned under the header as you scroll down through your exercises.
+- Once you finish, the strip keeps the totals with the time in minutes ("48 min"), and the line under the session name says when it started and finished. The separate Finished card at the bottom is gone, since the strip shows the same numbers. Reopen a session and the clock runs again from the original start.
+- Shared: `workoutElapsedS` in `packages/shared/src/training/stats.ts`. Web: `features/training/WorkoutTally.vue`, `formatClock` in `features/training/draft.ts`.
+
 ### The coach, checked against the live model (2026-11-03, slice 11 wrap-up)
 - The coach, the daily brief, the estimate behind "log 2 eggs" and the weekly review were run against the real model for the first time (the key was dead for the three slice 11 sessions). Everything worked; what changed from reading the answers: the coach says days the way the app prints them ("Tue 27 Oct", not 2026-10-27), lists today's foods by name when asked what you ate (it used to answer from the totals), keeps allergies and dislikes out of its suggestions without naming them, and is told how much of each target is left today so it quotes that instead of doing the sum. The gym brief keeps the last session's top lift ("1 of 4 sessions done this week; last top lift was barbell back squat 105 kg × 5") and no longer reads "on Sat Sat 31 Oct" in its facts.
 - `pnpm ai:smoke:coach` no longer spends a second estimator call per run and counts the question's own numbers and the estimate card's totals as traced.

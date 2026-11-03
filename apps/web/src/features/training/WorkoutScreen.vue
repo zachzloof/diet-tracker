@@ -3,7 +3,6 @@ import {
   MAX_WORKOUT_EXERCISES,
   nextSet,
   repeatWorkout,
-  workoutSummary,
   type Exercise,
   type Workout,
   type WorkoutExerciseInput,
@@ -27,7 +26,8 @@ import { useUiStore, type SetReference } from '@/stores/ui'
 import { useWorkoutDraftStore } from '@/stores/workout-draft'
 import ExerciseBlock from './ExerciseBlock.vue'
 import ExercisePicker from './ExercisePicker.vue'
-import { blockMeasures, formatDuration, formatVolume, workoutTitle } from './draft'
+import WorkoutTally from './WorkoutTally.vue'
+import { blockMeasures, workoutTitle } from './draft'
 import { useDeleteWorkout, useExercises, useWorkout } from './useTraining'
 
 /**
@@ -35,7 +35,8 @@ import { useDeleteWorkout, useExercises, useWorkout } from './useTraining'
  * after every change; the header says where it stands. Opening a session that is not on this
  * phone fetches it once and seeds the draft from the server copy. The Last / Best pill in the
  * header decides what the greyed column beside each set shows (D39); it is remembered on the
- * device.
+ * device. The tally under the header runs while the session is open and holds the totals once
+ * it is finished.
  */
 const route = useRoute()
 const router = useRouter()
@@ -89,7 +90,6 @@ const reference = computed({
 })
 
 const finished = computed(() => input.value?.endedAt !== null)
-const summary = computed(() => (input.value ? workoutSummary(input.value) : null))
 const full = computed(() => (input.value?.exercises.length ?? 0) >= MAX_WORKOUT_EXERCISES)
 
 const FEEL = [
@@ -263,6 +263,8 @@ const failed = computed(() => !input.value && remote.isError.value)
     </Card>
 
     <div v-else-if="input" class="space-y-4">
+      <WorkoutTally :workout="input" />
+
       <div class="space-y-1.5">
         <label for="workout-title" class="sr-only">Session name</label>
         <input
@@ -279,9 +281,7 @@ const failed = computed(() => !input.value && remote.isError.value)
         <p class="px-1 text-sm text-fg-muted">
           {{ input.day === today ? 'Today' : formatDay(input.day) }} · started
           {{ formatMealTime(input.startedAt) }}
-          <template v-if="summary?.durationMin !== null && summary">
-            · {{ formatDuration(summary.durationMin) }}</template
-          >
+          <template v-if="input.endedAt"> · finished {{ formatMealTime(input.endedAt) }}</template>
         </p>
       </div>
 
@@ -323,28 +323,6 @@ const failed = computed(() => !input.value && remote.isError.value)
       <p v-if="full" class="text-sm text-fg-muted">
         A session can have up to {{ MAX_WORKOUT_EXERCISES }} exercises.
       </p>
-
-      <Card v-if="finished && summary" as="section">
-        <h2 class="text-base font-semibold">Finished</h2>
-        <div class="mt-2 grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p class="text-xl font-bold text-fg tabular-nums">
-              {{ summary.durationMin === null ? '–' : formatDuration(summary.durationMin) }}
-            </p>
-            <p class="text-xs text-fg-muted">time</p>
-          </div>
-          <div>
-            <p class="text-xl font-bold text-fg tabular-nums">{{ summary.workingSets }}</p>
-            <p class="text-xs text-fg-muted">sets</p>
-          </div>
-          <div>
-            <p class="text-xl font-bold text-fg tabular-nums">
-              {{ formatVolume(summary.volumeKg) }}
-            </p>
-            <p class="text-xs text-fg-muted">lifted</p>
-          </div>
-        </div>
-      </Card>
 
       <SegmentedControl v-model="feel" label="How did it feel?" :options="FEEL" />
       <Textarea

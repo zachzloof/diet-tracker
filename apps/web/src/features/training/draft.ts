@@ -43,6 +43,14 @@ export function formatDuration(minutes: number): string {
   return m === 0 ? `${h} h` : `${h} h ${m} min`
 }
 
+/** "0:07", "12:34", "1:02:03": a stopwatch reading for the running session clock. */
+export function formatClock(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = String(seconds % 60).padStart(2, '0')
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`
+}
+
 export function formatVolume(kg: number): string {
   return `${formatNumber(Math.round(kg), 0)} kg`
 }

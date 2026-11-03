@@ -14,6 +14,7 @@ import {
   summariseWorkouts,
   topSet,
   workoutDurationMin,
+  workoutElapsedS,
   workoutSummary,
 } from './stats.js'
 
@@ -98,6 +99,19 @@ describe('workoutSummary', () => {
       exercisesDone: 0,
       durationMin: null,
     })
+  })
+})
+
+describe('workoutElapsedS', () => {
+  const open = { ...pushA, endedAt: null }
+  it('runs from the start to now while the session is open', () => {
+    expect(workoutElapsedS(open, Date.parse('2026-10-08T17:12:34.900Z'))).toBe(754)
+  })
+  it('stops at the finish once there is one, whatever now is', () => {
+    expect(workoutElapsedS(pushA, Date.parse('2026-10-09T09:00:00.000Z'))).toBe(2910)
+  })
+  it('is never negative', () => {
+    expect(workoutElapsedS(open, Date.parse('2026-10-08T16:59:58.000Z'))).toBe(0)
   })
 })
 

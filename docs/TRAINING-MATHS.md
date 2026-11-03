@@ -45,6 +45,14 @@ a single session rarely passes a few thousand.
 
 `minutes = round((finish − start) / 60 s)`, never below 0; null while the session is open.
 
+**The running clock.** While a session is open, the tally pinned at the top of the session
+screen counts `elapsed = now − start` in whole seconds (rounded down, never below 0) and shows
+it as a stopwatch: "12:34", then "1:02:03" past the hour (`workoutElapsedS`). Once the session
+is finished the same spot shows the minutes above ("48 min"), as every session card does.
+Reopening a finished session runs the clock from the original start again, so the time it sat
+finished counts. Beside the clock, the tally's sets done and kilograms lifted are the working
+sets and session volume above, updated as each set is ticked.
+
 ## What "best" means (D39)
 
 Every place that ranks sets ranks them on one **metric**. An exercise's **measure** is its
@@ -140,6 +148,9 @@ written up here first (the week-on-week card only looks one week back). Training
 review and recalibration are slice 10 and will be written up in `NUTRITION-MATHS.md`.
 
 ## Change log
+
+- **2026-11-03**: the running clock on an open session (`workoutElapsedS`) for the session
+  screen's tally. No existing rule changed.
 
 - **2026-10-19** (D39): what "best" means. A lift that records reps is ranked on the
   kilograms lifted in one set (weight × reps) by default, or on the heaviest weight by the
