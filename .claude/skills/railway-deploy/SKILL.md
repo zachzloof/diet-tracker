@@ -19,7 +19,7 @@ Migrations run before the server on every deploy so schema and code cannot disag
 |---|---|
 | DATABASE_URL | Injected by Railway; locally points at docker compose |
 | SESSION_SECRET | 32+ random bytes; signs session cookies |
-| APP_ORIGIN | e.g. `https://diet-tracker-production.up.railway.app`; cookie settings and absolute links |
+| APP_ORIGIN | `https://diet-trackerapi-production.up.railway.app` in production; cookie settings and absolute links |
 | OPENAI_API_KEY | server-only; must never reach the web bundle |
 | OPENAI_MODEL | e.g. `gpt-5`; changing it needs no code change |
 | AI_DAILY_CALL_CAP | per-user daily OpenAI call cap; default 150 |
@@ -40,7 +40,13 @@ Env is parsed by zod at boot (`apps/api/src/env.ts`). A missing or malformed var
 2. `curl https://<domain>/api/health`.
 3. On a phone: open the URL, add to home screen, log in, walk the slice's Done-when list.
 4. Locally, the same image can be built and booted against the compose database: `docker build -t diet-tracker:local .` then `docker run --rm -p 3001:3000 -e DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5433/diet_tracker -e SESSION_SECRET=<64 hex> -e APP_ORIGIN=http://localhost:3001 diet-tracker:local`. The README has the Railway one-time setup steps.
-The Railway CLI is not installed on the owner's machine. Use the dashboard, or `npm i -g @railway/cli` if terminal log access becomes necessary; say so in the report if you install it.
+
+## The live service
+Project `minori`, service `app`, environment `production`, at `https://diet-trackerapi-production.up.railway.app`. The domain is not built from the project or repo name, so never guess it: read it from `railway status --json`.
+
+The Railway CLI is installed and logged in as the owner, and the repo folder is deliberately not linked, so a stray `railway up` from it deploys nothing. `railway list --json` needs no link. For anything else, link from a scratch folder (`railway link --project <id> --environment production --service app`), read `railway status --json`, `railway deployment list --json` and `railway logs --deployment`, then `railway unlink --yes`. Reads only: changing a variable or deploying is the owner's call, push to `main` is how code ships, and `railway variables` is never printed because it holds secrets. Keep production log output to counts and message names; request lines can carry user details.
+
+A 404 with `x-railway-fallback: true` and "Application not found" means nothing answers on that hostname. That is a wrong address, not a failed deploy: confirm the address before saying anything about the deploy.
 
 ## Common failures
 - Build OK, boot crashes with an env error: set the variable in Railway Variables and redeploy.
