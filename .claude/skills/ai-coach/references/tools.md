@@ -27,7 +27,7 @@ Rendered as labelled lines, not JSON, in the system prompt (lines cost fewer tok
 
 | Tool | Arguments | Returns | Service |
 |---|---|---|---|
-| `get_day_food` | `{ day }` | entries grouped by meal (name, quantity, unit, kcal, protein, carbs, fat, confidence), totals, scores per shown key, met | `log-service.getDay`, `evaluateDay` |
+| `get_day_food` | `{ day }` (up to tomorrow, which only holds a plan) | entries grouped by meal (name, quantity, unit, kcal, protein, carbs, fat, confidence), `planned_not_eaten` when there are plans (same item shape, in no total, D43), totals, scores per shown key, met | `log-service.getDay`, `evaluateDay` |
 | `get_week_food` | `{ week_end }` | seven scored days (met, energy, protein, status line), averages, gaps with evidence | `stats-service.weekStats` |
 | `get_month_food` | `{ month }` | per day: logged, met, energy, protein; counts | `stats-service.monthStats` |
 | `get_targets` | `{}` | every target with reason and pin, the version history (dates and what changed) | `targets-service` |

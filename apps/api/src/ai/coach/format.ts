@@ -85,6 +85,7 @@ export function dayLabel(day: string): string {
 export function relativeDayLabel(day: string, today: string): string {
   if (day === today) return 'today'
   if (day === addDays(today, -1)) return 'yesterday'
+  if (day === addDays(today, 1)) return 'tomorrow'
   return dayLabel(day)
 }
 

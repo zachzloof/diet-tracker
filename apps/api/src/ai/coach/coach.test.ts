@@ -5,6 +5,8 @@ import {
   COACH_UNAVAILABLE_TEXT,
   accountExportSchema,
   addDays,
+  emptyFoodGroupServes,
+  emptyNutrientVector,
   apiErrorSchema,
   coachThreadResponseSchema,
   coachThreadsResponseSchema,
@@ -167,6 +169,89 @@ describe('the read tools', () => {
     expect(empty).toMatchObject({ empty: true })
     const future = await run('get_day_food', ctx, { day: addDays(today(), 1) })
     expect(future).toMatchObject({ empty: true })
+    const further = await run('get_day_food', ctx, { day: addDays(today(), 2) })
+    expect(further).toMatchObject({ empty: true })
+  })
+
+  describe('planned food (D43)', () => {
+    const chicken = {
+      name: 'Chicken curry',
+      quantity: 1,
+      unit: 'bowl',
+      grams: 400,
+      nutrients: { ...emptyNutrientVector(), energy_kcal: 640, protein_g: 45 },
+      foodGroups: emptyFoodGroupServes(),
+      source: 'manual',
+      foodId: null,
+      aiCallId: null,
+      assumptions: [],
+      confidence: null,
+    }
+    const plan = async (day: string) => {
+      const res = await send(finnAccount.cookie, 'POST', '/api/v1/log/entries', {
+        day,
+        meal: 'dinner',
+        loggedAt: new Date().toISOString(),
+        planned: true,
+        entries: [chicken],
+      })
+      expect(res.status).toBe(201)
+    }
+
+    it('reads the plan apart from what was eaten, today and tomorrow', async () => {
+      const ctx = ctxFor(finnAccount)
+      await plan(addDays(today(), -1))
+      const yesterday = (await run('get_day_food', ctx, { day: addDays(today(), -1) })) as {
+        entries: number
+        meals: { items: { name: string }[] }[]
+        planned_not_eaten: { name: string; kcal: number }[]
+      }
+      expect(yesterday.planned_not_eaten).toEqual([
+        expect.objectContaining({ name: 'Chicken curry', kcal: 640 }),
+      ])
+      expect(yesterday.meals.flatMap((m) => m.items).map((i) => i.name)).not.toContain(
+        'Chicken curry',
+      )
+
+      await plan(addDays(today(), 1))
+      const tomorrow = (await run('get_day_food', ctx, { day: addDays(today(), 1) })) as {
+        label: string
+        entries: number
+        planned_not_eaten: unknown[]
+        note: string
+      }
+      expect(tomorrow).toMatchObject({ label: 'tomorrow', entries: 0 })
+      expect(tomorrow.planned_not_eaten).toHaveLength(1)
+      expect(tomorrow.note).toMatch(/only holds a plan/)
+    })
+
+    it('tells the briefing what is planned without touching its numbers', async () => {
+      const before = await loadBriefingInputs(finnAccount.id, finnAccount.profile)
+      await plan(today())
+      const inputs = await loadBriefingInputs(finnAccount.id, finnAccount.profile)
+      expect(inputs.dayScore.scores.energy_kcal?.actual).toBe(
+        before.dayScore.scores.energy_kcal?.actual,
+      )
+      const briefing = buildBriefing(inputs)
+      expect(briefing).toContain(
+        'Planned for later, not eaten and in none of these numbers: Chicken curry (640 kcal).',
+      )
+    })
+
+    it('leaves a day with only a plan on it as nothing logged', async () => {
+      const fresh = await signUp('planner@example.com', finn.profile)
+      const res = await send(fresh.cookie, 'POST', '/api/v1/log/entries', {
+        day: today(),
+        meal: 'dinner',
+        loggedAt: new Date().toISOString(),
+        planned: true,
+        entries: [chicken],
+      })
+      expect(res.status).toBe(201)
+      const briefing = buildBriefing(await loadBriefingInputs(fresh.id, fresh.profile))
+      expect(briefing).toContain('Nothing logged yet today.')
+      expect(briefing).toContain('Chicken curry (640 kcal)')
+    })
   })
 
   it("get_lift_history matches the lift page: best 525, latest 525, +25 kg over Finn's squats", async () => {

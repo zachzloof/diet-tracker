@@ -75,5 +75,5 @@ export const accountExportSchema = z.object({
 })
 export type AccountExport = z.infer<typeof accountExportSchema>
 
-/** 2 added `savedMeals`; 3 added `exercises` (custom only) and `workouts` (slice 8); 4 added `coachThreads` (slice 11a); 5 added `coachNotes` (slice 11b); 6 added `coachBriefs` (slice 11c). */
-export const ACCOUNT_EXPORT_SCHEMA_VERSION = 6
+/** 2 added `savedMeals`; 3 added `exercises` (custom only) and `workouts` (slice 8); 4 added `coachThreads` (slice 11a); 5 added `coachNotes` (slice 11b); 6 added `coachBriefs` (slice 11c); 7 added `planned` on log entries (D43). */
+export const ACCOUNT_EXPORT_SCHEMA_VERSION = 7

@@ -1,5 +1,7 @@
 import {
   NO_FLAGS,
+  accountExportSchema,
+  addDays,
   apiErrorSchema,
   createEntriesResponseSchema,
   dayLogResponseSchema,
@@ -9,6 +11,7 @@ import {
   emptyNutrientVector,
   foodResponseSchema,
   foodsResponseSchema,
+  localDay,
   portionOf,
   savedMealsResponseSchema,
   updateEntryResponseSchema,
@@ -512,6 +515,206 @@ describe('day log', () => {
     cookie = ''
     expect((await send('GET', `/api/v1/log/day/${DAY}`)).status).toBe(401)
     expect((await send('GET', '/api/v1/foods')).status).toBe(401)
+  })
+})
+
+describe('planned food', () => {
+  const TODAY = localDay(new Date(), finn.timezone)
+  const TOMORROW = addDays(TODAY, 1)
+  const AT = new Date().toISOString()
+
+  const plan = (day: string, entries: LogEntryInput[] = [eggs]) =>
+    send('POST', '/api/v1/log/entries', {
+      day,
+      meal: 'dinner',
+      loggedAt: AT,
+      planned: true,
+      entries,
+    })
+
+  const dayLog = async (day: string) =>
+    dayLogResponseSchema.parse(await (await send('GET', `/api/v1/log/day/${day}`)).json())
+
+  it('sits on the day, out of every total, until it is eaten', async () => {
+    const planned = createEntriesResponseSchema.parse(await (await plan(TODAY)).json())
+    expect(planned.entries[0]?.planned).toBe(true)
+    expect(planned.summary.totals.energy_kcal).toBe(0)
+    expect(planned.summary.entryCount).toBe(0)
+
+    await send('POST', '/api/v1/log/entries', {
+      day: TODAY,
+      meal: 'breakfast',
+      loggedAt: AT,
+      entries: [toast],
+    })
+    const day = await dayLog(TODAY)
+    expect(day.entries.map((e) => [e.name, e.planned])).toEqual([
+      [eggs.name, true],
+      [toast.name, false],
+    ])
+    // Toast only: 230 kcal and one entry, with the 310 kcal of eggs still to come.
+    expect(day.summary.totals.energy_kcal).toBe(230)
+    expect(day.summary.entryCount).toBe(1)
+  })
+
+  it('lets tomorrow hold a plan and nothing else, and goes no further', async () => {
+    expect((await plan(TOMORROW)).status).toBe(201)
+
+    const eaten = await send('POST', '/api/v1/log/entries', {
+      day: TOMORROW,
+      meal: 'dinner',
+      loggedAt: AT,
+      entries: [eggs],
+    })
+    expect(eaten.status).toBe(400)
+    expect((await errorBody(eaten)).message).toMatch(/can only be planned/)
+
+    const tooFar = await plan(addDays(TODAY, 2))
+    expect(tooFar.status).toBe(400)
+    expect((await errorBody(tooFar)).message).toMatch(/as far as tomorrow/)
+
+    const day = await dayLog(TOMORROW)
+    expect(day.entries).toHaveLength(1)
+    expect(day.summary.entryCount).toBe(0)
+  })
+
+  it('counts once ticked off, in the meal it went to, and leaves again if put back', async () => {
+    const created = createEntriesResponseSchema.parse(await (await plan(TODAY)).json())
+    const id = created.entries[0]!.id
+
+    const ticked = updateEntryResponseSchema.parse(
+      await (
+        await send('PATCH', `/api/v1/log/entries/${id}`, { planned: false, meal: 'lunch' })
+      ).json(),
+    )
+    expect(ticked.entry).toMatchObject({ planned: false, meal: 'lunch' })
+    // It sorts where it was eaten, not where it was planned.
+    expect(ticked.entry.loggedAt).not.toBe(created.entries[0]!.loggedAt)
+    expect(ticked.summaries[0]?.totals.energy_kcal).toBe(310)
+    expect(ticked.summaries[0]?.entryCount).toBe(1)
+
+    const back = updateEntryResponseSchema.parse(
+      await (await send('PATCH', `/api/v1/log/entries/${id}`, { planned: true })).json(),
+    )
+    expect(back.entry.planned).toBe(true)
+    expect(back.summaries[0]?.totals.energy_kcal).toBe(0)
+  })
+
+  it('will not let a plan for tomorrow be eaten, or eaten food move to tomorrow', async () => {
+    const planned = createEntriesResponseSchema.parse(await (await plan(TOMORROW)).json())
+    const plannedId = planned.entries[0]!.id
+    const ticked = await send('PATCH', `/api/v1/log/entries/${plannedId}`, { planned: false })
+    expect(ticked.status).toBe(400)
+    expect((await dayLog(TOMORROW)).entries[0]?.planned).toBe(true)
+
+    const logged = createEntriesResponseSchema.parse(
+      await (
+        await send('POST', '/api/v1/log/entries', {
+          day: TODAY,
+          meal: 'lunch',
+          loggedAt: AT,
+          entries: [toast],
+        })
+      ).json(),
+    )
+    const toastId = logged.entries[0]!.id
+    const moved = await send('PATCH', `/api/v1/log/entries/${toastId}`, { day: TOMORROW })
+    expect(moved.status).toBe(400)
+
+    // Tomorrow as a plan is fine, and today's total drops by what left it.
+    const replanned = updateEntryResponseSchema.parse(
+      await (
+        await send('PATCH', `/api/v1/log/entries/${toastId}`, { day: TOMORROW, planned: true })
+      ).json(),
+    )
+    expect(replanned.entry).toMatchObject({ day: TOMORROW, planned: true })
+    expect(replanned.summaries.find((s) => s.day === TODAY)?.totals.energy_kcal).toBe(0)
+  })
+
+  it('can bring a plan for tomorrow to today, and a stale plan stays off the numbers', async () => {
+    const planned = createEntriesResponseSchema.parse(await (await plan(TOMORROW)).json())
+    const id = planned.entries[0]!.id
+    const moved = updateEntryResponseSchema.parse(
+      await (await send('PATCH', `/api/v1/log/entries/${id}`, { day: TODAY })).json(),
+    )
+    expect(moved.entry).toMatchObject({ day: TODAY, planned: true })
+
+    // A plan nobody ate stays on its day, uncounted, and can still be ticked off afterwards.
+    const yesterday = addDays(TODAY, -1)
+    const stale = createEntriesResponseSchema.parse(await (await plan(yesterday)).json())
+    expect((await dayLog(yesterday)).summary.totals.energy_kcal).toBe(0)
+    const ticked = await send('PATCH', `/api/v1/log/entries/${stale.entries[0]!.id}`, {
+      planned: false,
+    })
+    expect(ticked.status).toBe(200)
+    expect((await dayLog(yesterday)).summary.totals.energy_kcal).toBe(310)
+  })
+
+  it('ticks a planned meal off whole, and lets one ingredient go on its own', async () => {
+    const created = createEntriesResponseSchema.parse(
+      await (
+        await send('POST', '/api/v1/log/entries', {
+          day: TODAY,
+          meal: 'dinner',
+          loggedAt: AT,
+          planned: true,
+          entries: [eggs, toast],
+          saveAsMeal: { name: 'Eggs on toast' },
+        })
+      ).json(),
+    )
+    const groupId = created.entries[0]!.groupId!
+    expect(created.summary.entryCount).toBe(0)
+
+    const one = updateEntryResponseSchema.parse(
+      await (
+        await send('PATCH', `/api/v1/log/entries/${created.entries[1]!.id}`, { planned: false })
+      ).json(),
+    )
+    // Eaten on its own: it leaves the meal, the rest stay planned together.
+    expect(one.entry).toMatchObject({ planned: false, groupId: null })
+    expect(one.summaries[0]?.totals.energy_kcal).toBe(230)
+
+    const rest = updateGroupResponseSchema.parse(
+      await (
+        await send('PATCH', `/api/v1/log/groups/${groupId}`, { planned: false, meal: 'lunch' })
+      ).json(),
+    )
+    expect(rest.entries).toHaveLength(1)
+    expect(rest.entries[0]).toMatchObject({ planned: false, meal: 'lunch', groupId })
+    expect(rest.summaries[0]?.totals.energy_kcal).toBe(540)
+  })
+
+  it('moves a whole planned meal to tomorrow but will not eat it there', async () => {
+    const created = createEntriesResponseSchema.parse(
+      await (
+        await send('POST', '/api/v1/log/entries', {
+          day: TODAY,
+          meal: 'dinner',
+          loggedAt: AT,
+          planned: true,
+          entries: [eggs, toast],
+          saveAsMeal: { name: 'Eggs on toast' },
+        })
+      ).json(),
+    )
+    const groupId = created.entries[0]!.groupId!
+    const moved = await send('PATCH', `/api/v1/log/groups/${groupId}`, { day: TOMORROW })
+    expect(moved.status).toBe(200)
+    const eaten = await send('PATCH', `/api/v1/log/groups/${groupId}`, { planned: false })
+    expect(eaten.status).toBe(400)
+    expect((await errorBody(eaten)).message).toMatch(/can only be planned/)
+  })
+
+  it('is marked as planned in both exports', async () => {
+    await plan(TODAY)
+    const json = accountExportSchema.parse(
+      await (await send('GET', '/api/v1/account/export/json')).json(),
+    )
+    expect(json.logEntries[0]?.planned).toBe(true)
+    const csv = await (await send('GET', '/api/v1/account/export/log.csv')).text()
+    expect(csv.split('\r\n')[0]).toContain(',planned,')
+    expect(csv.split('\r\n')[1]).toContain(',true,')
   })
 })
 

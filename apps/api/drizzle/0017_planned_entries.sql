@@ -1,0 +1,1 @@
+ALTER TABLE "log_entries" ADD COLUMN "planned" boolean DEFAULT false NOT NULL;

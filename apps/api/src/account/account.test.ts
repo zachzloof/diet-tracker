@@ -190,7 +190,7 @@ describe('GET /api/v1/account/export', () => {
     const lines = (await log.text()).trim().split('\r\n')
     expect(lines).toHaveLength(logged + 1)
     expect(lines[0]).toMatch(
-      /^day,logged_at,meal,name,quantity,unit,grams,source,confidence,energy_kcal,/,
+      /^day,logged_at,meal,planned,name,quantity,unit,grams,source,confidence,energy_kcal,/,
     )
     expect(lines[0]).toMatch(/,nuts_seeds,assumptions$/)
 

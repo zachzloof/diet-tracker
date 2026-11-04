@@ -78,7 +78,8 @@ export function draftBrief(inputs: BriefingInputs, half: CoachBriefHalf): BriefD
 function dietDraft(inputs: BriefingInputs, today: string): BriefDraft {
   const { profile, day, dayScore, targets, gym } = inputs
   const { hour } = localTimeParts(inputs.now, profile.timezone)
-  const foodEntries = day.entries.filter((e) => !isWaterEntry(e))
+  // Planned food is not eaten (D43): a plan alone leaves the day empty and its meal to go.
+  const foodEntries = day.entries.filter((e) => !isWaterEntry(e) && !e.planned)
   const facts: string[] = []
   facts.push(`- Today is ${dayLabel(today)}, local time ${String(hour).padStart(2, '0')}:00.`)
 

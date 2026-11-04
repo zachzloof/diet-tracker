@@ -53,6 +53,12 @@ export const AI_UNAVAILABLE_MESSAGES = {
 export const errors = {
   validation: (details: ValidationDetails) =>
     new AppError(400, 'validation_error', 'Check the highlighted fields', details),
+  /** A day an entry cannot sit on (D43), with the reason as the message the person reads. */
+  entryDay: (message: string) =>
+    new AppError(400, 'validation_error', message, {
+      fieldErrors: { day: [message] },
+      formErrors: [],
+    }),
   unauthenticated: () => new AppError(401, 'unauthenticated', 'Sign in to continue'),
   invalidCredentials: () =>
     new AppError(401, 'invalid_credentials', 'Email or password is incorrect'),

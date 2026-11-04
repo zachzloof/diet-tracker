@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_EXPORT_SCHEMA_VERSION,
   RETENTION_DAYS,
   accountExportSchema,
   addDays,
@@ -9,6 +10,8 @@ import {
   coachThreadSchema,
   coachThreadsResponseSchema,
   coachTurnResponseSchema,
+  emptyFoodGroupServes,
+  emptyNutrientVector,
   localDay,
   type CoachBriefHalf,
 } from '@diet-tracker/shared'
@@ -130,6 +133,34 @@ describe('the draft', () => {
     const gym = draftBrief(inputs, 'training')
     expect(gym.empty).toBe(true)
     expect(gym.sentence).toMatch(/^No sessions in the last two weeks\. Log one/)
+  })
+
+  it('does not take a plan for food eaten: a planned-only day still invites the first entry', async () => {
+    const fresh = await signUp('planner@example.com', finn.profile)
+    const res = await send(fresh.cookie, 'POST', '/api/v1/log/entries', {
+      day: localDay(new Date(), TZ),
+      meal: 'dinner',
+      loggedAt: new Date().toISOString(),
+      planned: true,
+      entries: [
+        {
+          name: 'Chicken curry',
+          quantity: 1,
+          unit: 'bowl',
+          grams: 400,
+          nutrients: { ...emptyNutrientVector(), energy_kcal: 640 },
+          foodGroups: emptyFoodGroupServes(),
+          source: 'manual',
+          foodId: null,
+          aiCallId: null,
+          assumptions: [],
+          confidence: null,
+        },
+      ],
+    })
+    expect(res.status).toBe(201)
+    const inputs = await loadBriefingInputs(fresh.id, fresh.profile, new Date())
+    expect(draftBrief(inputs, 'diet').empty).toBe(true)
   })
 
   it('accepts a sentence only when its numbers are in the facts and it fits a line', () => {
@@ -296,7 +327,7 @@ describe('/api/v1/coach/brief and the chat it opens', () => {
     })
     const exported = await send(finnAccount.cookie, 'GET', '/api/v1/account/export/json')
     const data = accountExportSchema.parse(await exported.json())
-    expect(data.app.schema).toBe(6)
+    expect(data.app.schema).toBe(ACCOUNT_EXPORT_SCHEMA_VERSION)
     expect(data.coachBriefs.map((b) => [b.day, b.half])).toEqual([
       [old, 'training'],
       [today(), 'diet'],

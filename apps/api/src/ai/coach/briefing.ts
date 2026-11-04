@@ -135,6 +135,8 @@ const TARGET_KEYS: readonly TargetKey[] = [
   'added_sugar_g',
 ]
 
+const MAX_PLANNED_NAMES = 6
+
 function list(items: readonly string[]): string {
   return items.length ? items.join(', ') : 'none'
 }
@@ -204,11 +206,22 @@ export function targetLines(targets: Targets, prefs: Preferences): string[] {
   return lines
 }
 
+/** What is planned and not eaten yet (D43); it is in none of the day's numbers. */
+function plannedLine(day: DayLogResponse): string | null {
+  const planned = day.entries.filter((e) => e.planned)
+  if (planned.length === 0) return null
+  const names = planned.slice(0, MAX_PLANNED_NAMES).map((e) => e.groupName ?? e.name)
+  const kcal = planned.reduce((sum, e) => sum + e.nutrients.energy_kcal, 0)
+  return `- Planned for later, not eaten and in none of these numbers: ${list([...new Set(names)])} (${whole(kcal)} kcal).`
+}
+
 export function todayLines(day: DayLogResponse, dayScore: DayScore, prefs: Preferences): string[] {
   const lines: string[] = ['TODAY SO FAR']
-  const foodEntries = day.entries.filter((e) => !isWaterEntry(e))
+  const foodEntries = day.entries.filter((e) => !isWaterEntry(e) && !e.planned)
+  const planned = plannedLine(day)
   if (foodEntries.length === 0) {
     lines.push('- Nothing logged yet today.')
+    if (planned) lines.push(planned)
     return lines
   }
   const meals = MEALS.filter((meal) => foodEntries.some((e) => e.meal === meal)).map((meal) =>
@@ -238,6 +251,7 @@ export function todayLines(day: DayLogResponse, dayScore: DayScore, prefs: Prefe
     )
   }
   lines.push(`- Day so far: ${dayScore.dayMet ? 'met' : 'not met yet'}.`)
+  if (planned) lines.push(planned)
   return lines
 }
 

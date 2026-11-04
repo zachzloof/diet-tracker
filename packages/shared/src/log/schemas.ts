@@ -161,6 +161,11 @@ export const createEntriesRequestSchema = z.object({
   day: z.iso.date(),
   meal: mealSchema,
   loggedAt: z.iso.datetime(),
+  /**
+   * Meant to be eaten, not eaten yet (D43). Stays out of the day's totals, and is the only
+   * thing a day that has not happened yet can hold. `meal` is a placeholder on these.
+   */
+  planned: z.boolean().optional(),
   entries: z.array(logEntryInputSchema).min(1, 'Nothing to log').max(MAX_ENTRIES_PER_REQUEST),
   /** The saved meal these entries came from, so it sorts to the top of Meals next time. */
   savedMealId: z.uuid().optional(),
@@ -178,6 +183,8 @@ export const logEntrySchema = z.object({
   day: z.iso.date(),
   loggedAt: z.iso.datetime(),
   meal: mealSchema,
+  /** Not eaten yet (D43): counted in no total, and `meal` means nothing until it is eaten. */
+  planned: z.boolean(),
   ...entryFields,
   source: entrySourceSchema,
   sourceUrl: sourceUrlSchema,
@@ -216,8 +223,10 @@ export type DayLogResponse = z.infer<typeof dayLogResponseSchema>
 /**
  * Edit an entry. Send `quantity`, `grams`, `nutrients` and `foodGroups` together to change
  * how much was eaten (the client rescales with `rescaleToQuantity`); `meal` or `day` to
- * move it; `saveToLibrary: true` to save the entry, as it stands after the edit, to My foods
- * when it is not linked to a food yet. Every field is optional but something must change.
+ * move it; `planned` to tick a plan off as eaten (with the `meal` it went to) or put an entry
+ * back on the plan; `saveToLibrary: true` to save the entry, as it stands after the edit, to
+ * My foods when it is not linked to a food yet. Every field is optional but something must
+ * change.
  */
 export const updateEntryRequestSchema = z
   .object({
@@ -228,6 +237,7 @@ export const updateEntryRequestSchema = z
     foodGroups: foodGroupServesSchema,
     meal: mealSchema,
     day: z.iso.date(),
+    planned: z.boolean(),
     saveToLibrary: z.boolean(),
   })
   .partial()
@@ -250,9 +260,12 @@ export type DeleteEntryResponse = z.infer<typeof deleteEntryResponseSchema>
 
 // --- Logged meal groups --------------------------------------------------------------------
 
-/** Move every entry of a logged meal (`groupId`) to another meal of the day, another day, or both. */
+/**
+ * Move every entry of a logged meal (`groupId`) to another meal of the day, another day, or
+ * both; `planned` ticks the whole meal off as eaten or puts it back on the plan.
+ */
 export const updateGroupRequestSchema = z
-  .object({ meal: mealSchema, day: z.iso.date() })
+  .object({ meal: mealSchema, day: z.iso.date(), planned: z.boolean() })
   .partial()
   .refine((fields) => Object.values(fields).some((v) => v !== undefined), {
     message: 'Nothing to change',

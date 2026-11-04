@@ -11,6 +11,7 @@ function entry(overrides: Partial<LogEntry> & { name: string; kcal?: number }): 
     day: '2026-10-08',
     loggedAt: '2026-10-08T08:00:00.000Z',
     meal: 'breakfast',
+    planned: false,
     quantity: 1,
     unit: 'serving',
     grams: 100,

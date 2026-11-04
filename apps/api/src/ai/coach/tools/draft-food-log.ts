@@ -20,7 +20,9 @@ export const draftFoodLog = defineTool({
     `Estimating "${args.text.length > STATUS_CHARS ? `${args.text.slice(0, STATUS_CHARS - 1).trimEnd()}…` : args.text}"`,
   async run(ctx, args): Promise<DraftResult | ReturnType<typeof empty>> {
     if (args.day && args.day > ctx.today) {
-      return empty(`${args.day} has not happened yet; food is logged on today or an earlier day`)
+      return empty(
+        `${args.day} has not happened yet. Draft it with day null; the person can pick Tomorrow on the card, which only takes plans`,
+      )
     }
     const response = await estimateFood({
       userId: ctx.userId,

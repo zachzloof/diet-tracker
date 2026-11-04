@@ -121,6 +121,7 @@ export const useQueueStore = defineStore('queue', () => {
         day: request.day,
         loggedAt: request.loggedAt,
         meal: request.meal,
+        planned: request.planned ?? false,
         name: entry.name,
         quantity: entry.quantity,
         unit: entry.unit,

@@ -2,7 +2,9 @@ import {
   dailySummarySchema,
   emptyFoodGroupServes,
   emptyNutrientVector,
+  entryDayProblem,
   isWaterEntry,
+  localDay,
   logEntrySchema,
   sumPortions,
   type CreateEntriesRequest,
@@ -25,6 +27,7 @@ import {
   aiCalls,
   dailySummaries,
   logEntries,
+  profiles,
   type DailySummaryRow,
   type LogEntryRow,
 } from '../db/schema/index.js'
@@ -36,6 +39,7 @@ import { createSavedMeal, touchSavedMeal } from './saved-meals-service.js'
 /**
  * Log entries and the daily summary that shadows them. Every write recomputes the summary
  * for the affected day(s) inside the same transaction (db-schema skill), so reads never sum.
+ * Planned entries (D43) stay out of the summary, so everything that reads it counts eaten food.
  */
 
 export function toWireEntry(row: LogEntryRow): LogEntry {
@@ -44,6 +48,7 @@ export function toWireEntry(row: LogEntryRow): LogEntry {
     day: row.day,
     loggedAt: row.loggedAt.toISOString(),
     meal: row.meal,
+    planned: row.planned,
     name: row.name,
     quantity: row.quantity,
     unit: row.unit,
@@ -86,7 +91,9 @@ export async function recomputeSummary(
       foodGroups: logEntries.foodGroups,
     })
     .from(logEntries)
-    .where(and(eq(logEntries.userId, userId), eq(logEntries.day, day)))
+    .where(
+      and(eq(logEntries.userId, userId), eq(logEntries.day, day), eq(logEntries.planned, false)),
+    )
   const totals = sumPortions(rows)
   const values = {
     totals: totals.totals,
@@ -135,6 +142,26 @@ async function ownedAiCallIds(tx: Tx, userId: string, ids: string[]): Promise<Se
   return new Set(rows.map((row) => row.id))
 }
 
+/**
+ * Refuses an entry on a day it cannot sit on (D43). Today is the person's own, from the same
+ * profile time zone the app uses, so the two always agree on what tomorrow is.
+ */
+async function assertEntryDay(
+  tx: Tx,
+  userId: string,
+  day: string,
+  planned: boolean,
+  now: Date,
+): Promise<void> {
+  const rows = await tx
+    .select({ timezone: profiles.timezone })
+    .from(profiles)
+    .where(eq(profiles.userId, userId))
+    .limit(1)
+  const problem = entryDayProblem(day, planned, localDay(now, rows[0]?.timezone ?? 'UTC'))
+  if (problem) throw errors.entryDay(problem)
+}
+
 /** A logged item saved as a per-serving food: one serving is exactly what was logged. */
 async function saveEntryAsFood(
   tx: Tx,
@@ -181,7 +208,9 @@ export async function createEntries(
   now: Date = new Date(),
 ): Promise<CreateEntriesResponse> {
   const loggedAt = new Date(request.loggedAt)
+  const planned = request.planned ?? false
   return db.transaction(async (tx) => {
+    await assertEntryDay(tx, userId, request.day, planned, now)
     const wantedFoodIds = request.entries.flatMap((e) => (e.foodId ? [e.foodId] : []))
     const owned = await ownedFoods(tx, userId, wantedFoodIds)
     const missing = wantedFoodIds.filter((id) => !owned.has(id))
@@ -220,6 +249,7 @@ export async function createEntries(
         day: request.day,
         loggedAt,
         meal: request.meal,
+        planned,
         name: entry.name,
         quantity: entry.quantity,
         unit: entry.unit,
@@ -299,7 +329,13 @@ export async function updateEntry(
 ): Promise<UpdateEntryResponse> {
   return db.transaction(async (tx) => {
     const current = await requireEntry(tx, userId, id)
+    if (patch.day !== undefined || patch.planned !== undefined) {
+      const day = patch.day ?? current.day
+      await assertEntryDay(tx, userId, day, patch.planned ?? current.planned, now)
+    }
+    const planChanged = patch.planned !== undefined && patch.planned !== current.planned
     const moved =
+      planChanged ||
       (patch.meal !== undefined && patch.meal !== current.meal) ||
       (patch.day !== undefined && patch.day !== current.day)
     let updated = (
@@ -313,6 +349,9 @@ export async function updateEntry(
           ...(patch.foodGroups !== undefined ? { foodGroups: patch.foodGroups } : {}),
           ...(patch.meal !== undefined ? { meal: patch.meal } : {}),
           ...(patch.day !== undefined ? { day: patch.day } : {}),
+          ...(patch.planned !== undefined ? { planned: patch.planned } : {}),
+          // Ticked off: it sorts where it was eaten, not where it was planned.
+          ...(planChanged && !patch.planned ? { loggedAt: now } : {}),
           // An ingredient moved on its own leaves the logged meal it was part of.
           ...(moved ? { groupId: null, groupName: null } : {}),
           updatedAt: now,
@@ -377,7 +416,10 @@ async function recomputeDays(
   return summaries.map((row) => toWireSummary(row, row.day))
 }
 
-/** Moves every ingredient of a logged meal to another meal of the day, another day, or both. */
+/**
+ * Moves every ingredient of a logged meal to another meal of the day, another day, or both,
+ * or ticks the whole meal off the plan. The ingredients move together, so the group stays.
+ */
 export async function updateGroup(
   userId: string,
   groupId: string,
@@ -386,11 +428,19 @@ export async function updateGroup(
 ): Promise<UpdateGroupResponse> {
   return db.transaction(async (tx) => {
     const current = await requireGroup(tx, userId, groupId)
+    const first = current[0]
+    if (first && (patch.day !== undefined || patch.planned !== undefined)) {
+      const day = patch.day ?? first.day
+      await assertEntryDay(tx, userId, day, patch.planned ?? first.planned, now)
+    }
+    const eaten = patch.planned === false && current.some((row) => row.planned)
     const updated = await tx
       .update(logEntries)
       .set({
         ...(patch.meal !== undefined ? { meal: patch.meal } : {}),
         ...(patch.day !== undefined ? { day: patch.day } : {}),
+        ...(patch.planned !== undefined ? { planned: patch.planned } : {}),
+        ...(eaten ? { loggedAt: now } : {}),
         updatedAt: now,
       })
       .where(and(eq(logEntries.groupId, groupId), eq(logEntries.userId, userId)))

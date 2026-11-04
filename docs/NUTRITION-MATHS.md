@@ -199,6 +199,14 @@ The share of minimum targets (fibre, the 14 vitamins, minerals and omega-3, the 
 
 ---
 
+### 2.4 Planned food (D43)
+
+Food marked planned is food someone means to eat and has not eaten. It counts for nothing: it is not in the day's totals, not in the entry count that decides whether a day is logged (2.1), and so not in day met, the week, the streak, gaps, recalibration or any number the coach quotes. Every number on screen is what was eaten. A plan only adds a lighter tone to the energy ring and the macro and water bars, running on from the eaten amount and stopping at the end of the bar.
+
+Ticked off, it becomes an ordinary entry and counts from then on, in the meal it went to. Today can reach one day ahead (`MAX_PLAN_DAYS_AHEAD`) and that day can hold plans and nothing else. A plan never eaten stays on its day, uncounted, until the day is purged.
+
+---
+
 ## 3. The week
 
 - The window is the seven calendar days ending on the chosen day, in the person's local timezone.
@@ -273,6 +281,7 @@ A log entry's nutrients are always the totals for the quantity logged. Every vec
 | 5 | `weight.ts` |
 | 6 | `recalibration.ts` |
 | hidden nutrients | `nutrients.ts` (`HIDDEN_NUTRIENT_KEYS`) |
+| 2.4 | outside this folder: `packages/shared/src/log/planned.ts` for the day rule, `recomputeSummary` in `apps/api/src/log/log-service.ts`, which leaves planned entries out of the day's totals |
 
 The engine references the code was built from, with the worked examples, are `.claude/skills/nutrition-engine/references/targets.md` and `nutrients.md`.
 
@@ -290,6 +299,7 @@ BMR 1189. TDEE 1843. Energy 1843 − 275 = 1568, rounded 1570 kcal (deficit 14.9
 
 ## Change log for this page
 
+- 2026-11-04 (D43): planned food. An entry can be planned instead of eaten; it is left out of the day's totals and entry count, so no score, streak or review changes. No number or band in the engine changed.
 - 2026-10-31 (D40): uncapped energy. A profile flag marks the energy target a floor: met from 95% with no upper line, close from 90%, never over; the number and everything derived from it are unchanged. The week's "energy over plan" gap is skipped for it. Sections 1.12, 2 and 2.2.
 - 2026-10-08 (D34 follow-up): limits now read met only up to the limit itself, close from there to 105%, over past 105% (was met to 105%, close to 110%). A deciding limit fails the day past 105%.
 - 2026-10-08 (D34): page created. Energy met within 5%, close within 10%; water met from 95%, never over, caution at 4 litres; minimums met from 95%, red only at the UL; limits met to 105%, close to 110%; alcohol hidden. Upper-limit table added.

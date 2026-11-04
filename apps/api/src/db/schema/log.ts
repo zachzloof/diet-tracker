@@ -73,6 +73,11 @@ export const logEntries = pgTable(
     day: day('day').notNull(),
     loggedAt: timestamptz('logged_at').notNull(),
     meal: text('meal').$type<Meal>().notNull(),
+    /**
+     * Meant to be eaten, not eaten yet (D43). A planned row is left out of `daily_summaries`,
+     * so nothing that reads the summary can count it; its `meal` is a placeholder.
+     */
+    planned: boolean('planned').notNull().default(false),
     name: text('name').notNull(),
     quantity: doublePrecision('quantity').notNull(),
     unit: text('unit').notNull(),

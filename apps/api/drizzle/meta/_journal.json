@@ -120,6 +120,13 @@
       "when": 1793647539948,
       "tag": "0016_coach_briefs",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793792112943,
+      "tag": "0017_planned_entries",
+      "breakpoints": true
     }
   ]
 }

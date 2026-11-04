@@ -701,3 +701,22 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 **On money.** The view shows counts and tokens, not pounds: OpenAI's prices change per model and the app would show a stale number with false confidence. If a figure is wanted, an `OPENAI_PRICE_PER_M_INPUT` / `_OUTPUT` / `_SEARCH` trio in the env with the current list price is the cheapest honest way, with the date the prices were set shown beside the total.
 
 **Status.** `adopted` (2026-11-02): A, built; please confirm.
+
+---
+
+## D43. Planned food lives on the log, out of the totals (adopted, please confirm)
+
+**Context.** The owner asked for food to be added as "planned": meant to be eaten today and not eaten yet, shaded on the charts at the top, with the numbers showing only what was eaten, and for Today to step one day forward to plan tomorrow, where plan is the only option and no meal can be assigned. Where a plan is stored shapes every reader of the food log, so the options are recorded.
+
+**Options.**
+- **A. A `planned` flag on `log_entries`.** Built. A plan is an ordinary entry with the flag set and `recomputeSummary` leaves it out, so `daily_summaries` stays eaten food and everything that reads it (scoring, Week, streaks, recalibration, reviews, the coach's totals) is right without being touched. Ticking one off flips the flag. The saved-meal grouping, the offline queue, the export and the retention all work as they are. The cost: anything reading `log_entries` directly must mind the flag (the day log, the coach's day tool, its briefing and the brief; all four do), and a plan's `meal` column holds a placeholder nothing shows.
+- **B. A fifth `meal` value, `planned`.** Honest about a plan having no meal, and no new column. But `Meal` is used everywhere as one of four, including the AI schemas and the coach's arguments, which would have to be told apart from a wider type, and the summary still needs the same filter.
+- **C. A separate `planned_entries` table.** Nothing can count a plan by accident, since it is not in the log at all. But the grouping, the queue, the editor, the export and the retention would each need a second path, and eating a plan becomes a move between tables.
+
+**Recommendation.** A.
+
+**Settled in the build, from the owner's words.** Planned sits with Breakfast, Lunch, Dinner and Snack in the picker, on every way of logging. Numbers are eaten only. Tomorrow offers Planned alone and the screen has no way to eat it. One day ahead and no further.
+
+**Assumed in the build, easy to change.** (1) The tick moves a plan to the meal the time of day suggests; tapping the row opens the editor, where any meal can be picked. (2) The Planned list sits above the meals, since it is the one list still to act on. (3) A plan not eaten stays on its day, uncounted and still tickable, and is not rolled forward. (4) A small "640 planned" caption sits under the ring as the chart's legend; it is the one planned number near the chart, and it changes no total. (5) Tomorrow hides water, food groups and vitamins, which have nothing eaten to show. (6) The API refuses eaten food on a future day and anything past tomorrow, so the rule holds for the coach's cards and old clients as well as the screen. (7) A plan can sit on a past day; nothing is gained by refusing it and a leftover plan needs to stay editable. (8) The coach reads plans, keeps them apart from what was eaten and can say where the day would land, but cannot draft one itself; the person picks Planned or Tomorrow on its estimate card.
+
+**Status.** `adopted` (2026-11-04): A, built; please confirm, along with assumptions 1 to 3, which are the ones you will feel.
