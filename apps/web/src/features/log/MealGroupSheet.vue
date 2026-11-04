@@ -36,6 +36,7 @@ const remove = useDeleteGroup()
 
 const meal = ref<Meal>('snack')
 const day = ref(props.today)
+const planned = ref(false)
 const confirmingDelete = ref(false)
 const error = ref<string | null>(null)
 
@@ -48,6 +49,7 @@ watch(
     if (isOpen && first.value) {
       meal.value = first.value.meal
       day.value = first.value.day
+      planned.value = first.value.planned
       confirmingDelete.value = false
       error.value = null
       move.reset()
@@ -58,23 +60,29 @@ watch(
 )
 
 const moved = computed(
-  () => first.value !== null && (meal.value !== first.value.meal || day.value !== first.value.day),
+  () =>
+    first.value !== null &&
+    (meal.value !== first.value.meal ||
+      day.value !== first.value.day ||
+      planned.value !== first.value.planned),
 )
 
 function save(): void {
   if (!props.groupId || !first.value || !moved.value) return
   error.value = null
+  const eaten = first.value.planned && !planned.value
   move.mutate(
     {
       groupId: props.groupId,
       patch: {
         ...(meal.value !== first.value.meal ? { meal: meal.value } : {}),
         ...(day.value !== first.value.day ? { day: day.value } : {}),
+        ...(planned.value !== first.value.planned ? { planned: planned.value } : {}),
       },
     },
     {
       onSuccess: () => {
-        ui.toast('Moved', 'success')
+        ui.toast(eaten ? `Added to ${meal.value}` : 'Moved', 'success')
         open.value = false
       },
       onError: (e: unknown) => {
@@ -144,7 +152,12 @@ function del(): void {
         Tap an ingredient to change its amount or remove it from this meal.
       </p>
 
-      <MealDayPicker v-model:meal="meal" v-model:day="day" :today="today" />
+      <MealDayPicker
+        v-model:meal="meal"
+        v-model:day="day"
+        v-model:planned="planned"
+        :today="today"
+      />
 
       <p v-if="error" class="text-sm text-over" role="alert">{{ error }}</p>
 

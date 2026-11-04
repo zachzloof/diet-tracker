@@ -24,6 +24,7 @@ import ItemEditor from './ItemEditor.vue'
 import SourceLink from './SourceLink.vue'
 import MealDayPicker from './MealDayPicker.vue'
 import { applyItemEdit, snapshotItem, type EditableItem, type ItemEdit } from './item-edit'
+import { addLabel } from './log-slot'
 import { MAX_MEAL_NAME_LENGTH, suggestMealName } from './meal-name'
 
 /**
@@ -65,7 +66,13 @@ const reportHref = computed(() => {
 
 const emit = defineEmits<{
   confirm: [
-    payload: { day: string; meal: Meal; entries: LogEntryInput[]; saveAsMeal?: { name: string } },
+    payload: {
+      day: string
+      meal: Meal
+      planned: boolean
+      entries: LogEntryInput[]
+      saveAsMeal?: { name: string }
+    },
   ]
   clarify: [answer: string]
   edit: []
@@ -96,6 +103,7 @@ const ui = useUiStore()
 const items = ref<ReviewItem[]>([])
 const meal = ref<Meal>(props.result.meal)
 const day = ref(props.result.day)
+const planned = ref(false)
 const answer = ref('')
 const saveAsMeal = ref(false)
 const mealName = ref('')
@@ -129,6 +137,7 @@ watch(
     }))
     meal.value = result.meal
     day.value = result.day
+    planned.value = false
     answer.value = ''
     saveAsMeal.value = false
     mealName.value = suggestMealName(props.text)
@@ -173,6 +182,7 @@ function confirm(): void {
   emit('confirm', {
     day: day.value,
     meal: meal.value,
+    planned: planned.value,
     ...(wantsMeal ? { saveAsMeal: { name } } : {}),
     entries: items.value.map((item) => ({
       name: item.name,
@@ -338,6 +348,7 @@ function confirm(): void {
     <MealDayPicker
       v-model:meal="meal"
       v-model:day="day"
+      v-model:planned="planned"
       :today="today"
       :previous-day="result.previousDay"
     />
@@ -371,7 +382,7 @@ function confirm(): void {
 
     <p v-if="error" class="text-sm text-over" role="alert">{{ error }}</p>
     <Button block :loading="saving" :disabled="items.length === 0" @click="confirm">
-      {{ ui.online ? `Add to ${meal}` : `Add to ${meal} (offline)` }}
+      {{ addLabel(meal, planned, ui.online) }}
     </Button>
     <p class="text-center text-xs text-fg-muted">
       Estimated by AI. Tap an item to change the amount, fix any number or read its assumptions.

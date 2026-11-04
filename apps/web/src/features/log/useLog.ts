@@ -12,6 +12,7 @@ import {
   type EstimateRequest,
   type Food,
   type FoodInput,
+  type NutrientVector,
   type UpdateEntryRequest,
   type UpdateGroupRequest,
 } from '@diet-tracker/shared'
@@ -37,7 +38,8 @@ export function dayQueryOptions(day: string) {
 
 /**
  * One day's entries and totals, with anything queued offline for that day folded in so
- * the log and the ring already count it. Re-runs when `day` changes.
+ * the log and the ring already count it. Re-runs when `day` changes. `summary` is what was
+ * eaten; `plannedTotals` is what is still to come (D43), for the lighter tone on the charts.
  */
 export function useDayLog(day: MaybeRefOrGetter<string>) {
   const queue = useQueueStore()
@@ -46,8 +48,9 @@ export function useDayLog(day: MaybeRefOrGetter<string>) {
   const entries = computed(() => [...(query.data.value?.entries ?? []), ...pending.value])
   const summary = computed<DailySummary | null>(() => {
     const base = query.data.value?.summary ?? null
-    if (pending.value.length === 0) return base
-    const extra = sumPortions(pending.value)
+    const eaten = pending.value.filter((e) => !e.planned)
+    if (eaten.length === 0) return base
+    const extra = sumPortions(eaten)
     const start = base ?? {
       day: toValue(day),
       totals: emptyNutrientVector(),
@@ -58,12 +61,17 @@ export function useDayLog(day: MaybeRefOrGetter<string>) {
       day: start.day,
       totals: addNutrientVectors(start.totals, extra.totals),
       foodGroups: addFoodGroupServes(start.foodGroups, extra.foodGroups),
-      entryCount: start.entryCount + pending.value.filter((e) => !isWaterEntry(e)).length,
+      entryCount: start.entryCount + eaten.filter((e) => !isWaterEntry(e)).length,
     }
+  })
+  const plannedTotals = computed<NutrientVector | null>(() => {
+    const planned = entries.value.filter((e) => e.planned)
+    return planned.length > 0 ? sumPortions(planned).totals : null
   })
   return {
     entries,
     summary,
+    plannedTotals,
     pending,
     /** True once the server (or the offline mirror) has answered for this day. */
     hasData: computed(() => query.data.value !== undefined),

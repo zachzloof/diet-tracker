@@ -15,6 +15,7 @@ import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import { formatGrams, formatKcal, formatNumber } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
 import { basisLabel } from './food-form'
+import { addLabel } from './log-slot'
 import MealDayPicker from './MealDayPicker.vue'
 
 /**
@@ -45,7 +46,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  confirm: [payload: { day: string; meal: Meal; entry: LogEntryInput }]
+  confirm: [payload: { day: string; meal: Meal; planned: boolean; entry: LogEntryInput }]
   back: []
 }>()
 
@@ -54,6 +55,7 @@ const mode = ref<'servings' | 'grams'>(props.food.basis === 'per_serving' ? 'ser
 const amount = ref<number | null>(props.food.basis === 'per_serving' ? 1 : 100)
 const meal = ref<Meal>(props.initialMeal)
 const day = ref(props.initialDay)
+const planned = ref(false)
 
 const MODES = [
   { value: 'servings', label: props.food.basis === 'per_serving' ? 'Servings' : '× 100 g' },
@@ -86,6 +88,7 @@ function confirm(): void {
   emit('confirm', {
     day: day.value,
     meal: meal.value,
+    planned: planned.value,
     entry: {
       name: props.food.name,
       quantity: mode.value === 'servings' ? amount.value : grams.value,
@@ -153,6 +156,7 @@ function confirm(): void {
       v-if="!ingredient"
       v-model:meal="meal"
       v-model:day="day"
+      v-model:planned="planned"
       :today="today"
       :previous-day="previousDay"
     />
@@ -161,7 +165,7 @@ function confirm(): void {
     <Button block :loading="saving" :disabled="!amount || amount <= 0" @click="confirm">
       <template v-if="ingredient">Add to meal</template>
       <template v-else>
-        {{ ui.online ? `Add to ${meal}` : `Add to ${meal} (offline)` }}
+        {{ addLabel(meal, planned, ui.online) }}
       </template>
     </Button>
   </div>

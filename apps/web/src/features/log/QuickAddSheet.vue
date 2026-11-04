@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   MAX_ESTIMATE_CHARS,
-  MEAL_LABELS,
+  isPlanOnlyDay,
   portionOf,
   type EstimateResponse,
   type Food,
@@ -32,6 +32,7 @@ import ManualFoodForm from './ManualFoodForm.vue'
 import MealDayPicker from './MealDayPicker.vue'
 import PortionPicker from './PortionPicker.vue'
 import { emptyFoodForm, manualPortion, parseFoodForm } from './food-form'
+import { addLabel, slotName } from './log-slot'
 import { useCreateEntries, useCreateFood, useEstimate } from './useLog'
 import { useLocalDay } from './useLocalDay'
 
@@ -78,9 +79,16 @@ const DESCRIPTIONS: Record<Mode, string> = {
   foods: 'Pick a saved food and say how much you had.',
   manual: 'Enter a food from the numbers on its label.',
 }
+const PLAN_DESCRIPTIONS: Record<Mode, string> = {
+  ...DESCRIPTIONS,
+  describe: 'Type what you plan to eat and the app estimates the nutrients.',
+  foods: 'Pick a saved food and say how much you plan to have.',
+}
 
 /** The day to log to: the one the person was looking at, else their local today. */
 const defaultDay = computed(() => ui.quickAdd.day ?? suggestion.value.day)
+/** Opened on a day that has not happened, the whole sheet is about a plan (D43). */
+const planning = computed(() => isPlanOnlyDay(defaultDay.value, today.value))
 const saveError = ref<string | null>(null)
 
 // --- Describe -----------------------------------------------------------------------------
@@ -149,6 +157,7 @@ const manualAmount = ref<number | null>(null)
 const manualSave = ref(true)
 const manualMeal = ref<Meal>(suggestion.value.meal)
 const manualDay = ref(defaultDay.value)
+const manualPlanned = ref(false)
 
 const manualPreview = computed(() => {
   const parsed = parseFoodForm(manual)
@@ -192,13 +201,19 @@ async function submitManual(): Promise<void> {
     sourceUrl: food.sourceUrl,
     saveToLibrary: false,
   }
-  log({ day: manualDay.value, meal: manualMeal.value, entries: [entry] })
+  log({
+    day: manualDay.value,
+    meal: manualMeal.value,
+    planned: manualPlanned.value,
+    entries: [entry],
+  })
 }
 
 // --- Shared confirm -----------------------------------------------------------------------
 function log(payload: {
   day: string
   meal: Meal
+  planned: boolean
   entries: LogEntryInput[]
   savedMealId?: string
   saveAsMeal?: { name: string }
@@ -208,6 +223,7 @@ function log(payload: {
     {
       day: payload.day,
       meal: payload.meal,
+      planned: payload.planned,
       loggedAt: new Date().toISOString(),
       entries: payload.entries,
       ...(payload.savedMealId ? { savedMealId: payload.savedMealId } : {}),
@@ -220,7 +236,7 @@ function log(payload: {
         ui.toast(
           response.queued
             ? `Saved offline · ${formatKcal(kcal)}${andMeal}. It will be sent when you're back online.`
-            : `Added to ${MEAL_LABELS[payload.meal].toLowerCase()} · ${formatKcal(kcal)}${andMeal}`,
+            : `Added to ${slotName(payload.meal, payload.planned)} · ${formatKcal(kcal)}${andMeal}`,
           'success',
         )
         ui.closeQuickAdd()
@@ -254,6 +270,7 @@ watch(open, (isOpen) => {
     reset()
     manualMeal.value = suggestion.value.meal
     manualDay.value = defaultDay.value
+    manualPlanned.value = false
   }
 })
 </script>
@@ -261,9 +278,13 @@ watch(open, (isOpen) => {
 <template>
   <Sheet
     v-model:open="open"
-    title="Log food"
+    :title="planning ? 'Plan food' : 'Log food'"
     size="tall"
-    :description="result || picked || pickedMeal ? undefined : DESCRIPTIONS[mode]"
+    :description="
+      result || picked || pickedMeal
+        ? undefined
+        : (planning ? PLAN_DESCRIPTIONS : DESCRIPTIONS)[mode]
+    "
   >
     <div class="space-y-4">
       <SegmentedControl
@@ -304,7 +325,7 @@ watch(open, (isOpen) => {
         <template v-else>
           <Textarea
             v-model="text"
-            label="What did you eat?"
+            :label="planning ? 'What do you plan to eat?' : 'What did you eat?'"
             placeholder="4 eggs and two slices of toast with butter"
             :maxlength="MAX_ESTIMATE_CHARS"
             :rows="3"
@@ -379,7 +400,9 @@ watch(open, (isOpen) => {
           :saving="create.isPending.value"
           :error="saveError"
           @back="picked = null"
-          @confirm="(p) => log({ day: p.day, meal: p.meal, entries: [p.entry] })"
+          @confirm="
+            (p) => log({ day: p.day, meal: p.meal, planned: p.planned, entries: [p.entry] })
+          "
         />
         <FoodPicker v-else @pick="picked = $event" @manual="mode = 'manual'" />
       </template>
@@ -391,7 +414,7 @@ watch(open, (isOpen) => {
         <div class="space-y-3 border-t border-border pt-4">
           <NumberField
             v-model="manualAmount"
-            label="How much did you eat?"
+            :label="planning ? 'How much do you plan to eat?' : 'How much did you eat?'"
             :unit="manual.basis === 'per_serving' ? manual.servingLabel || 'servings' : 'g'"
             :min="0"
             :step="manual.basis === 'per_serving' ? 0.5 : 10"
@@ -414,6 +437,7 @@ watch(open, (isOpen) => {
           <MealDayPicker
             v-model:meal="manualMeal"
             v-model:day="manualDay"
+            v-model:planned="manualPlanned"
             :today="today"
             :previous-day="suggestion.previousDay"
           />
@@ -423,7 +447,7 @@ watch(open, (isOpen) => {
             :loading="create.isPending.value || createFood.isPending.value"
             @click="submitManual"
           >
-            {{ ui.online ? `Add to ${manualMeal}` : `Add to ${manualMeal} (offline)` }}
+            {{ addLabel(manualMeal, manualPlanned, ui.online) }}
           </Button>
         </div>
       </template>

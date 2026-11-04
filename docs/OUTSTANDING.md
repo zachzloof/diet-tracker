@@ -48,6 +48,14 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 - **The target card lists every target the engine derives from energy** (fibre, added sugar and saturated fat as well as carbs and fat), because that is what the patch would change. The plan said "fat and carbs"; decide after use whether the extra rows help or clutter a 360-wide card.
 - **"Last time" on a workout card (and on the session screen) can be an unfinished session.** The exercise history does not require `ended_at`, so a session started from a card and abandoned becomes "last time" for its exercises. Predates 11b; one `isNotNull(endedAt)` away if it bites. *Mostly settled 2026-11-03:* "Last" now reads the latest session where the exercise was done (`lastDoneSession`), so an abandoned session with nothing ticked is passed over whenever an earlier one has a ticked set. An abandoned session can still be "last time" if you ticked something in it.
 
+## Noticed during planned food (2026-11-04)
+
+- **A plan you never ate stays on its day.** It is uncounted and can still be ticked or moved from that day, but nothing reminds you of it: open Yesterday to find it. Decide after use whether Today should offer yesterday's leftovers, or whether a plan should roll forward. D43 records the choice made for now.
+- **The tick guesses the meal from the clock.** Dinner ticked at 22:30 lands in Snack, as anything logged then does. Tap the row instead to pick the meal. Watch whether this annoys; the fix is to ask, at the cost of a tap.
+- **Undoing a tick takes three taps** (row, Planned, Save), because toasts have no action button. Worth a real Undo if ticks get mis-tapped.
+- **The coach cannot draft a plan.** Asked to plan something, it drafts an ordinary estimate card and the person picks Planned or Tomorrow on it. A `planned` argument on `draft_food_log` would close the gap.
+- **Offline logging was broken for an unknown stretch.** Fixed the same day (D21), but the fix was walked with Playwright's offline switch on the production build, not on a phone in airplane mode. The "Whether anything logged offline arrived late" line below is worth a real look.
+
 ## Going live with slice 11 (2026-11-03)
 
 Checked from this machine on 2026-11-03: the code is green (shared 198, api 179, web 53 tests; typecheck; lint), every slice 11 path has now run against the live model, and migrations 0014 to 0016 apply from fresh and in sequence (they run on boot). What is left is on Railway, which could not be reached from here (the CLI login has expired and `https://diet-tracker-production.up.railway.app/api/health` answers Railway's own 404 "Application not found", so the service is either gone, renamed or on another domain):

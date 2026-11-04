@@ -9,11 +9,13 @@ import IconButton from './IconButton.vue'
 withDefaults(
   defineProps<{
     label: string
-    /** On the present day or week: the forward arrow and the label are inert. */
+    /** On the present day or week: the label is inert, and so is the forward arrow by default. */
     isCurrent: boolean
+    /** Set where the arrow can pass the present (Today steps on to tomorrow's plan, D43). */
+    atEnd?: boolean
     unit?: 'day' | 'week'
   }>(),
-  { unit: 'day' },
+  { atEnd: undefined, unit: 'day' },
 )
 
 const emit = defineEmits<{ prev: []; next: []; reset: [] }>()
@@ -34,7 +36,7 @@ const emit = defineEmits<{ prev: []; next: []; reset: [] }>()
     <IconButton
       :label="`Next ${unit}`"
       icon="chevron-right"
-      :disabled="isCurrent"
+      :disabled="atEnd ?? isCurrent"
       @click="emit('next')"
     />
   </div>

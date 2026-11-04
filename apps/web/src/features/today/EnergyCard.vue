@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DayScore, NutrientKey } from '@diet-tracker/shared'
+import type { DayScore, NutrientKey, NutrientVector } from '@diet-tracker/shared'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import Card from '@/components/ui/Card.vue'
@@ -9,8 +9,11 @@ import ProgressBar, { type BarColor } from '@/components/ui/ProgressBar.vue'
 import Ring from '@/components/ui/Ring.vue'
 import { STATUS_LABELS, formatNumber } from '@/lib/format'
 
-/** The hero: remaining kcal inside the energy ring, with the macro bars beside it. */
-const props = defineProps<{ score: DayScore }>()
+/**
+ * The hero: remaining kcal inside the energy ring, with the macro bars beside it. Every
+ * number is what was eaten; food still `planned` (D43) only shades the ring and the bars.
+ */
+const props = defineProps<{ score: DayScore; planned?: NutrientVector | null }>()
 
 interface Bar {
   key: NutrientKey
@@ -28,6 +31,13 @@ const energy = computed(() => props.score.scores.energy_kcal)
 const eaten = computed(() => energy.value?.actual ?? 0)
 const target = computed(() => energy.value?.target ?? 0)
 const remaining = computed(() => Math.round(target.value - eaten.value))
+const plannedKcal = computed(() => props.planned?.energy_kcal ?? 0)
+const ringLabel = computed(() => {
+  const base = `Energy: ${formatNumber(Math.round(eaten.value), 0)} of ${formatNumber(target.value, 0)} kcal`
+  return plannedKcal.value > 0
+    ? `${base}, plus ${formatNumber(Math.round(plannedKcal.value), 0)} planned`
+    : base
+})
 /**
  * Past the target by the numbers, which is not the same as the `over` status: up to 110%
  * of energy still scores close (D34), and 2,700 of 2,500 kcal is "200 kcal over" all the same.
@@ -47,6 +57,7 @@ const TONE: Record<string, ChipTone> = {
 }
 const actual = (key: NutrientKey) => props.score.scores[key]?.actual ?? 0
 const goal = (key: NutrientKey) => props.score.scores[key]?.target ?? 0
+const plannedOf = (key: NutrientKey) => props.planned?.[key] ?? 0
 </script>
 
 <template>
@@ -68,7 +79,8 @@ const goal = (key: NutrientKey) => props.score.scores[key]?.target ?? 0
         :size="148"
         :stroke="12"
         :color="ringColor"
-        :label="`Energy: ${formatNumber(Math.round(eaten), 0)} of ${formatNumber(target, 0)} kcal`"
+        :planned="plannedKcal"
+        :label="ringLabel"
         class="shrink-0"
       >
         <span
@@ -96,6 +108,7 @@ const goal = (key: NutrientKey) => props.score.scores[key]?.target ?? 0
             <ProgressBar
               :value="actual(bar.key)"
               :max="goal(bar.key)"
+              :planned="plannedOf(bar.key)"
               :color="bar.color"
               :label="bar.label"
             />
@@ -108,6 +121,11 @@ const goal = (key: NutrientKey) => props.score.scores[key]?.target ?? 0
       <p class="text-sm text-fg-muted">
         <span class="font-semibold text-fg">{{ formatNumber(Math.round(eaten), 0) }}</span>
         of {{ formatNumber(target, 0) }} kcal eaten
+        <span v-if="plannedKcal > 0" class="whitespace-nowrap">
+          ·
+          <span class="inline-block size-2 rounded-full bg-accent/35" aria-hidden="true" />
+          {{ formatNumber(Math.round(plannedKcal), 0) }} planned
+        </span>
       </p>
       <Chip v-if="energy && score.logged" :tone="TONE[energy.status]">
         {{ STATUS_LABELS[energy.status] }}

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  MEAL_LABELS,
   savedMealTotals,
   type LogEntryInput,
   type Meal,
@@ -16,6 +15,7 @@ import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import Sheet from '@/components/ui/Sheet.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
+import { slotName } from '@/features/log/log-slot'
 import { useCreateEntries } from '@/features/log/useLog'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { ApiError } from '@/lib/api'
@@ -55,6 +55,7 @@ function select(meal: SavedMeal): void {
 function logMeal(payload: {
   day: string
   meal: Meal
+  planned: boolean
   entries: LogEntryInput[]
   savedMealId: string
 }): void {
@@ -63,6 +64,7 @@ function logMeal(payload: {
     {
       day: payload.day,
       meal: payload.meal,
+      planned: payload.planned,
       loggedAt: new Date().toISOString(),
       entries: payload.entries,
       savedMealId: payload.savedMealId,
@@ -73,7 +75,7 @@ function logMeal(payload: {
         ui.toast(
           response.queued
             ? `Saved offline · ${formatKcal(kcal)}. It will be sent when you're back online.`
-            : `Added to ${MEAL_LABELS[payload.meal].toLowerCase()} · ${formatKcal(kcal)}`,
+            : `Added to ${slotName(payload.meal, payload.planned)} · ${formatKcal(kcal)}`,
           'success',
         )
         sheetOpen.value = false

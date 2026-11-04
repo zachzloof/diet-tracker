@@ -31,6 +31,8 @@ import { useDeleteEntry, useUpdateEntry } from './useLog'
  * Edit one logged item: quantity or weight (everything rescales), any single nutrient (only
  * that number), meal, day, or delete it. An item that is not in My foods yet (an estimate
  * that was not saved when it was logged) can be saved there as it stands after the edits.
+ * Planned food is edited here too: picking a meal is how it becomes eaten, and picking
+ * Planned puts eaten food back on the plan (D43).
  */
 const open = defineModel<boolean>('open', { default: false })
 
@@ -44,6 +46,7 @@ const draft = ref<EditableItem | null>(null)
 const base = ref<EditableItem | null>(null)
 const meal = ref<Meal>('snack')
 const day = ref(props.today)
+const planned = ref(false)
 const saveToLibrary = ref(false)
 const confirmingDelete = ref(false)
 const error = ref<string | null>(null)
@@ -56,6 +59,7 @@ watch(
       base.value = snapshotItem(entry)
       meal.value = entry.meal
       day.value = entry.day
+      planned.value = entry.planned
       saveToLibrary.value = false
       confirmingDelete.value = false
       error.value = null
@@ -83,14 +87,17 @@ const changed = computed(
     (portionChanged.value ||
       meal.value !== props.entry.meal ||
       day.value !== props.entry.day ||
+      planned.value !== props.entry.planned ||
       saveToLibrary.value),
 )
 
 function save(): void {
   if (!props.entry || !draft.value || draft.value.quantity < 0) return
   error.value = null
-  const moved = meal.value !== props.entry.meal || day.value !== props.entry.day
+  const planChanged = planned.value !== props.entry.planned
+  const moved = planChanged || meal.value !== props.entry.meal || day.value !== props.entry.day
   const saving = saveToLibrary.value && props.entry.foodId === null
+  const eaten = planChanged && !planned.value
   update.mutate(
     {
       id: props.entry.id,
@@ -105,12 +112,14 @@ function save(): void {
           : {}),
         ...(meal.value !== props.entry.meal ? { meal: meal.value } : {}),
         ...(day.value !== props.entry.day ? { day: day.value } : {}),
+        ...(planChanged ? { planned: planned.value } : {}),
         ...(saving ? { saveToLibrary: true } : {}),
       },
     },
     {
       onSuccess: () => {
-        ui.toast(saving ? 'Saved to My foods' : moved ? 'Moved' : 'Saved', 'success')
+        const done = saving ? 'Saved to My foods' : moved ? 'Moved' : 'Saved'
+        ui.toast(eaten ? `Added to ${meal.value}` : done, 'success')
         open.value = false
       },
       onError: (e: unknown) => {
@@ -178,7 +187,12 @@ function del(): void {
         </li>
       </ul>
 
-      <MealDayPicker v-model:meal="meal" v-model:day="day" :today="today" />
+      <MealDayPicker
+        v-model:meal="meal"
+        v-model:day="day"
+        v-model:planned="planned"
+        :today="today"
+      />
       <p v-if="entry.groupName" class="flex gap-2 text-sm text-fg-muted">
         <Icon name="utensils" :size="16" class="mt-0.5 shrink-0" />
         Part of {{ entry.groupName }}. Moving it to another meal or day takes it out of that meal;

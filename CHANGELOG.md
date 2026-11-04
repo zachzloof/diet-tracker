@@ -4,6 +4,17 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Planned food (2026-11-04)
+- When you log food you can now pick Planned beside Breakfast, Lunch, Dinner and Snack: food you mean to eat and haven't yet. It works on every way of logging: Describe, Meals, My foods, Manual and the coach's cards. The button reads "Add to planned".
+- The ring and the macro and water bars show planned food in a lighter tone running on from what you've eaten. The numbers stay what you've eaten: kcal left, the amounts beside each bar, day met, the week and your streak ignore a plan until you eat it. A small "640 planned" under the ring says how much is shaded.
+- Planned food has its own list at the top of the day's log. Tick one once you've eaten it and it moves into the meal that fits the time of day, and starts counting. Tap the row instead to change the amount, pick a different meal or move it to another day. Eaten food can go back on the plan the same way.
+- A saved meal planned as a whole stays one row and ticks off in one go.
+- The arrow on Today now goes one day forward, to Tomorrow. Tomorrow holds a plan and nothing else: Planned is the only option, there is no tick, and the + plans for that day. Move a plan to today in its editor if you change your mind. When tomorrow comes, its plan is there on Today, ready to tick.
+- A plan you never eat stays on its day, uncounted, where you can still tick it, move it or remove it.
+- The coach keeps the two apart: it tells you what you've eaten, what's planned, what's planned for tomorrow, and where the day would land if you eat the plan.
+- "Another day" in the day chips is now "Other", to make room for Tomorrow.
+- API: `planned` on `POST /log/entries`, `PATCH /log/entries/:id` and `PATCH /log/groups/:id`, and on every entry; the API refuses eaten food on a future day and anything past tomorrow. `log_entries.planned` (migration 0017), export schema 7, a `planned` column in the log CSV. Shared: `packages/shared/src/log/planned.ts`. Web: `features/log/PlannedList.vue`, `features/log/log-slot.ts`.
+
 ### Logging offline works again (2026-11-04)
 - Food and water logged with no connection go into the queue straight away, as they were designed to. Before this fix the sheet sat there and nothing was saved until the connection came back, and an offline entry could be lost if you closed the app. Removing a queued entry works offline again too.
 

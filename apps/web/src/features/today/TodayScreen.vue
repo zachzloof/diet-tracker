@@ -2,8 +2,10 @@
 import {
   addDays,
   energyUncapped,
+  isPlanOnlyDay,
   isValidDay,
   isWaterEntry,
+  lastPlanDay,
   type LogEntry,
 } from '@diet-tracker/shared'
 import { computed, ref, watch } from 'vue'
@@ -11,6 +13,7 @@ import { useRoute } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
+import Chip from '@/components/ui/Chip.vue'
 import DayStepper from '@/components/ui/DayStepper.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Icon from '@/components/ui/Icon.vue'
@@ -19,6 +22,7 @@ import { useSession } from '@/features/auth/useSession'
 import DayLog from '@/features/log/DayLog.vue'
 import EntrySheet from '@/features/log/EntrySheet.vue'
 import MealGroupSheet from '@/features/log/MealGroupSheet.vue'
+import PlannedList from '@/features/log/PlannedList.vue'
 import { groupMembers, type GroupRow } from '@/features/log/day-groups'
 import { useDayLog } from '@/features/log/useLog'
 import BriefCard from '@/features/coach/BriefCard.vue'
@@ -72,9 +76,12 @@ const log = useDayLog(viewedDay)
 const score = useDayScore(log.summary, targets.version)
 
 const isToday = computed(() => viewedDay.value === today.value)
+/** Tomorrow (D43): the one day ahead the stepper reaches, which holds a plan and nothing else. */
+const planOnly = computed(() => isPlanOnlyDay(viewedDay.value, today.value))
 const dayLabel = computed(() => {
   if (isToday.value) return 'Today'
   if (viewedDay.value === addDays(today.value, -1)) return 'Yesterday'
+  if (viewedDay.value === addDays(today.value, 1)) return 'Tomorrow'
   return formatDay(viewedDay.value)
 })
 
@@ -85,7 +92,9 @@ const greeting = computed(() => {
   return 'Good evening'
 })
 
-const foodEntries = computed(() => log.entries.value.filter((e) => !isWaterEntry(e)))
+// Eaten and planned never mix: everything that adds up reads `foodEntries`.
+const foodEntries = computed(() => log.entries.value.filter((e) => !isWaterEntry(e) && !e.planned))
+const plannedEntries = computed(() => log.entries.value.filter((e) => e.planned))
 
 // The fortnightly plan check only surfaces here when it has a proposal to confirm.
 const recalibration = useRecalibration(
@@ -157,13 +166,14 @@ function retry(): void {
 </script>
 
 <template>
-  <AppShell title="Today">
+  <AppShell title="Today" :log-day="planOnly ? viewedDay : null">
     <template #header-right>
       <CoachButton />
     </template>
     <DayStepper
       :label="dayLabel"
       :is-current="isToday"
+      :at-end="viewedDay >= lastPlanDay(today)"
       @prev="viewedDay = addDays(viewedDay, -1)"
       @next="viewedDay = addDays(viewedDay, 1)"
       @reset="viewedDay = today"
@@ -198,8 +208,12 @@ function retry(): void {
         <p class="text-[28px] leading-tight font-bold">
           {{ isToday ? greeting : formatDay(viewedDay) }}
         </p>
+        <div v-if="planOnly" class="mt-2 flex flex-wrap items-center gap-2">
+          <Chip tone="neutral"><Icon name="calendar" :size="16" /> Plan only</Chip>
+          <span class="text-xs text-fg-muted">Nothing counts until you have eaten it.</span>
+        </div>
         <DayStatus
-          v-if="score && targets.version.value"
+          v-else-if="score && targets.version.value"
           class="mt-2"
           :score="score"
           :goal="targets.version.value.effective.meta.goalApplied"
@@ -223,16 +237,25 @@ function retry(): void {
       <RecalibrationCard v-if="proposal" :assessment="proposal" compact />
 
       <template v-if="score">
-        <EnergyCard :score="score" />
+        <EnergyCard :score="score" :planned="log.plannedTotals.value" />
         <WaterCard
-          v-if="prefs.water"
+          v-if="prefs.water && !planOnly"
           :score="score"
           :entries="log.entries.value"
           :day="viewedDay"
+          :planned="log.plannedTotals.value?.water_ml"
         />
       </template>
 
       <WeightCard v-if="isToday" :today="today" />
+
+      <PlannedList
+        v-if="plannedEntries.length"
+        :entries="plannedEntries"
+        :plan-only="planOnly"
+        @select="editing = $event"
+        @select-group="openGroup"
+      />
 
       <DayLog
         v-if="foodEntries.length"
@@ -241,7 +264,19 @@ function retry(): void {
         @select-group="openGroup"
       />
 
-      <Card v-else :padded="false">
+      <Card v-else-if="planOnly && !plannedEntries.length" :padded="false">
+        <EmptyState
+          icon="calendar"
+          title="Nothing planned yet"
+          description="Plan tomorrow's food here. It stays out of your numbers until you have eaten it."
+        >
+          <Button @click="ui.openQuickAdd(viewedDay)">
+            <Icon name="plus" :size="20" /> Plan food
+          </Button>
+        </EmptyState>
+      </Card>
+
+      <Card v-else-if="!plannedEntries.length" :padded="false">
         <EmptyState
           icon="sparkles"
           :title="isToday ? 'Nothing logged yet' : 'Nothing logged this day'"
@@ -253,12 +288,15 @@ function retry(): void {
         </EmptyState>
       </Card>
 
-      <p v-if="foodEntries.length" class="px-2 text-center text-xs text-fg-muted">
+      <p
+        v-if="foodEntries.length || plannedEntries.length"
+        class="px-2 text-center text-xs text-fg-muted"
+      >
         Tap an item to change the amount, move it to another meal or day, or remove it. Tap a meal
         to see its ingredients.
       </p>
 
-      <template v-if="score && prefs.nutrientDetail === 'full'">
+      <template v-if="score && prefs.nutrientDetail === 'full' && !planOnly">
         <FoodGroupsCard :score="score" :entries="foodEntries" :is-today="isToday" />
         <MicronutrientGrid :score="score" :entries="foodEntries" :is-today="isToday" />
       </template>

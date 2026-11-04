@@ -3,6 +3,7 @@ import { MEAL_LABELS, type EstimateCard, type LogEntryInput, type Meal } from '@
 import { computed, ref } from 'vue'
 import Icon from '@/components/ui/Icon.vue'
 import EstimateReview from '@/features/log/EstimateReview.vue'
+import { slotName } from '@/features/log/log-slot'
 import { useCreateEntries } from '@/features/log/useLog'
 import { useLocalDay } from '@/features/log/useLocalDay'
 import { ApiError } from '@/lib/api'
@@ -32,6 +33,7 @@ const totalKcal = computed(() =>
 function log(payload: {
   day: string
   meal: Meal
+  planned: boolean
   entries: LogEntryInput[]
   saveAsMeal?: { name: string }
 }): void {
@@ -40,6 +42,7 @@ function log(payload: {
     {
       day: payload.day,
       meal: payload.meal,
+      planned: payload.planned,
       loggedAt: new Date().toISOString(),
       entries: payload.entries,
       ...(payload.saveAsMeal ? { saveAsMeal: payload.saveAsMeal } : {}),
@@ -51,7 +54,7 @@ function log(payload: {
         ui.toast(
           response.queued
             ? `Saved offline · ${formatKcal(kcal)}${andMeal}. It will be sent when you're back online.`
-            : `Added to ${MEAL_LABELS[payload.meal].toLowerCase()} · ${formatKcal(kcal)}${andMeal}`,
+            : `Added to ${slotName(payload.meal, payload.planned)} · ${formatKcal(kcal)}${andMeal}`,
           'success',
         )
         emit('confirmed')

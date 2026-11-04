@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button.vue'
 import NumberField from '@/components/ui/NumberField.vue'
 import SegmentedControl, { type SegmentOption } from '@/components/ui/SegmentedControl.vue'
 import MealDayPicker from '@/features/log/MealDayPicker.vue'
+import { addLabel } from '@/features/log/log-slot'
 import { formatGrams, formatKcal, formatNumber } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
 import MealItemList from './MealItemList.vue'
@@ -43,7 +44,15 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  confirm: [payload: { day: string; meal: Meal; entries: LogEntryInput[]; savedMealId: string }]
+  confirm: [
+    payload: {
+      day: string
+      meal: Meal
+      planned: boolean
+      entries: LogEntryInput[]
+      savedMealId: string
+    },
+  ]
   back: []
 }>()
 
@@ -63,6 +72,7 @@ const grams = ref<number | null>(null)
 const applied = ref(1)
 const meal = ref<Meal>(props.initialMeal)
 const day = ref(props.initialDay)
+const planned = ref(false)
 
 watch(
   () => props.saved,
@@ -129,6 +139,7 @@ function confirm(): void {
   emit('confirm', {
     day: day.value,
     meal: meal.value,
+    planned: planned.value,
     // The items are already scaled to the portions on screen.
     entries: savedMealEntries(items.value.map(fromDraftItem)),
     savedMealId: props.saved.id,
@@ -194,13 +205,14 @@ function confirm(): void {
     <MealDayPicker
       v-model:meal="meal"
       v-model:day="day"
+      v-model:planned="planned"
       :today="today"
       :previous-day="previousDay"
     />
 
     <p v-if="error" class="text-sm text-over" role="alert">{{ error }}</p>
     <Button block :loading="saving" :disabled="!canLog" @click="confirm">
-      {{ ui.online ? `Add to ${meal}` : `Add to ${meal} (offline)` }}
+      {{ addLabel(meal, planned, ui.online) }}
     </Button>
     <p class="text-center text-xs text-fg-muted">
       Tap an ingredient to change or remove it for this time. The saved meal stays as it is.

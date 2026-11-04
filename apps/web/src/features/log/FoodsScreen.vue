@@ -17,6 +17,7 @@ import ManualFoodForm from './ManualFoodForm.vue'
 import PortionPicker from './PortionPicker.vue'
 import SourceLink from './SourceLink.vue'
 import { basisLabel, emptyFoodForm, parseFoodForm } from './food-form'
+import { slotName } from './log-slot'
 import { FOOD_SOURCE_ICON, FOOD_SOURCE_LABEL } from './source'
 import { useCreateEntries, useCreateFood, useDeleteFood, useFoods, useUpdateFood } from './useLog'
 import { useLocalDay } from './useLocalDay'
@@ -122,19 +123,25 @@ function removeFood(): void {
   })
 }
 
-function logPortion(payload: { day: string; meal: Meal; entry: LogEntryInput }): void {
+function logPortion(payload: {
+  day: string
+  meal: Meal
+  planned: boolean
+  entry: LogEntryInput
+}): void {
   error.value = null
   createEntries.mutate(
     {
       day: payload.day,
       meal: payload.meal,
+      planned: payload.planned,
       loggedAt: new Date().toISOString(),
       entries: [payload.entry],
     },
     {
       onSuccess: () => {
         ui.toast(
-          `Added to ${payload.meal} · ${formatKcal(payload.entry.nutrients.energy_kcal)}`,
+          `Added to ${slotName(payload.meal, payload.planned)} · ${formatKcal(payload.entry.nutrients.energy_kcal)}`,
           'success',
         )
         sheetOpen.value = false

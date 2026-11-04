@@ -23,7 +23,13 @@ import { useUiStore } from '@/stores/ui'
  * Water for the day with a one-tap +250 ml (decision D18: a water quick-add is a log entry
  * whose only nutrient is water). "Undo" removes the most recent glass.
  */
-const props = defineProps<{ score: DayScore; entries: LogEntry[]; day: string }>()
+const props = defineProps<{
+  score: DayScore
+  entries: LogEntry[]
+  day: string
+  /** Water in food still planned (D43): shaded on the bar, counted in no number. */
+  planned?: number
+}>()
 
 const ui = useUiStore()
 const { suggestion } = useLocalDay()
@@ -33,7 +39,7 @@ const remove = useDeleteEntry()
 const water = computed(() => props.score.scores.water_ml)
 const actual = computed(() => water.value?.actual ?? 0)
 const target = computed(() => water.value?.target ?? 0)
-const glasses = computed(() => props.entries.filter(isWaterEntry))
+const glasses = computed(() => props.entries.filter((e) => isWaterEntry(e) && !e.planned))
 const lastGlass = computed(() => glasses.value[glasses.value.length - 1] ?? null)
 const busy = computed(() => create.isPending.value || remove.isPending.value)
 /** Water never scores "over"; past 4 litres the card says so in words instead (D34). */
@@ -72,7 +78,14 @@ function undo(): void {
       }}</span>
       <span class="text-sm text-fg-muted">/ {{ formatNumber(target, 0) }} ml</span>
     </div>
-    <ProgressBar class="mt-3" :value="actual" :max="target" color="water" label="Water" />
+    <ProgressBar
+      class="mt-3"
+      :value="actual"
+      :max="target"
+      :planned="planned"
+      color="water"
+      label="Water"
+    />
     <p v-if="caution" class="mt-2 flex items-start gap-1.5 text-xs text-fg" role="status">
       <Icon name="alert" :size="14" class="mt-px shrink-0 text-close" aria-hidden="true" />
       <span>

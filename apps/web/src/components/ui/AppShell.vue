@@ -15,6 +15,8 @@ const props = defineProps<{
   back?: RouteLocationRaw
   /** A screen with its own bottom bar (the coach's composer) drops the tab bar. */
   hideTabs?: boolean
+  /** The day the centre button logs to when it should not be today (tomorrow's plan, D43). */
+  logDay?: string | null
 }>()
 
 const router = useRouter()
@@ -45,7 +47,7 @@ function goBack(): void {
 /** The centre button logs food in the food half and starts a session in the gym half. */
 function add(): void {
   if (mode.value === 'training') void router.push({ name: 'workout-new' })
-  else ui.openQuickAdd()
+  else ui.openQuickAdd(props.logDay ?? null)
 }
 </script>
 

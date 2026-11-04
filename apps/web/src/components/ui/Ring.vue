@@ -9,15 +9,18 @@ const props = withDefaults(
     stroke?: number
     color?: string
     label?: string
+    /** Still to come (D43): a lighter arc running on from `value`, counted in no number. */
+    planned?: number
   }>(),
-  { size: 160, stroke: 14, color: 'var(--accent)' },
+  { size: 160, stroke: 14, color: 'var(--accent)', planned: 0 },
 )
 
 const radius = computed(() => (props.size - props.stroke) / 2)
 const circumference = computed(() => 2 * Math.PI * radius.value)
-const ratio = computed(() =>
-  props.max > 0 ? Math.min(1, Math.max(0, props.value / props.max)) : 0,
-)
+function ratioOf(amount: number): number {
+  return props.max > 0 ? Math.min(1, Math.max(0, amount / props.max)) : 0
+}
+const ratio = computed(() => ratioOf(props.value))
 
 // Animate from 0 on first paint, then from old to new on updates (CSS transition).
 const mounted = ref(false)
@@ -25,6 +28,9 @@ onMounted(() => {
   requestAnimationFrame(() => (mounted.value = true))
 })
 const offset = computed(() => circumference.value * (1 - (mounted.value ? ratio.value : 0)))
+const plannedOffset = computed(
+  () => circumference.value * (1 - (mounted.value ? ratioOf(props.value + props.planned) : 0)),
+)
 </script>
 
 <template>
@@ -45,6 +51,22 @@ const offset = computed(() => circumference.value * (1 - (mounted.value ? ratio.
         :stroke-width="stroke"
       />
       <circle
+        v-if="planned > 0"
+        :cx="size / 2"
+        :cy="size / 2"
+        :r="radius"
+        fill="none"
+        :stroke="color"
+        stroke-opacity="0.35"
+        :stroke-width="stroke"
+        stroke-linecap="round"
+        :stroke-dasharray="circumference"
+        :stroke-dashoffset="plannedOffset"
+        :transform="`rotate(-90 ${size / 2} ${size / 2})`"
+        class="transition-[stroke-dashoffset] duration-500 ease-out"
+      />
+      <circle
+        v-if="value > 0 || planned === 0"
         :cx="size / 2"
         :cy="size / 2"
         :r="radius"
