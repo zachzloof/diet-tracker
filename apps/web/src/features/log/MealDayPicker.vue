@@ -3,6 +3,7 @@ import {
   MEALS,
   MEAL_LABELS,
   addDays,
+  firstPlanDay,
   isPlanOnlyDay,
   lastPlanDay,
   mealSchema,
@@ -17,7 +18,8 @@ import { formatDay } from '@/lib/format'
  * day defaults to the user's local today; both are one tap to change. Before 04:00 the
  * previous day is offered up front (a late dinner belongs to the day it started). Planned
  * (D43) sits with the meals: food not eaten yet has no meal of the day, and tomorrow can
- * hold nothing else, so there it is the only option.
+ * hold nothing else, so there it is the only option. A day further back than a plan is kept
+ * cannot take one, so there it is not offered.
  */
 const meal = defineModel<Meal>('meal', { required: true })
 const day = defineModel<string>('day', { required: true })
@@ -35,9 +37,11 @@ const PLANNED_OPTION = { value: PLANNED, label: 'Planned' }
 const MEAL_OPTIONS = MEALS.map((value) => ({ value, label: MEAL_LABELS[value] }))
 
 const planOnly = computed(() => isPlanOnlyDay(day.value, props.today))
-const options = computed(() =>
-  planOnly.value ? [PLANNED_OPTION] : [...MEAL_OPTIONS, PLANNED_OPTION],
-)
+const tooFarBack = computed(() => day.value < firstPlanDay(props.today))
+const options = computed(() => {
+  if (planOnly.value) return [PLANNED_OPTION]
+  return tooFarBack.value ? MEAL_OPTIONS : [...MEAL_OPTIONS, PLANNED_OPTION]
+})
 
 const slotValue = computed({
   get: () => (planned.value ? PLANNED : meal.value),
@@ -54,11 +58,12 @@ const slotValue = computed({
   },
 })
 
-// Watches both: a parent resetting `planned` must not leave food eaten on a day to come.
+// Watches `planned` too: a parent resetting it must not leave food eaten on a day to come.
 watch(
-  [planOnly, planned],
-  ([only, isPlanned]) => {
+  [planOnly, tooFarBack, planned],
+  ([only, farBack, isPlanned]) => {
     if (only && !isPlanned) planned.value = true
+    if (farBack && isPlanned) planned.value = false
   },
   { immediate: true },
 )

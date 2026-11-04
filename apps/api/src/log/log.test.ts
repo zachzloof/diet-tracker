@@ -557,6 +557,23 @@ describe('planned food', () => {
     expect(day.summary.entryCount).toBe(1)
   })
 
+  it('takes a plan only as far back as a plan is kept', async () => {
+    expect((await plan(addDays(TODAY, -2))).status).toBe(201)
+    const tooOld = await plan(addDays(TODAY, -3))
+    expect(tooOld.status).toBe(400)
+    expect(await tooOld.text()).toContain('too far back')
+
+    const eaten = await send('POST', '/api/v1/log/entries', {
+      day: addDays(TODAY, -3),
+      meal: 'dinner',
+      loggedAt: AT,
+      entries: [eggs],
+    })
+    const [entry] = createEntriesResponseSchema.parse(await eaten.json()).entries
+    const backOnPlan = await send('PATCH', `/api/v1/log/entries/${entry?.id}`, { planned: true })
+    expect(backOnPlan.status).toBe(400)
+  })
+
   it('lets tomorrow hold a plan and nothing else, and goes no further', async () => {
     expect((await plan(TOMORROW)).status).toBe(201)
 
@@ -639,7 +656,7 @@ describe('planned food', () => {
     )
     expect(moved.entry).toMatchObject({ day: TODAY, planned: true })
 
-    // A plan nobody ate stays on its day, uncounted, and can still be ticked off afterwards.
+    // A plan nobody ticked stays on its day, uncounted, and can be ticked off until it expires.
     const yesterday = addDays(TODAY, -1)
     const stale = createEntriesResponseSchema.parse(await (await plan(yesterday)).json())
     expect((await dayLog(yesterday)).summary.totals.energy_kcal).toBe(0)

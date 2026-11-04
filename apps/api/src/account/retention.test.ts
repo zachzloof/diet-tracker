@@ -22,7 +22,7 @@ import {
   weightEntries,
 } from '../db/schema/index.js'
 import { saveProfile } from '../profile/profile-service.js'
-import { purgeExpiredData } from './retention.js'
+import { purgeExpiredData, purgeExpiredPlans } from './retention.js'
 
 const NOW = new Date('2026-10-01T12:00:00.000Z')
 const TODAY = '2026-10-01'
@@ -145,5 +145,59 @@ describe('purgeExpiredData', () => {
     const result = await purgeExpiredData(NOW)
     expect(result.targetVersions).toBe(0)
     expect(await db.select().from(targetVersions)).toHaveLength(1)
+  })
+})
+
+describe('purgeExpiredPlans', () => {
+  const MONDAY = '2026-11-02'
+
+  async function holdPlan(timezone: string, day: string, planned = true): Promise<void> {
+    await saveProfile(userId, tess.profile, NOW)
+    await db.update(profiles).set({ timezone }).where(eq(profiles.userId, userId))
+    await db.insert(logEntries).values({
+      id: uuidv7(),
+      userId,
+      day,
+      loggedAt: new Date(`${day}T12:00:00.000Z`),
+      meal: 'dinner',
+      planned,
+      name: 'Curry',
+      quantity: 1,
+      unit: 'plate',
+      grams: 400,
+      nutrients: emptyNutrientVector(),
+      foodGroups: emptyFoodGroupServes(),
+      source: 'manual',
+    })
+  }
+
+  const left = async () => (await db.select().from(logEntries)).map((row) => row.name)
+
+  it("deletes a plan when the second day after it ends, by the person's own clock", async () => {
+    // Monday's plan lasts through Wednesday. Thursday starts at 11:00 UTC on the Wednesday in
+    // Auckland (UTC+13) and 23 hours later in Honolulu (UTC-10).
+    await holdPlan('Pacific/Auckland', MONDAY)
+    expect(await purgeExpiredPlans(new Date('2026-11-04T10:59:00.000Z'))).toBe(0)
+    expect(await left()).toEqual(['Curry'])
+    expect(await purgeExpiredPlans(new Date('2026-11-04T11:00:00.000Z'))).toBe(1)
+    expect(await left()).toEqual([])
+
+    await holdPlan('Pacific/Honolulu', MONDAY)
+    expect(await purgeExpiredPlans(new Date('2026-11-05T09:59:00.000Z'))).toBe(0)
+    expect(await left()).toEqual(['Curry'])
+    expect(await purgeExpiredPlans(new Date('2026-11-05T10:00:00.000Z'))).toBe(1)
+    expect(await left()).toEqual([])
+  })
+
+  it('counts from the day, so a plan for tomorrow gets the same time', async () => {
+    await holdPlan('UTC', addDays(MONDAY, 1))
+    expect(await purgeExpiredPlans(new Date('2026-11-05T23:59:00.000Z'))).toBe(0)
+    expect(await purgeExpiredPlans(new Date('2026-11-06T00:00:00.000Z'))).toBe(1)
+  })
+
+  it('leaves eaten food alone, a ticked plan included', async () => {
+    await holdPlan('UTC', MONDAY, false)
+    expect(await purgeExpiredPlans(new Date('2026-12-01T12:00:00.000Z'))).toBe(0)
+    expect(await left()).toEqual(['Curry'])
   })
 })

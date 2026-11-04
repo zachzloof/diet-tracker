@@ -704,7 +704,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 ---
 
-## D43. Planned food lives on the log, out of the totals (adopted, please confirm)
+## D43. Planned food lives on the log, out of the totals (accepted)
 
 **Context.** The owner asked for food to be added as "planned": meant to be eaten today and not eaten yet, shaded on the charts at the top, with the numbers showing only what was eaten, and for Today to step one day forward to plan tomorrow, where plan is the only option and no meal can be assigned. Where a plan is stored shapes every reader of the food log, so the options are recorded.
 
@@ -717,6 +717,15 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Settled in the build, from the owner's words.** Planned sits with Breakfast, Lunch, Dinner and Snack in the picker, on every way of logging. Numbers are eaten only. Tomorrow offers Planned alone and the screen has no way to eat it. One day ahead and no further.
 
-**Assumed in the build, easy to change.** (1) The tick moves a plan to the meal the time of day suggests; tapping the row opens the editor, where any meal can be picked. (2) The Planned list sits above the meals, since it is the one list still to act on. (3) A plan not eaten stays on its day, uncounted and still tickable, and is not rolled forward. (4) A small "640 planned" caption sits under the ring as the chart's legend; it is the one planned number near the chart, and it changes no total. (5) Tomorrow hides water, food groups and vitamins, which have nothing eaten to show. (6) The API refuses eaten food on a future day and anything past tomorrow, so the rule holds for the coach's cards and old clients as well as the screen. (7) A plan can sit on a past day; nothing is gained by refusing it and a leftover plan needs to stay editable. (8) The coach reads plans, keeps them apart from what was eaten and can say where the day would land, but cannot draft one itself; the person picks Planned or Tomorrow on its estimate card.
+**Decided by the owner (2026-11-04).** The tick asks which meal, every time, at the cost of a second tap: a plan has no meal until it is eaten and the clock guessed wrong (dinner ticked at 22:30 landed in Snack). A plan never ticked off is deleted after 48 hours, which leaves time to tick one that was eaten and forgotten.
 
-**Status.** `adopted` (2026-11-04): A, built; please confirm, along with assumptions 1 to 3, which are the ones you will feel.
+**When the 48 hours start.** The owner gave the length and the reason, not the starting point, and it changes how long a plan lasts:
+- **A. From when the plan was made.** Simplest to say. But a plan for tomorrow made early today would run out early the day after tomorrow, with minutes to spare after its day, so the time to correct it would depend on when it was typed.
+- **B. From the start of the plan's day.** The plan's day and the day after. Every plan gets the same, but a dinner on Monday night has only Tuesday left.
+- **C. From the end of the plan's day.** Built. Midnight in the person's time zone, then two clear days: Monday's plan lasts through Wednesday and goes as Thursday starts. Every plan gets the same time after its day, today's or tomorrow's. Deletion cannot be undone, so the longer reading is the safer one. `PLAN_GRACE_DAYS` is the one number to change for B.
+
+Because a plan further back than that would be deleted within the hour, the API refuses one and the picker stops offering Planned there. An hourly purge does the deleting (`purgeExpiredPlans`), zone by zone, since the day ends at a different hour in each. A plan is in no total, so deleting one changes nothing that was counted. A past day's Planned list says the date its plans clear. The privacy policy says so too.
+
+**Assumed in the build, easy to change.** (2) The Planned list sits above the meals, since it is the one list still to act on. (4) A small "640 planned" caption sits under the ring as the chart's legend; it is the one planned number near the chart, and it changes no total. (5) Tomorrow hides water, food groups and vitamins, which have nothing eaten to show. (6) The API refuses eaten food on a future day and anything past tomorrow, so the rule holds for the coach's cards and old clients as well as the screen. (7) A plan can sit on a past day as far back as plans are kept, so a leftover one stays editable. (8) The coach reads plans, keeps them apart from what was eaten and can say where the day would land, but cannot draft one itself; the person picks Planned or Tomorrow on its estimate card.
+
+**Status.** `accepted` (2026-11-04): A, confirmed by the owner, with the tick asking and plans expiring after 48 hours. Option C for when the 48 hours start is the build's reading of the owner's words; say if you meant another.

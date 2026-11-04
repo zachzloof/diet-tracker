@@ -1,5 +1,5 @@
 import { serve } from '@hono/node-server'
-import { purgeExpiredData } from './account/retention.js'
+import { purgeExpiredData, purgeExpiredPlans } from './account/retention.js'
 import { createApp } from './app.js'
 import { deleteExpiredSessions } from './auth/session-service.js'
 import { closeDb } from './db/client.js'
@@ -20,6 +20,13 @@ function purge(): void {
     .catch((error: unknown) => logger.warn({ err: error }, 'retention purge failed'))
 }
 
+/** Plans never ticked off (D43). Hourly, because a day ends at a different hour in each zone. */
+function purgePlans(): void {
+  purgeExpiredPlans()
+    .then((deleted) => logger.info({ deleted }, 'expired plans purged'))
+    .catch((error: unknown) => logger.warn({ err: error }, 'expired plans purge failed'))
+}
+
 const HOUR_MS = 60 * 60 * 1000
 let hours = 0
 const housekeeping = setInterval(() => {
@@ -27,10 +34,12 @@ const housekeeping = setInterval(() => {
   deleteExpiredSessions().catch((error: unknown) => {
     logger.warn({ err: error }, 'expired session cleanup failed')
   })
+  purgePlans()
   hours += 1
   if (hours % 24 === 0) purge()
 }, HOUR_MS)
 purge()
+purgePlans()
 housekeeping.unref()
 
 let shuttingDown = false

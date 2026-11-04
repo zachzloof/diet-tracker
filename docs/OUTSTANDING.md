@@ -50,8 +50,7 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 
 ## Noticed during planned food (2026-11-04)
 
-- **A plan you never ate stays on its day.** It is uncounted and can still be ticked or moved from that day, but nothing reminds you of it: open Yesterday to find it. Decide after use whether Today should offer yesterday's leftovers, or whether a plan should roll forward. D43 records the choice made for now.
-- **The tick guesses the meal from the clock.** Dinner ticked at 22:30 lands in Snack, as anything logged then does. Tap the row instead to pick the meal. Watch whether this annoys; the fix is to ask, at the cost of a tap.
+- **Nothing on Today points at a leftover plan.** A plan you forgot lasts 48 hours past its day (D43), but you have to step back to that day to tick it, and it clears silently if you never do. Decide after use whether Today should show a line such as "1 plan from yesterday not ticked".
 - **Undoing a tick takes three taps** (row, Planned, Save), because toasts have no action button. Worth a real Undo if ticks get mis-tapped.
 - **The coach cannot draft a plan.** Asked to plan something, it drafts an ordinary estimate card and the person picks Planned or Tomorrow on it. A `planned` argument on `draft_food_log` would close the gap.
 - **Offline logging was broken for an unknown stretch.** Fixed the same day (D21), but the fix was walked with Playwright's offline switch on the production build, not on a phone in airplane mode. The "Whether anything logged offline arrived late" line below is worth a real look.

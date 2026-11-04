@@ -1,6 +1,7 @@
-import { RETENTION_DAYS, addDays } from '@diet-tracker/shared'
+import { RETENTION_DAYS, addDays, firstPlanDay, localDay } from '@diet-tracker/shared'
 import { sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
+import { profiles } from '../db/schema/index.js'
 
 export interface PurgeResult {
   /** Rows older than this day (or instant) were removed. */
@@ -58,4 +59,27 @@ export async function purgeExpiredData(now: Date = new Date()): Promise<PurgeRes
       `),
     }
   })
+}
+
+/**
+ * Plans never ticked off go 48 hours after their day ends (D43). A day ends at midnight in the
+ * person's own time zone, so this works zone by zone with the same `localDay` the app uses, and
+ * runs hourly where the year's purge runs daily. A plan is in no total, so no summary moves.
+ */
+export async function purgeExpiredPlans(now: Date = new Date()): Promise<number> {
+  const zones = await db.selectDistinct({ timezone: profiles.timezone }).from(profiles)
+  let deleted = 0
+  for (const { timezone } of zones) {
+    const cutoff = firstPlanDay(localDay(now, timezone))
+    const result = await db.execute(sql`
+      delete from log_entries entry
+      using profiles profile
+      where profile.user_id = entry.user_id
+        and profile.timezone = ${timezone}
+        and entry.planned
+        and entry.day < ${cutoff}
+    `)
+    deleted += result.rowCount ?? 0
+  }
+  return deleted
 }

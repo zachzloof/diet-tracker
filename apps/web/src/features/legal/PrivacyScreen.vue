@@ -62,6 +62,10 @@ import { APP_NAME, LEGAL_CONTACT_EMAIL, LEGAL_OPERATOR, PRIVACY_UPDATED } from '
         are more than a year old. You can delete a chat yourself at any time.
       </li>
       <li>
+        Food you planned and never marked as eaten is deleted automatically two days after the day
+        it was planned for.
+      </li>
+      <li>
         Your account, profile, current targets, saved foods and meals, and your workouts and
         exercises are kept until you delete them or your account.
       </li>

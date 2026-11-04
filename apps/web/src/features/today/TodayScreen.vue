@@ -20,10 +20,11 @@ import Icon from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { useSession } from '@/features/auth/useSession'
 import DayLog from '@/features/log/DayLog.vue'
+import EatPlanSheet from '@/features/log/EatPlanSheet.vue'
 import EntrySheet from '@/features/log/EntrySheet.vue'
 import MealGroupSheet from '@/features/log/MealGroupSheet.vue'
 import PlannedList from '@/features/log/PlannedList.vue'
-import { groupMembers, type GroupRow } from '@/features/log/day-groups'
+import { groupMembers, type DayLogRow, type GroupRow } from '@/features/log/day-groups'
 import { useDayLog } from '@/features/log/useLog'
 import BriefCard from '@/features/coach/BriefCard.vue'
 import CoachButton from '@/features/coach/CoachButton.vue'
@@ -142,6 +143,15 @@ function editIngredient(entry: LogEntry): void {
   editing.value = entry
 }
 
+// The tick on a plan asks which meal (D43). Kept here because the list leaves with its last row.
+const eating = ref<DayLogRow | null>(null)
+const eatSheetOpen = ref(false)
+
+function askMeal(row: DayLogRow): void {
+  eating.value = row
+  eatSheetOpen.value = true
+}
+
 // Cached data always wins over an error: offline, the last known day stays on screen.
 const loading = computed(
   () => session.isLoading.value || targets.isLoading.value || log.isLoading.value,
@@ -252,9 +262,11 @@ function retry(): void {
       <PlannedList
         v-if="plannedEntries.length"
         :entries="plannedEntries"
-        :plan-only="planOnly"
+        :day="viewedDay"
+        :today="today"
         @select="editing = $event"
         @select-group="openGroup"
+        @eat="askMeal"
       />
 
       <DayLog
@@ -302,6 +314,7 @@ function retry(): void {
       </template>
     </div>
 
+    <EatPlanSheet v-model:open="eatSheetOpen" :row="eating" />
     <EntrySheet v-model:open="entrySheetOpen" :entry="editing" :today="today" />
     <MealGroupSheet
       v-model:open="groupSheetOpen"

@@ -6,8 +6,8 @@
 export const LEGAL_CONTACT_EMAIL: string | null = null
 /** When the terms last changed. */
 export const LEGAL_UPDATED = '1 October 2026'
-/** When the privacy policy last changed (history kept for a year, D27). */
-export const PRIVACY_UPDATED = '3 November 2026'
+/** When the privacy policy last changed (uneaten plans deleted after 48 hours, D43). */
+export const PRIVACY_UPDATED = '4 November 2026'
 export const APP_NAME = 'Minori'
 
 /**

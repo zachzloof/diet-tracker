@@ -1,43 +1,45 @@
 <script setup lang="ts">
-import { MEAL_LABELS, type LogEntry } from '@diet-tracker/shared'
-import { computed, ref } from 'vue'
+import { isPlanOnlyDay, planExpiresAfter, type LogEntry } from '@diet-tracker/shared'
+import { computed } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import Icon from '@/components/ui/Icon.vue'
 import { ingredientCount } from '@/features/meals/meal-items'
-import { ApiError } from '@/lib/api'
-import { formatGrams, formatKcal, formatQuantity } from '@/lib/format'
+import { formatDayShort, formatGrams, formatKcal, formatQuantity } from '@/lib/format'
 import { useQueueStore } from '@/stores/queue'
 import { useUiStore } from '@/stores/ui'
-import { groupEntries, type DayLogRow, type GroupRow } from './day-groups'
-import { useLocalDay } from './useLocalDay'
-import { useUpdateEntry, useUpdateGroup } from './useLog'
+import { groupEntries, rowKcal, rowName, type DayLogRow, type GroupRow } from './day-groups'
 
 /**
  * What the person means to eat and has not yet (D43): one list above the meals, counted in
- * nothing. The tick moves a row into the meal the time of day suggests, and tapping the row
- * opens the ordinary editor, where a different meal can be picked. A day that has not
- * happened (`planOnly`) has no tick, because nothing on it can be eaten yet.
+ * nothing. The tick asks which meal it was (`EatPlanSheet`, held by the screen because this
+ * list goes with its last row) and tapping the row opens the ordinary editor. A day that has
+ * not happened has no tick, because nothing on it can be eaten yet. A day gone by says when
+ * what is left will be deleted.
  */
-const props = defineProps<{ entries: LogEntry[]; planOnly: boolean }>()
-const emit = defineEmits<{ select: [entry: LogEntry]; selectGroup: [group: GroupRow] }>()
+const props = defineProps<{ entries: LogEntry[]; day: string; today: string }>()
+const emit = defineEmits<{
+  select: [entry: LogEntry]
+  selectGroup: [group: GroupRow]
+  eat: [row: DayLogRow]
+}>()
 
 const ui = useUiStore()
 const queue = useQueueStore()
-const { suggestion } = useLocalDay()
-const updateEntry = useUpdateEntry()
-const updateGroup = useUpdateGroup()
+
+const planOnly = computed(() => isPlanOnlyDay(props.day, props.today))
+const caption = computed(() => {
+  if (planOnly.value)
+    return 'Nothing here counts yet. Tick it off on the day, once you have eaten it.'
+  if (props.day === props.today) return 'Not counted yet. Tick each one once you have eaten it.'
+  const last = formatDayShort(planExpiresAfter(props.day))
+  return `Not counted. Tick anything you did eat. The rest clears after ${last}.`
+})
 
 const rows = computed(() => groupEntries(props.entries))
 const kcal = computed(() => props.entries.reduce((sum, e) => sum + e.nutrients.energy_kcal, 0))
 
 function rowKey(row: DayLogRow): string {
   return row.kind === 'group' ? row.groupId : row.entry.id
-}
-function rowName(row: DayLogRow): string {
-  return row.kind === 'group' ? row.name : row.entry.name
-}
-function rowKcal(row: DayLogRow): number {
-  return row.kind === 'group' ? row.kcal : row.entry.nutrients.energy_kcal
 }
 function rowQueued(row: DayLogRow): boolean {
   return row.kind === 'group'
@@ -49,28 +51,6 @@ function select(row: DayLogRow): void {
   if (row.kind === 'group') emit('selectGroup', row)
   else emit('select', row.entry)
 }
-
-/** Rows on their way: the tick fills at once and the row leaves when the day log answers. */
-const ticking = ref<string[]>([])
-
-// `mutateAsync`, not `mutate`: the last row going unmounts this list, which would drop a
-// per-call callback and the toast with it.
-async function eat(row: DayLogRow): Promise<void> {
-  const key = rowKey(row)
-  if (ticking.value.includes(key)) return
-  ticking.value = [...ticking.value, key]
-  const meal = suggestion.value.meal
-  const patch = { planned: false, meal }
-  try {
-    if (row.kind === 'group') await updateGroup.mutateAsync({ groupId: row.groupId, patch })
-    else await updateEntry.mutateAsync({ id: row.entry.id, patch })
-    ui.toast(`Added to ${MEAL_LABELS[meal].toLowerCase()} · ${formatKcal(rowKcal(row))}`, 'success')
-  } catch (error) {
-    ui.toast(error instanceof ApiError ? error.message : 'Could not save. Try again.', 'error')
-  } finally {
-    ticking.value = ticking.value.filter((other) => other !== key)
-  }
-}
 </script>
 
 <template>
@@ -80,13 +60,7 @@ async function eat(row: DayLogRow): Promise<void> {
         <span class="text-base font-semibold text-fg">Planned</span>
         <span class="text-sm text-fg-muted">{{ formatKcal(kcal) }}</span>
       </h2>
-      <p class="text-xs text-fg-muted">
-        {{
-          planOnly
-            ? 'Nothing here counts yet. Tick it off on the day, once you have eaten it.'
-            : 'Not counted yet. Tick each one once you have eaten it.'
-        }}
-      </p>
+      <p class="text-xs text-fg-muted">{{ caption }}</p>
     </div>
     <ul class="divide-y divide-border">
       <li v-for="row in rows" :key="rowKey(row)" class="flex items-stretch">
@@ -115,15 +89,10 @@ async function eat(row: DayLogRow): Promise<void> {
           class="group flex w-14 shrink-0 items-center justify-center disabled:opacity-50"
           :aria-label="ui.online ? `Mark ${rowName(row)} as eaten` : `Offline: ${rowName(row)}`"
           :disabled="!ui.online"
-          @click="eat(row)"
+          @click="emit('eat', row)"
         >
           <span
-            class="flex size-8 items-center justify-center rounded-full border-2 transition duration-150 ease-out"
-            :class="
-              ticking.includes(rowKey(row))
-                ? 'border-accent bg-accent text-accent-fg'
-                : 'border-fg-muted/50 text-fg-muted group-hover:border-accent group-active:border-accent'
-            "
+            class="flex size-8 items-center justify-center rounded-full border-2 border-fg-muted/50 text-fg-muted transition duration-150 ease-out group-hover:border-accent group-active:border-accent"
           >
             <Icon name="check" :size="16" />
           </span>

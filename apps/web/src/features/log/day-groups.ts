@@ -28,6 +28,14 @@ export interface MealSection {
   kcal: number
 }
 
+export function rowName(row: DayLogRow): string {
+  return row.kind === 'group' ? row.name : row.entry.name
+}
+
+export function rowKcal(row: DayLogRow): number {
+  return row.kind === 'group' ? row.kcal : row.entry.nutrients.energy_kcal
+}
+
 export function groupEntries(entries: readonly LogEntry[]): DayLogRow[] {
   const rows: DayLogRow[] = []
   const groups = new Map<string, GroupRow>()
