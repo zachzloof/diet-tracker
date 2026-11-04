@@ -110,6 +110,11 @@ export function weekdayShort(day: string): string {
   return dateOf(day)?.toLocaleDateString(undefined, { weekday: 'short' }) ?? day
 }
 
+/** "Monday", "Tuesday", ... in the person's locale. */
+export function weekdayLong(day: string): string {
+  return dateOf(day)?.toLocaleDateString(undefined, { weekday: 'long' }) ?? day
+}
+
 /** "26 Sep" without the year. */
 export function formatDayShort(day: string): string {
   return dateOf(day)?.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) ?? day

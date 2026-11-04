@@ -50,7 +50,7 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 
 ## Noticed during planned food (2026-11-04)
 
-- **Nothing on Today points at a leftover plan.** A plan you forgot lasts 48 hours past its day (D43), but you have to step back to that day to tick it, and it clears silently if you never do. Decide after use whether Today should show a line such as "1 plan from yesterday not ticked".
+- ~~**Nothing on Today points at a leftover plan.**~~ Settled 2026-11-04: Today shows one line, "1 plan from yesterday not ticked", and the tap opens that day's list (D43). It has no dismiss. Watch whether up to two days of it annoys anyone who simply skipped a plan; a dismiss is the fix.
 - **Undoing a tick takes three taps** (row, Planned, Save), because toasts have no action button. Worth a real Undo if ticks get mis-tapped.
 - **The coach cannot draft a plan.** Asked to plan something, it drafts an ordinary estimate card and the person picks Planned or Tomorrow on it. A `planned` argument on `draft_food_log` would close the gap.
 - **Offline logging was broken for an unknown stretch.** Fixed the same day (D21), but the fix was walked with Playwright's offline switch on the production build, not on a phone in airplane mode. The "Whether anything logged offline arrived late" line below is worth a real look.

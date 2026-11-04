@@ -4,6 +4,7 @@ import {
   firstPlanDay,
   isPlanOnlyDay,
   lastPlanDay,
+  leftoverPlanDays,
   MAX_PLAN_DAYS_AHEAD,
   PLAN_GRACE_DAYS,
   planExpiresAfter,
@@ -36,6 +37,12 @@ describe('how long a plan lasts', () => {
   it('keeps today and the two days before it open to plans', () => {
     expect(firstPlanDay(TODAY)).toBe('2026-11-02')
     expect(firstPlanDay('2027-01-01')).toBe('2026-12-30')
+  })
+
+  it('looks for leftovers on each day gone by that can still hold a plan', () => {
+    expect(leftoverPlanDays(TODAY)).toEqual(['2026-11-03', '2026-11-02'])
+    expect(leftoverPlanDays(TODAY).at(-1)).toBe(firstPlanDay(TODAY))
+    expect(leftoverPlanDays('2027-01-01')).toEqual(['2026-12-31', '2026-12-30'])
   })
 })
 

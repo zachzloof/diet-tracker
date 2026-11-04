@@ -22,6 +22,7 @@ import { useSession } from '@/features/auth/useSession'
 import DayLog from '@/features/log/DayLog.vue'
 import EatPlanSheet from '@/features/log/EatPlanSheet.vue'
 import EntrySheet from '@/features/log/EntrySheet.vue'
+import LeftoverPlansNotice from '@/features/log/LeftoverPlansNotice.vue'
 import MealGroupSheet from '@/features/log/MealGroupSheet.vue'
 import PlannedList from '@/features/log/PlannedList.vue'
 import { groupMembers, type DayLogRow, type GroupRow } from '@/features/log/day-groups'
@@ -152,6 +153,26 @@ function askMeal(row: DayLogRow): void {
   eatSheetOpen.value = true
 }
 
+// The leftover line opens the day and brings its Planned list into view, since the list sits
+// below the charts. The scroll waits for the day to draw, which is when the list changes.
+const plannedSection = ref<HTMLElement | null>(null)
+let revealPlanned = false
+
+function openLeftovers(day: string): void {
+  revealPlanned = true
+  viewedDay.value = day
+}
+
+watch(
+  plannedEntries,
+  () => {
+    if (!revealPlanned || !plannedSection.value) return
+    revealPlanned = false
+    plannedSection.value.scrollIntoView({ block: 'center' })
+  },
+  { flush: 'post' },
+)
+
 // Cached data always wins over an error: offline, the last known day stays on screen.
 const loading = computed(
   () => session.isLoading.value || targets.isLoading.value || log.isLoading.value,
@@ -244,6 +265,8 @@ function retry(): void {
         for a connection. {{ ui.online ? 'Sending…' : 'They send when you are back online.' }}
       </p>
 
+      <LeftoverPlansNotice v-if="isToday" :today="today" @open="openLeftovers" />
+
       <RecalibrationCard v-if="proposal" :assessment="proposal" compact />
 
       <template v-if="score">
@@ -259,15 +282,16 @@ function retry(): void {
 
       <WeightCard v-if="isToday" :today="today" />
 
-      <PlannedList
-        v-if="plannedEntries.length"
-        :entries="plannedEntries"
-        :day="viewedDay"
-        :today="today"
-        @select="editing = $event"
-        @select-group="openGroup"
-        @eat="askMeal"
-      />
+      <div v-if="plannedEntries.length" ref="plannedSection">
+        <PlannedList
+          :entries="plannedEntries"
+          :day="viewedDay"
+          :today="today"
+          @select="editing = $event"
+          @select-group="openGroup"
+          @eat="askMeal"
+        />
+      </div>
 
       <DayLog
         v-if="foodEntries.length"

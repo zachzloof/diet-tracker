@@ -32,6 +32,11 @@ export function planExpiresAfter(day: string): string {
   return addDays(day, PLAN_GRACE_DAYS)
 }
 
+/** The days gone by that can still hold a plan, newest first: where Today looks for leftovers. */
+export function leftoverPlanDays(today: string): string[] {
+  return Array.from({ length: PLAN_GRACE_DAYS }, (_, back) => addDays(today, -(back + 1)))
+}
+
 /** A day that has not happened yet can hold a plan and nothing else. */
 export function isPlanOnlyDay(day: string, today: string): boolean {
   return day > today
