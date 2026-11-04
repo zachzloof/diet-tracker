@@ -4,6 +4,9 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Logging offline works again (2026-11-04)
+- Food and water logged with no connection go into the queue straight away, as they were designed to. Before this fix the sheet sat there and nothing was saved until the connection came back, and an offline entry could be lost if you closed the app. Removing a queued entry works offline again too.
+
 ### A year of history (2026-11-03)
 - Your food log, daily totals, weigh-ins, weekly reviews, coach chats and daily briefs are now kept for a year instead of six months. The privacy policy says so. Workouts were already kept until you delete them.
 - Progress has a 1 year range next to 4 weeks, 3 months and 6 months.

@@ -98,7 +98,9 @@ export interface CreateEntriesResult extends CreateEntriesResponse {
 
 /**
  * Logs entries. Offline, or when the server cannot be reached, the request goes into the
- * queue and the entries show as pending until it is sent (D21).
+ * queue and the entries show as pending until it is sent (D21). `networkMode: 'always'` here
+ * and on the two deletes: these handle offline themselves, and by default TanStack pauses a
+ * mutation while offline, so the queue would never be reached and the sheet would just spin.
  */
 export function useCreateEntries() {
   const queryClient = useQueryClient()
@@ -119,6 +121,7 @@ export function useCreateEntries() {
     }
   }
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (input: CreateEntriesRequest): Promise<CreateEntriesResult> => {
       if (!navigator.onLine) return enqueue(input)
       try {
@@ -170,6 +173,7 @@ export function useDeleteEntry() {
   const queryClient = useQueryClient()
   const queue = useQueueStore()
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (id: string) => {
       if (queue.has(id)) {
         queue.removeEntry(id)
@@ -196,6 +200,7 @@ export function useDeleteGroup() {
   const queryClient = useQueryClient()
   const queue = useQueueStore()
   return useMutation({
+    networkMode: 'always',
     mutationFn: async ({ groupId, entryIds }: { groupId: string; entryIds: string[] }) => {
       const queued = entryIds.filter((id) => queue.has(id))
       if (queued.length === entryIds.length) {

@@ -298,7 +298,7 @@ The request contains the profile summary (sex, age, height, weight, body fat, go
 
 **Recommendation.** B. Move to C only when two devices per person becomes common.
 
-**Status.** `accepted` (2026-09-26): B, confirmed by the owner.
+**Status.** `accepted` (2026-09-26): B, confirmed by the owner. Corrected 2026-11-04: TanStack Query pauses a mutation while it thinks the app is offline, so the writes never reached the queue and the sheet waited for a connection. The three hooks that handle offline themselves (`useCreateEntries`, `useDeleteEntry`, `useDeleteGroup`) now set `networkMode: 'always'`.
 
 ---
 
