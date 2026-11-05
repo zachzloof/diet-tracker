@@ -10,13 +10,15 @@ import {
   type WorkoutSet,
 } from '@diet-tracker/shared'
 import { computed, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import Icon from '@/components/ui/Icon.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import LineChart from '@/components/ui/LineChart.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
+import Sheet from '@/components/ui/Sheet.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import StatTile from '@/components/ui/StatTile.vue'
 import { useLocalDay } from '@/features/log/useLocalDay'
@@ -24,6 +26,7 @@ import { usePreferences } from '@/features/profile/usePreferences'
 import { formatDay, formatDayShort } from '@/lib/format'
 import { HISTORY_RANGES, rangeWindow } from '@/lib/ranges'
 import { useUiStore } from '@/stores/ui'
+import ExerciseForm from './ExerciseForm.vue'
 import { bodyweightSetLabel, formatMetricValue, setLabel, workoutTitle } from './draft'
 import { useExerciseTrend, useExercises } from './useTraining'
 
@@ -32,9 +35,11 @@ import { useExerciseTrend, useExercises } from './useTraining'
  * per session on a line, the best and the latest, and each session's best set with a way
  * into it. A lift is ranked on the kg
  * lifted in one set or the heaviest weight as Preferences says (D39); other exercises on
- * reps, seconds or metres. The maths is `bestSetBy` (docs/TRAINING-MATHS.md).
+ * reps, seconds or metres. The maths is `bestSetBy` (docs/TRAINING-MATHS.md). One of your
+ * own exercises has a pencil in the header to change or delete it.
  */
 const route = useRoute()
+const router = useRouter()
 const ui = useUiStore()
 const prefs = usePreferences()
 const id = computed(() => (typeof route.params.id === 'string' ? route.params.id : ''))
@@ -43,6 +48,17 @@ const exercises = useExercises()
 const exercise = computed(
   () => exercises.exercises.value.find((candidate) => candidate.id === id.value) ?? null,
 )
+
+const editOpen = ref(false)
+function edited(): void {
+  editOpen.value = false
+  ui.toast('Exercise saved', 'success')
+}
+function deleted(): void {
+  editOpen.value = false
+  ui.toast('Exercise deleted', 'success')
+  void router.replace({ name: 'lifts' })
+}
 const measures = computed<readonly ExerciseMeasure[]>(
   () => exercise.value?.measures ?? ['weight', 'reps'],
 )
@@ -124,6 +140,9 @@ const labelEvery = computed(() => Math.max(1, Math.ceil(points.value.length / 5)
 
 <template>
   <AppShell :title="exercise?.name ?? 'Lift'" :back="{ name: 'lifts' }">
+    <template v-if="exercise?.custom" #header-right>
+      <IconButton :label="`Edit ${exercise.name}`" icon="pencil" @click="editOpen = true" />
+    </template>
     <div class="space-y-4">
       <SegmentedControl v-model="range" label="Range" :options="HISTORY_RANGES" />
 
@@ -225,5 +244,15 @@ const labelEvery = computed(() => Math.max(1, Math.ceil(points.value.length / 5)
         </section>
       </template>
     </div>
+
+    <Sheet v-if="exercise?.custom" v-model:open="editOpen" title="Edit exercise" size="tall">
+      <ExerciseForm
+        :key="exercise.id"
+        :exercise="exercise"
+        @saved="edited"
+        @deleted="deleted"
+        @back="editOpen = false"
+      />
+    </Sheet>
   </AppShell>
 </template>

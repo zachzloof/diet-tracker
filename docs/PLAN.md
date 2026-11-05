@@ -520,9 +520,30 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 - [x] The figure is the server's and does not move. *`training.test.ts`: the weight on the day is the latest weigh-in before it, else the earliest after; a re-save after a new weigh-in keeps 82 while a new block gets 85; a value of 5 sent by the client is ignored; a block keeps its load after its custom exercise is deleted; no weight on file gives no load.*
 - [x] Typecheck, lint, tests (shared 234, api 202, web 62). The API suite migrates a fresh database, 0019 included.
 
-**Deferrals.** No real-phone check and not checked on Railway; the migration runs on the next deploy. Docker was not running, so the tests and the walk used a private Postgres. Existing custom exercises cannot have their share changed in the app (there is no edit screen for an exercise). Under "Heaviest weight" an unweighted pull-up still has no best. See OUTSTANDING.
+**Deferrals.** No real-phone check and not checked on Railway; the migration runs on the next deploy. Docker was not running, so the tests and the walk used a private Postgres. Existing custom exercises could not have their share changed in the app (fixed the same day, next follow-up). The push-up was first built at all of bodyweight and moved to 0.7 the same day. Under "Heaviest weight" an unweighted pull-up still has no best. See OUTSTANDING.
 
 **Decisions it depends on.** D44, D35, D36, D39, D19, D27.
+
+---
+
+## Follow-up - Edit your own exercises, the measured push-up, crunch and sit-up (D44)
+
+**Status:** done (2026-11-05)
+
+**Goal.** The owner's answers to the two questions left by the bodyweight follow-up, and one request: the push-up at whichever share is most accurate; whatever is best for crunches; and a way to edit the exercises they have created, which did not exist.
+
+**Shipped.** DB: migration 0020 sets the push-up's share to 0.7, rescales the push-up loads already stored, and adds Crunch (0.3) and Sit-up (0.5) to the catalogue (76 rows). API: `updateExercise` runs in a transaction, renames the exercise on the person's logged blocks and re-works their loads when the share changes (`restampBlocks`). Web: `ExerciseForm.vue` (the add form, now also edit and delete), opened from a pencil beside your own exercises in the picker and in the header of a Lifts page; `useUpdateExercise`; the draft store's `applyExercise` brings a session open on the phone into line. "About two thirds" joins the share choices.
+
+**Done when.**
+- [x] An exercise of your own can be changed from the picker and from its Lifts page. *Walked at 390x844 dark and 360 as Finn against Vite and the API on a private Postgres: added "My crunch" (Bodyweight, all of it) to a session, 10 reps, tally 751 kg at 75.1 kg a rep; pencil in the picker, the form opened filled in; renamed and set to about a third; the open session showed the new name, "Each rep counts 22.5 kg" and a tally of 225 kg, and the stored block agreed. From its Lifts page: set to about half, stored load 37.5 kg. No horizontal scroll, no console errors.*
+- [x] It can be deleted, and sessions keep it. *Same walk: two taps on Delete in the Lifts page form returned to Lifts, the exercise row was gone, and the session still listed the block by name with its load.*
+- [x] An edit reaches logged sessions and nobody else's. *`training.test.ts`: a rename shows on the saved block; 1 to 0.3 rescales 82 kg to 24.6; a later weigh-in for that day does not move a rescale; 0 clears and back to 1 reads the weight on the day; a re-save from a phone with the old name keeps the load; another person gets 404.*
+- [x] The push-up is 0.7 and history follows. *Migration 0020 on a database at 0019 holding push-up blocks: 74.4 kg became 52.1 and 75.1 became 52.6, pull-ups untouched; run twice, the second applied nothing. A new push-up block on the phone read "Each rep counts 52.6 kg".*
+- [x] Typecheck, lint, tests (shared 234, api 203, web 62).
+
+**Deferrals.** No real-phone check; not checked on Railway. A rescale carries the 0.1 kg rounding of the stored load, so moving a share back and forth can drift by 0.1 kg a rep. An exercise can be edited only where it is listed: the picker (inside a session) or its Lifts page (once it has been logged).
+
+**Decisions it depends on.** D44, D35.
 
 ---
 

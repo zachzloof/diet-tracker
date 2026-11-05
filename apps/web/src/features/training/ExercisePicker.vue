@@ -1,37 +1,28 @@
 <script setup lang="ts">
-import {
-  EXERCISE_KINDS,
-  EXERCISE_KIND_LABELS,
-  MUSCLE_GROUPS,
-  MUSCLE_GROUP_LABELS,
-  exerciseInputSchema,
-  toValidationDetails,
-  type Exercise,
-  type ExerciseKind,
-  type ExerciseMeasure,
-  type MuscleGroup,
-} from '@diet-tracker/shared'
+import { EXERCISE_KIND_LABELS, MUSCLE_GROUP_LABELS, type Exercise } from '@diet-tracker/shared'
 import { computed, ref, watch } from 'vue'
 import Button from '@/components/ui/Button.vue'
 import Icon from '@/components/ui/Icon.vue'
-import Input from '@/components/ui/Input.vue'
-import Select from '@/components/ui/Select.vue'
+import IconButton from '@/components/ui/IconButton.vue'
 import Sheet from '@/components/ui/Sheet.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
-import { ApiError } from '@/lib/api'
 import { useUiStore } from '@/stores/ui'
-import { useCreateExercise, useExercises } from './useTraining'
+import ExerciseForm from './ExerciseForm.vue'
+import { useExercises } from './useTraining'
 
-/** Search the catalogue and your own exercises, recent first, or add one of your own. */
+/**
+ * Search the catalogue and your own exercises, recent first, or add one of your own. One of
+ * your own has a pencil beside it: it opens the same form to change or delete it.
+ */
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ pick: [exercise: Exercise] }>()
 
 const ui = useUiStore()
 const exercises = useExercises()
-const create = useCreateExercise()
 
 const q = ref('')
-const adding = ref(false)
+/** What the sheet shows: the list, the form for a new exercise, or the form for one of yours. */
+const form = ref<{ exercise: Exercise | null } | null>(null)
 
 const filtered = computed(() => {
   const needle = q.value.trim().toLowerCase()
@@ -60,141 +51,43 @@ function pick(exercise: Exercise): void {
   open.value = false
 }
 
-// --- Add your own -------------------------------------------------------------------------
-
-const RECORDS: { value: string; label: string; measures: ExerciseMeasure[] }[] = [
-  { value: 'weight_reps', label: 'Weight and reps', measures: ['weight', 'reps'] },
-  { value: 'reps', label: 'Reps only', measures: ['reps'] },
-  { value: 'time', label: 'Time', measures: ['time'] },
-  { value: 'time_distance', label: 'Time and distance', measures: ['time', 'distance'] },
-  { value: 'weight_distance', label: 'Weight and distance', measures: ['weight', 'distance'] },
-]
-/** How much of the person a rep lifts (D44); offered for a bodyweight exercise that counts reps. */
-const SHARES: { value: string; label: string; share: number }[] = [
-  { value: 'all', label: 'All of it (pull-up, dip)', share: 1 },
-  { value: 'half', label: 'About half (sit-up)', share: 0.5 },
-  { value: 'third', label: 'About a third (crunch)', share: 0.3 },
-  { value: 'none', label: 'None', share: 0 },
-]
-const name = ref('')
-const kind = ref<ExerciseKind>('barbell')
-const muscleGroup = ref<MuscleGroup | ''>('')
-const records = ref('weight_reps')
-const share = ref('all')
-const measures = computed(
-  () => RECORDS.find((option) => option.value === records.value)?.measures ?? [],
-)
-const liftsBodyweight = computed(
-  () => kind.value === 'bodyweight' && measures.value.includes('reps'),
-)
-const fieldErrors = ref<Record<string, string[]>>({})
-const formError = ref<string | null>(null)
-
-const kindOptions = EXERCISE_KINDS.map((value) => ({ value, label: EXERCISE_KIND_LABELS[value] }))
-const muscleOptions = MUSCLE_GROUPS.map((value) => ({ value, label: MUSCLE_GROUP_LABELS[value] }))
-const recordOptions = RECORDS.map(({ value, label }) => ({ value, label }))
-const shareOptions = SHARES.map(({ value, label }) => ({ value, label }))
-
-// A kind suggests what a set records; the person can still change it.
-watch(kind, (next) => {
-  if (next === 'cardio') records.value = 'time_distance'
-  else if (next === 'bodyweight') records.value = 'reps'
-  else if (records.value === 'time_distance' || records.value === 'reps')
-    records.value = 'weight_reps'
-})
-
 watch(open, (isOpen) => {
   if (isOpen) return
   q.value = ''
-  adding.value = false
-  fieldErrors.value = {}
-  formError.value = null
+  form.value = null
 })
 
-function startAdding(): void {
-  name.value = q.value.trim()
-  adding.value = true
+const title = computed(() =>
+  !form.value ? 'Add exercise' : form.value.exercise ? 'Edit exercise' : 'Add your own exercise',
+)
+
+/** A new exercise goes straight into the session; an edited one returns to the list. */
+function saved(exercise: Exercise): void {
+  if (form.value?.exercise) {
+    form.value = null
+    ui.toast('Exercise saved', 'success')
+  } else {
+    pick(exercise)
+  }
 }
 
-function submit(): void {
-  fieldErrors.value = {}
-  formError.value = null
-  const parsed = exerciseInputSchema.safeParse({
-    name: name.value,
-    kind: kind.value,
-    muscleGroups: muscleGroup.value ? [muscleGroup.value] : [],
-    measures: measures.value,
-    // Left out for anything else, so the server's default for the kind applies (none).
-    ...(liftsBodyweight.value
-      ? { bodyweightShare: SHARES.find((option) => option.value === share.value)?.share ?? 1 }
-      : {}),
-  })
-  if (!parsed.success) {
-    fieldErrors.value = toValidationDetails(parsed.error).fieldErrors
-    return
-  }
-  create.mutate(parsed.data, {
-    onSuccess: (exercise) => {
-      name.value = ''
-      muscleGroup.value = ''
-      share.value = 'all'
-      pick(exercise)
-    },
-    onError: (error: unknown) => {
-      if (error instanceof ApiError) {
-        fieldErrors.value = error.fieldErrors
-        formError.value = Object.keys(error.fieldErrors).length ? null : error.message
-      } else {
-        formError.value = 'Could not save. Please try again.'
-      }
-    },
-  })
+function deleted(): void {
+  form.value = null
+  ui.toast('Exercise deleted', 'success')
 }
 </script>
 
 <template>
-  <Sheet v-model:open="open" :title="adding ? 'Add your own exercise' : 'Add exercise'" size="tall">
-    <form v-if="adding" class="space-y-4" novalidate @submit.prevent="submit">
-      <Input
-        v-model="name"
-        label="Name"
-        placeholder="Pistol squat"
-        autocomplete="off"
-        :error="fieldErrors.name?.[0] ?? null"
-      />
-      <Select v-model="kind" label="Equipment" :options="kindOptions" />
-      <Select
-        v-model="muscleGroup"
-        label="Muscle group (optional)"
-        :options="muscleOptions"
-        placeholder="Pick one"
-      />
-      <Select
-        v-model="records"
-        label="A set records"
-        :options="recordOptions"
-        :error="fieldErrors.measures?.[0] ?? null"
-      />
-      <Select
-        v-if="liftsBodyweight"
-        v-model="share"
-        label="Bodyweight each rep lifts"
-        :options="shareOptions"
-        helper="Counted in your kilograms lifted, at your weight on the day."
-      />
-      <p v-if="formError" class="text-sm text-over" role="alert">{{ formError }}</p>
-      <div class="flex gap-2">
-        <Button variant="secondary" class="flex-1" @click="adding = false">Back</Button>
-        <Button
-          type="submit"
-          class="flex-1"
-          :loading="create.isPending.value"
-          :disabled="!ui.online"
-        >
-          {{ ui.online ? 'Add' : 'Offline' }}
-        </Button>
-      </div>
-    </form>
+  <Sheet v-model:open="open" :title="title" size="tall">
+    <ExerciseForm
+      v-if="form"
+      :key="form.exercise?.id ?? 'new'"
+      :exercise="form.exercise"
+      :initial-name="q.trim()"
+      @saved="saved"
+      @deleted="deleted"
+      @back="form = null"
+    />
 
     <div v-else class="space-y-3">
       <div class="relative">
@@ -245,10 +138,10 @@ function submit(): void {
               {{ heading }}
             </h3>
             <ul class="divide-y divide-border rounded-card border border-border bg-surface">
-              <li v-for="exercise in list" :key="exercise.id">
+              <li v-for="exercise in list" :key="exercise.id" class="flex items-center">
                 <button
                   type="button"
-                  class="flex min-h-14 w-full items-center justify-between gap-3 px-3 py-2 text-left"
+                  class="flex min-h-14 min-w-0 flex-1 items-center justify-between gap-3 px-3 py-2 text-left"
                   @click="pick(exercise)"
                 >
                   <span class="min-w-0">
@@ -265,13 +158,20 @@ function submit(): void {
                     >Yours</span
                   >
                 </button>
+                <IconButton
+                  v-if="exercise.custom"
+                  class="mr-1 shrink-0"
+                  :label="`Edit ${exercise.name}`"
+                  icon="pencil"
+                  @click="form = { exercise }"
+                />
               </li>
             </ul>
           </section>
         </template>
       </template>
 
-      <Button block variant="secondary" @click="startAdding">
+      <Button block variant="secondary" @click="form = { exercise: null }">
         <Icon name="plus" :size="18" /> Add your own
       </Button>
     </div>

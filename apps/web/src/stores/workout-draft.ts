@@ -187,6 +187,25 @@ export const useWorkoutDraftStore = defineStore('workout-draft', () => {
     schedule(id)
   }
 
+  /**
+   * One of the person's own exercises was edited. Sessions on this phone that hold it take
+   * the new name and have their loads worked out again from its new share, then save, so an
+   * open session never sends the old name back over the server's.
+   */
+  function applyExercise(exercise: Pick<Exercise, 'id' | 'name'>): void {
+    for (const draft of Object.values(drafts.value)) {
+      if (!draft.input.exercises.some((block) => block.exerciseId === exercise.id)) continue
+      update(draft.id, (input) => ({
+        ...input,
+        exercises: input.exercises.map((block) => {
+          if (block.exerciseId !== exercise.id) return block
+          const { bodyweightKg: _stale, ...rest } = block
+          return { ...rest, exerciseName: exercise.name }
+        }),
+      }))
+    }
+  }
+
   function schedule(id: string): void {
     const existing = timers.get(id)
     if (existing !== undefined) window.clearTimeout(existing)
@@ -274,5 +293,19 @@ export const useWorkoutDraftStore = defineStore('workout-draft', () => {
     persist()
   }
 
-  return { drafts, pending, get, status, start, seed, update, save, flush, release, discard, clear }
+  return {
+    drafts,
+    pending,
+    get,
+    status,
+    start,
+    seed,
+    update,
+    applyExercise,
+    save,
+    flush,
+    release,
+    discard,
+    clear,
+  }
 })

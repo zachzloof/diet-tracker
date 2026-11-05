@@ -19,6 +19,7 @@ import {
 } from './keys'
 import { MIRRORED_RANGE_DAYS } from '@/lib/ranges'
 import { COACH_BRIEF_KEY } from '@/stores/coach'
+import { useWorkoutDraftStore } from '@/stores/workout-draft'
 
 export { EXERCISES_KEY, WORKOUTS_KEY }
 
@@ -48,6 +49,32 @@ export function useCreateExercise() {
   return useMutation({
     mutationFn: (input: ExerciseInput) => exercisesApi.create(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: EXERCISES_KEY }),
+  })
+}
+
+/**
+ * Saves a change to one of the person's own exercises. The server renames it in past
+ * sessions and re-works their bodyweight loads (D44), so everything that shows sessions is
+ * refetched; a session open on this phone is brought into line by the draft store.
+ */
+export function useUpdateExercise() {
+  const queryClient = useQueryClient()
+  const drafts = useWorkoutDraftStore()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: ExerciseInput }) =>
+      exercisesApi.update(id, input),
+    onSuccess: (exercise) => {
+      // The list first, so the draft store reads the new share; "last used" is not in the answer.
+      queryClient.setQueryData<Exercise[]>(EXERCISES_KEY, (list) =>
+        list?.map((existing) =>
+          existing.id === exercise.id ? { ...exercise, lastUsedAt: existing.lastUsedAt } : existing,
+        ),
+      )
+      drafts.applyExercise(exercise)
+      void queryClient.invalidateQueries({ queryKey: EXERCISES_KEY })
+      void queryClient.invalidateQueries({ queryKey: WORKOUTS_KEY })
+      void queryClient.invalidateQueries({ queryKey: COACH_BRIEF_KEY })
+    },
   })
 }
 

@@ -336,8 +336,10 @@ describe('bodyweight load (D44)', () => {
     const list = await listExercises()
     const share = (id: string) => list.find((e) => e.id === id)?.bodyweightShare
     expect([share(pushUpId), share(pullUpId), share(legRaiseId), share(squatId)]).toEqual([
-      1, 1, 0.35, 0,
+      0.7, 1, 0.35, 0,
     ])
+    expect(list.find((e) => e.name === 'Crunch')?.bodyweightShare).toBe(0.3)
+    expect(list.find((e) => e.name === 'Sit-up')?.bodyweightShare).toBe(0.5)
     expect(list.find((e) => e.name === 'Plank')?.bodyweightShare).toBe(0)
     for (const entry of EXERCISE_CATALOGUE) expect(share(entry.id)).toBe(entry.bodyweightShare)
 
@@ -359,12 +361,13 @@ describe('bodyweight load (D44)', () => {
     await weighIn(addDays(DAY, -10), 80)
     await weighIn(DAY, 82)
     // On the day: 82. Share 0.35 of 82 = 28.7. A barbell lift has none.
-    expect(loads(await putWorkout(uuidv7(), bodyweightDay()))).toEqual([82, 82, 28.7, null])
+    // A push-up is 0.7 of 82 = 57.4.
+    expect(loads(await putWorkout(uuidv7(), bodyweightDay()))).toEqual([57.4, 82, 28.7, null])
     // Between weigh-ins: the latest one before the day.
     const earlier = addDays(DAY, -5)
-    expect(loads(await putWorkout(uuidv7(), bodyweightDay({ day: earlier })))[0]).toBe(80)
+    expect(loads(await putWorkout(uuidv7(), bodyweightDay({ day: earlier })))[1]).toBe(80)
     // Before every weigh-in: the earliest one after.
-    expect(loads(await putWorkout(uuidv7(), bodyweightDay({ day: addDays(DAY, -30) })))[0]).toBe(80)
+    expect(loads(await putWorkout(uuidv7(), bodyweightDay({ day: addDays(DAY, -30) })))[1]).toBe(80)
   })
 
   it('has no load to give before there is a weight on file', async () => {
@@ -387,7 +390,7 @@ describe('bodyweight load (D44)', () => {
       },
       200,
     )
-    expect(loads(resaved)).toEqual([82, 82, 28.7, null, 85])
+    expect(loads(resaved)).toEqual([57.4, 82, 28.7, null, 85])
 
     // A block pointed at another exercise is worked out again.
     const [first, ...rest] = input.exercises
@@ -410,6 +413,47 @@ describe('bodyweight load (D44)', () => {
     expect(loads(await putWorkout(id, input))).toEqual([82])
     expect((await send('DELETE', `/api/v1/exercises/${created.id}`)).status).toBe(204)
     expect(loads(await putWorkout(id, input, 200))).toEqual([82])
+  })
+
+  it("editing a person's own exercise renames it in past sessions and re-works their loads", async () => {
+    await weighIn(DAY, 82)
+    const created = await addExercise(pistol)
+    const id = uuidv7()
+    const input = pushDay({
+      exercises: [block(created.id, created.name, [set({ weightKg: null, reps: 8 })])],
+    })
+    expect(loads(await putWorkout(id, input))).toEqual([82])
+    const patch = async (changes: Partial<ExerciseInput>) => {
+      const res = await send('PATCH', `/api/v1/exercises/${created.id}`, { ...pistol, ...changes })
+      expect(res.status).toBe(200)
+      return exerciseResponseSchema.parse(await res.json()).exercise
+    }
+    const saved = async () =>
+      workoutResponseSchema.parse(await (await send('GET', `/api/v1/workouts/${id}`)).json())
+        .workout.exercises[0]
+
+    // A third of the person: 82 × 0.3 = 24.6, and the new name on the block.
+    const edited = await patch({ name: 'Crunch (mine)', bodyweightShare: 0.3 })
+    expect(edited).toMatchObject({ name: 'Crunch (mine)', bodyweightShare: 0.3 })
+    expect(await saved()).toMatchObject({ exerciseName: 'Crunch (mine)', bodyweightKg: 24.6 })
+
+    // Rescaled from the stored figure, so a later weigh-in for that day changes nothing.
+    await weighIn(DAY, 90)
+    await patch({ name: 'Crunch (mine)', bodyweightShare: 0.5 })
+    expect((await saved())?.bodyweightKg).toBe(41)
+
+    // None, then some again: with no stored figure it is the weight on the day, now 90.
+    await patch({ name: 'Crunch (mine)', bodyweightShare: 0 })
+    expect((await saved())?.bodyweightKg).toBeNull()
+    await patch({ name: 'Crunch (mine)', bodyweightShare: 1 })
+    expect((await saved())?.bodyweightKg).toBe(90)
+
+    // A re-save from a phone that still has the old name and no load keeps the server's load.
+    expect(loads(await putWorkout(id, input, 200))).toEqual([90])
+
+    // Somebody else cannot edit it, and their sessions are not touched.
+    cookie = (await register('tess@example.com')).cookie
+    expect((await send('PATCH', `/api/v1/exercises/${created.id}`, pistol)).status).toBe(404)
   })
 
   it('carries the load in the exercise history', async () => {

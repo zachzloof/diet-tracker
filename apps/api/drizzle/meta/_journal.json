@@ -141,6 +141,13 @@
       "when": 1793898697197,
       "tag": "0019_bodyweight_load",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793901050350,
+      "tag": "0020_bodyweight_pushup_crunch",
+      "breakpoints": true
     }
   ]
 }

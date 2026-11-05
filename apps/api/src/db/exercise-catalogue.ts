@@ -4,7 +4,8 @@ import type { ExerciseKind, ExerciseMeasure, MuscleGroup } from '@diet-tracker/s
  * The shared exercise catalogue (D35). The ids are fixed so every database has the same rows:
  * migration 0010 inserts them, and this list is what tests and the seed check against.
  * Adding a lift is a new migration that inserts it; never renumber or reuse an id.
- * A bodyweight share is set here and by a migration together (0019 wrote the first ones).
+ * A bodyweight share is set here and by a migration together (0019 wrote the first ones,
+ * 0020 changed the push-up's and rescaled the loads already stored).
  */
 export interface CatalogueExercise {
   id: string
@@ -61,7 +62,7 @@ export const EXERCISE_CATALOGUE: readonly CatalogueExercise[] = [
   entry('Dumbbell bench press', 'dumbbell', ['chest', 'triceps']),
   entry('Incline dumbbell bench press', 'dumbbell', ['chest', 'shoulders']),
   entry('Machine chest press', 'machine', ['chest', 'triceps']),
-  entry('Push-up', 'bodyweight', ['chest', 'triceps'], R, 1),
+  entry('Push-up', 'bodyweight', ['chest', 'triceps'], R, 0.7),
   entry('Dip', 'bodyweight', ['chest', 'triceps'], WR, 1),
   entry('Cable fly', 'cable', ['chest']),
   entry('Pec deck', 'machine', ['chest']),
@@ -119,4 +120,8 @@ export const EXERCISE_CATALOGUE: readonly CatalogueExercise[] = [
   entry('Stationary bike', 'cardio', ['quads'], TD),
   entry('Stair climber', 'cardio', ['glutes', 'quads'], T),
   entry('Skipping', 'cardio', ['calves'], T),
+
+  // Added by migration 0020. New rows go at the end: an id is its place in this list.
+  entry('Crunch', 'bodyweight', ['core'], R, 0.3),
+  entry('Sit-up', 'bodyweight', ['core'], R, 0.5),
 ]

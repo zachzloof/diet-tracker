@@ -57,9 +57,10 @@ friends using the app from the Railway URL. Revisit from 2026-10-03.
 
 ## Noticed during bodyweight volume (2026-11-05)
 
-- **Push-up at all of your bodyweight, or about two thirds?** Built at all of it, as asked. Measured, the hands carry about 64 to 75% and the feet the rest, so 20 push-ups at 80 kg are nearer 1,050 kg than 1,600. One migration switches it and rescales history (D44).
-- **Your own exercises added before 2026-11-05 count in full if their equipment is Bodyweight and they count reps.** A crunch of your own is therefore scored at all of you, not a third. There is no screen to edit an exercise, so the fix today is to add it again with "About a third" and use the new one, or ask for the share to be set by hand. An edit screen would settle it.
-- **Crunch and sit-up are not in the catalogue.** Adding them (at a third and a half) is a small migration.
+- ~~Push-up at all of your bodyweight, or about two thirds?~~ Settled 2026-11-05: 0.7, the measured share, with history rescaled (D44).
+- **Your own exercises added before 2026-11-05 count in full if their equipment is Bodyweight and they count reps.** A crunch of your own is scored at all of you until you set it: open it with the pencil (in Add exercise, or on its Lifts page) and pick "About a third". Past sessions follow. Or switch to the catalogue's Crunch.
+- ~~Crunch and sit-up are not in the catalogue.~~ Added 2026-11-05.
+- **An exercise of your own that you have never logged can only be edited from inside a session** (the picker). There is no list of your exercises elsewhere; Lifts shows only ones with history.
 - **Under "Heaviest weight" an unweighted pull-up, chin-up or dip has no best set**, since that basis is the weight added and none was. It was already so; the default basis now handles them.
 - **A session logged before any weight was on file has no load** until it is next saved. Nobody past onboarding is in that state.
 - **The shares for core work are approximate** (0.3 to 0.5). They are there so the work shows up at a sensible size.

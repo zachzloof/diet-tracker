@@ -4,8 +4,17 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Edit your own exercises, and a truer push-up (2026-11-05)
+- You can now change an exercise you created. In a session, open Add exercise and tap the pencil beside one of yours; or open its page under Lifts and tap the pencil at the top. Change its name, equipment, muscle group, what a set records, and how much of your bodyweight a rep lifts.
+- A change reaches the sessions you already logged with it: they show the new name, and their kilograms are worked out again if you changed the bodyweight share. So a crunch of your own that was counting all of you can be set to about a third, and every past week corrects itself.
+- You can delete one of your own from the same form (two taps). Sessions keep it by name; its Lifts page goes.
+- A push-up now counts 70% of your bodyweight, not all of it: your feet carry the rest. That is the middle of what force plates under the hands measure. Twenty push-ups at 80 kg are 1,120 kg. Your past sessions were adjusted.
+- Crunch and Sit-up are in the exercise list, counting about a third and a half of your bodyweight.
+- "About two thirds" joins the choices for how much of you one of your own exercises lifts.
+- API: `PATCH /exercises/:id` renames the exercise on the person's logged blocks and re-works their `bodyweightKg` when the share changes. Migration 0020 (push-up share 0.7 with stored loads rescaled; Crunch and Sit-up added, catalogue now 76 rows). D44.
+
 ### Bodyweight counts (2026-11-05)
-- Push-ups, pull-ups, chin-ups and dips now count toward your kilograms lifted, at your bodyweight. Twenty push-ups at 80 kg are 1,600 kg, where they used to be 0. Weight you add on a pull-up or dip (a belt) counts on top: five with 10 kg are 450 kg.
+- Push-ups, pull-ups, chin-ups and dips now count toward your kilograms lifted. A pull-up, chin-up or dip counts all of your bodyweight: twelve pull-ups at 80 kg are 960 kg, where they used to be 0. Weight you add (a belt) counts on top: five with 10 kg are 450 kg. A push-up counts the share your hands carry (see above).
 - Core work counts for the part of you that moves: hanging leg raises at about a third of your bodyweight, ab wheel rollouts and back extensions at half, Russian twists at three tenths. A plank is timed, so it still adds no kilograms.
 - It uses your weight on the day of the session, from your weigh-ins, so the numbers follow you as your weight changes and an old session keeps the figure it had.
 - Your past sessions have been updated too. Totals on Today, the Workouts list, the Week tiles and Week on week all went up wherever a session held bodyweight work.

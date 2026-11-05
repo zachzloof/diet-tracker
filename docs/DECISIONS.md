@@ -736,7 +736,7 @@ Because a plan further back than that would be deleted within the hour, the API 
 
 **Status.** `accepted` (2026-11-04): A, confirmed by the owner, with the tick asking and plans expiring after 48 hours. The owner confirmed option C for when the 48 hours start, and asked for the line on Today.
 
-## D44. Bodyweight counts toward the kilograms lifted (adopted, one number to confirm)
+## D44. Bodyweight counts toward the kilograms lifted (accepted)
 
 **Context.** The owner found push-ups scoring 0 kg: volume was weight × reps, and a push-up has no weight. Asked for: bodyweight in the total lifted, a push-up and a pull-up at bodyweight, any bodyweight exercise the same, exceptions such as crunches worked out, and past sessions backdated if that does not cost code quality. Three things had options.
 
@@ -748,7 +748,7 @@ Because a plan further back than that would be deleted within the hour, the API 
 **Who works it out (under B).** The server, once, when the block is first saved, and it keeps the figure on later saves while the block points at the same exercise. The phone fills in its own estimate from the profile weight so the tally is right offline and before the save lands, then takes the server's figure. What the phone sends is never read, so an old cached copy of the app cannot wipe or skew it.
 
 **How much of you each exercise lifts.** `exercises.bodyweight_share`, 0 to 1. The table is in `docs/TRAINING-MATHS.md`.
-- **Push-up.** **A. 1, all of you.** Built, because the owner said a push-up should score at bodyweight. **B. About 0.65.** What force-plate studies measure: the hands carry roughly 64 to 75% of body weight, depending on the study and the point in the rep, and the feet the rest. More honest as "kilograms moved", and it would sit with the worked-out shares below; it lowers push-up volume by a third. Switching is one migration that rescales the stored loads.
+- **Push-up.** **A. 1, all of you.** Built first, because the owner said a push-up should score at bodyweight. **B. The measured share.** Chosen by the owner (2026-11-05: "whichever you think is most accurate") and set at 0.7, the middle of the two studies. What force-plate studies measure: the hands carry roughly 64 to 75% of body weight, depending on the study and the point in the rep, and the feet the rest. More honest as "kilograms moved", and it would sit with the worked-out shares below; it lowers push-up volume by about a third. Switching is one migration that rescales the stored loads.
 - **Pull-up, chin-up, dip:** 1.
 - **Worked out, as the owner asked for exceptions:** hanging leg raise 0.35 (both legs), ab wheel rollout 0.5 (as a knee push-up), back extension 0.5 (everything above the hips), Russian twist 0.3 (as a crunch). Approximate by nature; they are there so core work shows up at a sensible size, not to be argued to the decimal.
 - **A person's own exercise:** 1 when its equipment is Bodyweight and a set counts reps, else 0. The add form offers all, about half, about a third or none for those.
@@ -756,6 +756,10 @@ Because a plan further back than that would be deleted within the hour, the API 
 
 **Settled in the build.** (1) "Kg lifted in one set" (D39) includes the bodyweight load, so an unweighted pull-up now has a best set, where it used to rank nowhere; a push-up records reps only and is still ranked on reps. (2) "Heaviest weight" stays the weight added. (3) Weight on the day is the latest weigh-in on or before it, else the earliest after, else the profile weight. (4) Migration 0019 backdated every logged block by the same rules. (5) The export gains both fields (schema 8).
 
-**Recommendation.** B for storage. For the push-up, the owner's rule stands as built; option B is the one to pick if the number should mean kilograms actually moved.
+**Recommendation.** B for storage; the measured share for the push-up.
 
-**Status.** `adopted` (2026-11-05), built from the owner's request. Open for the owner: push-up at 1 or about 0.65.
+**Decided by the owner (2026-11-05).** The push-up takes the most accurate figure: 0.7. Migration 0020 set it and rescaled the stored loads. Asked which was best for crunches, the owner left it to the build: Crunch (0.3) and Sit-up (0.5) joined the catalogue in the same migration.
+
+**Editing your own exercises.** The owner asked for a way to edit the exercises they had created; there was none. The form that adds one now also changes and deletes one, from the pencil beside it in the exercise picker and in the header of its Lifts page. Two things follow an edit into the sessions already logged, in the same transaction, because it is the same exercise and not a new one: a new name replaces the name kept on each block (that snapshot exists so a block survives the exercise being deleted, not to freeze a typo), and a new bodyweight share re-works each block's load. The alternative, changing only sessions from now on, would leave a crunch counted at all of you in every past week, which is the thing the owner wanted fixed. Rescaling the stored load, where there is one, keeps the weight of the day it was logged. Deleting is offered in the same form with a second tap; sessions keep the exercise by name, as before (D35).
+
+**Status.** `accepted` (2026-11-05): storage on the block, the server working it out, the push-up at 0.7 by the owner's choice, and own exercises editable.

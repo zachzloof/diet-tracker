@@ -39,8 +39,8 @@ with no weight entered).
 
 For a barbell, dumbbell, machine, cable or kettlebell lift the bodyweight load is nothing, so
 this is `weight × reps` as it always was. For a bodyweight exercise the load is the share of
-you each rep lifts: 20 push-ups at 80 kg are `80 × 20 = 1,600 kg`, and 5 pull-ups with a
-10 kg belt are `(80 + 10) × 5 = 450 kg`.
+you each rep lifts: 12 pull-ups at 80 kg are `80 × 12 = 960 kg`, 5 with a 10 kg belt are
+`(80 + 10) × 5 = 450 kg`, and 20 push-ups are `0.7 × 80 × 20 = 1,120 kg`.
 
 `session volume = sum of set volumes`, shown rounded to the kilogram ("1,308 kg").
 
@@ -56,14 +56,15 @@ Each exercise has a **bodyweight share** from 0 to 1: how much of you one rep li
 | Exercise | Share | Why |
 |---|---|---|
 | Pull-up, chin-up, dip | 1 | You hang or press your whole body. |
-| Push-up | 1 | The owner's rule: a push-up scores at bodyweight. Measured on force plates, the hands carry about 64 to 75% of body weight, the feet the rest; see D44 for the option of using that. |
+| Push-up | 0.7 | The feet carry the rest. Force plates under the hands read 64% of body weight in one study (peak force through the rep) and 69% at the top and 75% at the bottom in another; 0.7 is the middle. |
 | Hanging leg raise | 0.35 | Both legs are about a third of body mass (each leg is 16 to 20% in the standard body-segment tables). |
 | Ab wheel rollout | 0.5 | From the knees, about half your weight travels, as in a knee push-up (49 to 62% measured). |
 | Back extension | 0.5 | Everything above the hips: head, arms and trunk, about half of body mass. |
-| Russian twist | 0.3 | Head, arms and upper trunk, as in a crunch. |
+| Sit-up | 0.5 | As a back extension, from the other side: everything above the hips. |
+| Crunch, Russian twist | 0.3 | Head, arms and upper trunk; the lower back stays down. |
 | Plank, and anything timed | 0 | No reps, so no volume. |
 | Every other catalogue exercise | 0 | Barbell, dumbbell, machine, cable, kettlebell and cardio count the weight entered, nothing of you. |
-| Your own exercise | 1 if its equipment is Bodyweight and a set counts reps, else 0 | When you add one of that kind you can pick all, about half (0.5, a sit-up), about a third (0.3, a crunch) or none. |
+| Your own exercise | 1 if its equipment is Bodyweight and a set counts reps, else 0 | For one of that kind you can pick all, about two thirds (0.7, a push-up), about half (0.5, a sit-up), about a third (0.3, a crunch) or none, when you add it or later. |
 
 `bodyweight load = share × your body weight on the session's day`, rounded to 0.1 kg
 (`bodyweightLoadKg`); an exact half rounds up.
@@ -79,6 +80,14 @@ later, when a weigh-in older than a year is purged, or when a custom exercise is
 block with no load yet is tried again on each save, so a session started before you had a
 weight on file picks one up.
 
+**Changing the share of one of your own exercises** re-works every session already logged
+with it, because the share is a rule about the exercise and not a fact about the day
+(`restampBlocks`). A block that has a load is rescaled, `load × new share / old share`, which
+keeps the body weight it was first worked out from (to within the 0.1 kg rounding); a block
+that has none, because the share was 0, is worked out from your weight on its session's day;
+a share of 0 clears the loads. The catalogue's shares change only by a migration, which
+rescales the same way (0020 did for the push-up).
+
 **On the phone.** While a session is being logged the phone fills in its own figure from the
 exercise list and the profile weight (`fillBodyweightLoads`), so push-ups count in the tally
 straight away and with no signal. When the save lands it takes the server's figure, which is
@@ -86,7 +95,7 @@ the one every other screen shows. The session screen says what is counted under 
 name: "Each rep counts 75.1 kg of your bodyweight".
 
 **Backdated.** Migration 0019 gave every block already logged its load by the same rules, from
-the weigh-ins on file on 2026-11-05.
+the weigh-ins on file on 2026-11-05; 0020 then rescaled the push-up's to 0.7.
 
 **What it does not do.** A squat, lunge or calf raise also moves most of you; they are not
 counted, because volume for a loaded lift is the weight on the bar by convention and the
@@ -211,6 +220,13 @@ written up here first (the week-on-week card only looks one week back). Training
 review and recalibration are slice 10 and will be written up in `NUTRITION-MATHS.md`.
 
 ## Change log
+
+- **2026-11-05** (D44, decided by the owner): **Rule change:** a push-up lifts 0.7 of
+  bodyweight, where it was all of it; the loads already stored were rescaled (migration 0020),
+  so push-up kilograms fell by three tenths in every session. Crunch (0.3) and sit-up (0.5)
+  joined the catalogue. Changing the bodyweight share of one of your own exercises now
+  re-works the sessions logged with it (`restampBlocks`); "about two thirds" was added to the
+  shares offered.
 
 - **2026-11-05** (D44): **Rule change:** bodyweight counts toward volume. A set's volume is
   `load × reps` with `load = bodyweight load + weight`, where it was `weight × reps`, so a

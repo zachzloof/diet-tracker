@@ -1,5 +1,6 @@
 import {
   MAX_CUSTOM_EXERCISES,
+  bodyweightLoadKg,
   defaultBodyweightShare,
   exerciseHistoryEntrySchema,
   exerciseSchema,
@@ -7,7 +8,7 @@ import {
   type ExerciseHistoryEntry,
   type ExerciseInput,
 } from '@diet-tracker/shared'
-import { and, asc, desc, eq, gte, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import { db } from '../db/client.js'
 import { EXERCISE_CATALOGUE } from '../db/exercise-catalogue.js'
@@ -20,6 +21,7 @@ import {
 } from '../db/schema/index.js'
 import { errors } from '../errors.js'
 import type { Tx } from '../profile/targets-service.js'
+import { bodyWeightOn } from '../progress/weight-service.js'
 import { toWireSet } from './wire.js'
 
 /**
@@ -102,21 +104,86 @@ export async function createExercise(
   })
 }
 
-/** Only a person's own exercises can change; a catalogue id reads as not found. */
+/**
+ * Only a person's own exercises can change; a catalogue id reads as not found. An edit
+ * reaches the sessions already logged, in the same transaction: a new name replaces the
+ * snapshot on every block (it is the same exercise, renamed), and a new bodyweight share
+ * re-works their loads (`restampBlocks`), since the share is a rule about the exercise and
+ * not a fact about the day.
+ */
 export async function updateExercise(
   userId: string,
   id: string,
   input: ExerciseInput,
   now: Date = new Date(),
 ): Promise<Exercise> {
-  const updated = await db
-    .update(exercises)
-    .set({ ...ownExerciseFields(input), updatedAt: now })
-    .where(and(eq(exercises.id, id), eq(exercises.userId, userId)))
-    .returning()
-  const row = updated[0]
-  if (!row) throw errors.notFound()
-  return toWireExercise(row)
+  return db.transaction(async (tx) => {
+    const mine = and(eq(exercises.id, id), eq(exercises.userId, userId))
+    const existing = await tx.select().from(exercises).where(mine).for('update')
+    const before = existing[0]
+    if (!before) throw errors.notFound()
+    const fields = ownExerciseFields(input)
+    const updated = await tx
+      .update(exercises)
+      .set({ ...fields, updatedAt: now })
+      .where(mine)
+      .returning()
+    const row = updated[0]
+    if (!row) throw new Error('exercise update returned no row')
+    if (row.name !== before.name) {
+      await tx.update(workoutExercises).set({ exerciseName: row.name }).where(blocksOf(userId, id))
+    }
+    if (row.bodyweightShare !== before.bodyweightShare) {
+      await restampBlocks(tx, userId, id, before.bodyweightShare, row.bodyweightShare)
+    }
+    return toWireExercise(row)
+  })
+}
+
+/** This person's session blocks of one exercise. */
+const blocksOf = (userId: string, exerciseId: string) =>
+  and(eq(workoutExercises.userId, userId), eq(workoutExercises.exerciseId, exerciseId))
+
+/**
+ * Re-works the bodyweight load of every logged block of an exercise whose share changed
+ * (D44). A block that has a load is rescaled, which keeps the body weight it was worked out
+ * from; one that has none (the share was 0) is worked out from the person's weight on its
+ * session's day; a share of 0 clears them.
+ */
+async function restampBlocks(
+  tx: Tx,
+  userId: string,
+  exerciseId: string,
+  from: number,
+  to: number,
+): Promise<void> {
+  const blocks = blocksOf(userId, exerciseId)
+  if (!(to > 0)) {
+    await tx.update(workoutExercises).set({ bodyweightKg: null }).where(blocks)
+    return
+  }
+  if (from > 0) {
+    await tx
+      .update(workoutExercises)
+      .set({
+        bodyweightKg: sql`round((${workoutExercises.bodyweightKg} * ${to / from})::numeric, 1)::double precision`,
+      })
+      .where(and(blocks, isNotNull(workoutExercises.bodyweightKg)))
+  }
+  const unstamped = await tx
+    .select({ id: workoutExercises.id, day: workouts.day })
+    .from(workoutExercises)
+    .innerJoin(workouts, eq(workouts.id, workoutExercises.workoutId))
+    .where(and(blocks, isNull(workoutExercises.bodyweightKg)))
+  const byDay = new Map<string, string[]>()
+  for (const block of unstamped) {
+    byDay.set(block.day, [...(byDay.get(block.day) ?? []), block.id])
+  }
+  for (const [day, ids] of byDay) {
+    const bodyweightKg = bodyweightLoadKg(to, await bodyWeightOn(tx, userId, day))
+    if (bodyweightKg === null) continue
+    await tx.update(workoutExercises).set({ bodyweightKg }).where(inArray(workoutExercises.id, ids))
+  }
 }
 
 /** Past sessions keep the exercise's name; their link to it is cleared by the foreign key. */
