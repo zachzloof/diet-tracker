@@ -4,6 +4,7 @@ import type { ExerciseKind, ExerciseMeasure, MuscleGroup } from '@diet-tracker/s
  * The shared exercise catalogue (D35). The ids are fixed so every database has the same rows:
  * migration 0010 inserts them, and this list is what tests and the seed check against.
  * Adding a lift is a new migration that inserts it; never renumber or reuse an id.
+ * A bodyweight share is set here and by a migration together (0019 wrote the first ones).
  */
 export interface CatalogueExercise {
   id: string
@@ -11,6 +12,8 @@ export interface CatalogueExercise {
   kind: ExerciseKind
   muscleGroups: MuscleGroup[]
   measures: ExerciseMeasure[]
+  /** The share of bodyweight one rep lifts, 0 to 1 (D44, docs/TRAINING-MATHS.md). */
+  bodyweightShare: number
 }
 
 const WR: ExerciseMeasure[] = ['weight', 'reps']
@@ -27,7 +30,8 @@ const entry = (
   kind: ExerciseKind,
   muscleGroups: MuscleGroup[],
   measures: ExerciseMeasure[] = WR,
-): CatalogueExercise => ({ id: id(), name, kind, muscleGroups, measures })
+  bodyweightShare = 0,
+): CatalogueExercise => ({ id: id(), name, kind, muscleGroups, measures, bodyweightShare })
 
 export const EXERCISE_CATALOGUE: readonly CatalogueExercise[] = [
   // Squat and hinge
@@ -57,8 +61,8 @@ export const EXERCISE_CATALOGUE: readonly CatalogueExercise[] = [
   entry('Dumbbell bench press', 'dumbbell', ['chest', 'triceps']),
   entry('Incline dumbbell bench press', 'dumbbell', ['chest', 'shoulders']),
   entry('Machine chest press', 'machine', ['chest', 'triceps']),
-  entry('Push-up', 'bodyweight', ['chest', 'triceps'], R),
-  entry('Dip', 'bodyweight', ['chest', 'triceps']),
+  entry('Push-up', 'bodyweight', ['chest', 'triceps'], R, 1),
+  entry('Dip', 'bodyweight', ['chest', 'triceps'], WR, 1),
   entry('Cable fly', 'cable', ['chest']),
   entry('Pec deck', 'machine', ['chest']),
   entry('Overhead press', 'barbell', ['shoulders', 'triceps']),
@@ -74,8 +78,8 @@ export const EXERCISE_CATALOGUE: readonly CatalogueExercise[] = [
   entry('Skull crusher', 'barbell', ['triceps']),
 
   // Pull
-  entry('Pull-up', 'bodyweight', ['back', 'biceps']),
-  entry('Chin-up', 'bodyweight', ['back', 'biceps']),
+  entry('Pull-up', 'bodyweight', ['back', 'biceps'], WR, 1),
+  entry('Chin-up', 'bodyweight', ['back', 'biceps'], WR, 1),
   entry('Lat pulldown', 'cable', ['back', 'biceps']),
   entry('Barbell row', 'barbell', ['back', 'biceps']),
   entry('Pendlay row', 'barbell', ['back']),
@@ -102,11 +106,11 @@ export const EXERCISE_CATALOGUE: readonly CatalogueExercise[] = [
 
   // Core
   entry('Plank', 'bodyweight', ['core'], T),
-  entry('Hanging leg raise', 'bodyweight', ['core'], R),
+  entry('Hanging leg raise', 'bodyweight', ['core'], R, 0.35),
   entry('Cable crunch', 'cable', ['core']),
-  entry('Ab wheel rollout', 'bodyweight', ['core'], R),
-  entry('Russian twist', 'bodyweight', ['core'], R),
-  entry('Back extension', 'bodyweight', ['back', 'glutes', 'hamstrings']),
+  entry('Ab wheel rollout', 'bodyweight', ['core'], R, 0.5),
+  entry('Russian twist', 'bodyweight', ['core'], R, 0.3),
+  entry('Back extension', 'bodyweight', ['back', 'glutes', 'hamstrings'], WR, 0.5),
 
   // Cardio
   entry('Run', 'cardio', ['full_body'], TD),

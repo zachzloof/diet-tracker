@@ -18,7 +18,7 @@ import Button from '@/components/ui/Button.vue'
 import Icon from '@/components/ui/Icon.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import { usePreferences } from '@/features/profile/usePreferences'
-import { formatDayShort } from '@/lib/format'
+import { formatDayShort, formatNumber } from '@/lib/format'
 import type { SetReference } from '@/stores/ui'
 import SetRow from './SetRow.vue'
 import { useExerciseHistory } from './useTraining'
@@ -77,6 +77,14 @@ const referenceLine = computed(() => {
   }
   const n = previous.value.sets.length
   return `Last time ${formatDayShort(previous.value.day)} · ${n} ${n === 1 ? 'set' : 'sets'}`
+})
+
+/** What each rep counts of the person's own weight (D44), so the kilograms lifted add up. */
+const bodyweightLine = computed(() => {
+  const load = props.block.bodyweightKg
+  if (!load) return ''
+  const counted = `Each rep counts ${formatNumber(load, 1)} kg of your bodyweight`
+  return props.measures.includes('weight') ? `${counted}, plus the weight you add` : counted
 })
 
 const noteOpen = ref(props.block.notes.length > 0)
@@ -146,6 +154,7 @@ function remove(): void {
       </div>
     </div>
     <p v-if="referenceLine" class="mt-0.5 text-xs text-fg-muted">{{ referenceLine }}</p>
+    <p v-if="bodyweightLine" class="mt-0.5 text-xs text-fg-muted">{{ bodyweightLine }}</p>
 
     <div
       v-if="block.sets.length"
@@ -157,7 +166,9 @@ function remove(): void {
       <span v-for="measure in measures" :key="measure" class="flex-1 text-center">
         {{
           measure === 'weight'
-            ? 'kg'
+            ? block.bodyweightKg
+              ? '+ kg'
+              : 'kg'
             : measure === 'reps'
               ? 'Reps'
               : measure === 'time'

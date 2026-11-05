@@ -1,5 +1,6 @@
 import {
   MAX_CUSTOM_EXERCISES,
+  defaultBodyweightShare,
   exerciseHistoryEntrySchema,
   exerciseSchema,
   type Exercise,
@@ -41,6 +42,7 @@ export function toWireExercise(
     kind: row.kind,
     muscleGroups: row.muscleGroups,
     measures: row.measures,
+    bodyweightShare: row.bodyweightShare,
     custom: row.userId !== null,
     lastUsedAt: lastUsedAt === null ? null : new Date(lastUsedAt).toISOString(),
   })
@@ -67,6 +69,14 @@ export async function listExercises(userId: string): Promise<Exercise[]> {
   return rows.map((row) => toWireExercise(row.exercise, row.lastUsedAt))
 }
 
+/** The columns of a person's own exercise; a share left out follows the kind and measures (D44). */
+function ownExerciseFields(input: ExerciseInput) {
+  return {
+    ...input,
+    bodyweightShare: input.bodyweightShare ?? defaultBodyweightShare(input.kind, input.measures),
+  }
+}
+
 export async function createExercise(
   userId: string,
   input: ExerciseInput,
@@ -84,7 +94,7 @@ export async function createExercise(
     }
     const inserted = await tx
       .insert(exercises)
-      .values({ id: uuidv7(), userId, ...input, createdAt: now, updatedAt: now })
+      .values({ id: uuidv7(), userId, ...ownExerciseFields(input), createdAt: now, updatedAt: now })
       .returning()
     const row = inserted[0]
     if (!row) throw new Error('exercise insert returned no row')
@@ -101,7 +111,7 @@ export async function updateExercise(
 ): Promise<Exercise> {
   const updated = await db
     .update(exercises)
-    .set({ ...input, updatedAt: now })
+    .set({ ...ownExerciseFields(input), updatedAt: now })
     .where(and(eq(exercises.id, id), eq(exercises.userId, userId)))
     .returning()
   const row = updated[0]
@@ -118,18 +128,21 @@ export async function deleteExercise(userId: string, id: string): Promise<void> 
   if (deleted.length === 0) throw errors.notFound()
 }
 
-/** Of `ids`, the ones this person may log against: the catalogue and their own. */
-export async function usableExerciseIds(
+/**
+ * Of `ids`, the ones this person may log against (the catalogue and their own), each with
+ * the share of bodyweight it lifts.
+ */
+export async function usableExerciseShares(
   tx: Tx,
   userId: string,
   ids: readonly string[],
-): Promise<Set<string>> {
-  if (ids.length === 0) return new Set()
+): Promise<Map<string, number>> {
+  if (ids.length === 0) return new Map()
   const rows = await tx
-    .select({ id: exercises.id })
+    .select({ id: exercises.id, bodyweightShare: exercises.bodyweightShare })
     .from(exercises)
     .where(and(visibleTo(userId), inArray(exercises.id, [...ids])))
-  return new Set(rows.map((row) => row.id))
+  return new Map(rows.map((row) => [row.id, row.bodyweightShare]))
 }
 
 /**
@@ -146,6 +159,7 @@ export async function exerciseHistory(
   const blocks = await db
     .select({
       blockId: workoutExercises.id,
+      bodyweightKg: workoutExercises.bodyweightKg,
       workoutId: workouts.id,
       day: workouts.day,
       title: workouts.title,
@@ -183,6 +197,7 @@ export async function exerciseHistory(
       workoutId: block.workoutId,
       day: block.day,
       title: block.title,
+      bodyweightKg: block.bodyweightKg,
       sets: (setsByBlock.get(block.blockId) ?? []).map(toWireSet),
     }),
   )

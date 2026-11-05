@@ -43,6 +43,12 @@ describe('metric labels', () => {
     expect(metricSetLabel(set({ weightKg: 30, reps: 15 }), 'weight')).toBe('30 kg × 15')
     expect(metricSetLabel(set({ weightKg: 24, distanceM: 40 }), 'volume')).toBe('24 kg')
     expect(metricSetLabel(set({ durationS: 75 }), 'time')).toBe('1 min 15 s')
+    // A bodyweight block (D44): the kilograms include the person, and the label says so.
+    expect(metricSetLabel(set({ reps: 12 }), 'volume', 80)).toBe('960 kg (bodyweight × 12)')
+    expect(metricSetLabel(set({ weightKg: 10, reps: 5 }), 'volume', 80)).toBe(
+      '450 kg (bodyweight + 10 kg × 5)',
+    )
+    expect(metricSetLabel(set({ weightKg: 10, reps: 5 }), 'weight', 80)).toBe('10 kg × 5')
   })
   it('format a value and a change in the metric', () => {
     expect(formatMetricValue(450, 'volume')).toBe('450 kg')

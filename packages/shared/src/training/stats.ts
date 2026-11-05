@@ -1,5 +1,5 @@
-import type { BestBasis, ExerciseMeasure } from './enums.js'
-import type { Workout, WorkoutExercise, WorkoutInput, WorkoutSet } from './schemas.js'
+import type { BestBasis, ExerciseKind, ExerciseMeasure } from './enums.js'
+import type { WorkoutInput, WorkoutSet } from './schemas.js'
 
 /** The order a lift is compared in: weight for a lift, else reps, time, distance. */
 export const MEASURE_ORDER: readonly ExerciseMeasure[] = ['weight', 'reps', 'time', 'distance']
@@ -14,14 +14,59 @@ export function isWorkingSet(set: WorkoutSet): boolean {
   return set.completed
 }
 
-/** Weight × reps for one set; 0 when either is missing or it is not a working set. */
-export function setVolumeKg(set: WorkoutSet): number {
-  if (!isWorkingSet(set)) return 0
-  return (set.weightKg ?? 0) * (set.reps ?? 0)
+/**
+ * The sets of one exercise in one session, with the kilograms of the person's own body each
+ * rep lifts (D44). Null or absent means none: a barbell lift, or a block not worked out yet.
+ */
+export interface LoadedSets {
+  sets: readonly WorkoutSet[]
+  bodyweightKg?: number | null
 }
 
-export function exerciseVolumeKg(block: Pick<WorkoutExercise, 'sets'>): number {
-  return block.sets.reduce((sum, set) => sum + setVolumeKg(set), 0)
+/**
+ * The share of bodyweight an exercise lifts when nobody has said otherwise: all of it for a
+ * bodyweight exercise that counts reps, none for anything else (a plank is timed, a squat's
+ * volume is the bar). The catalogue sets its own shares; this is for a person's own exercises.
+ */
+export function defaultBodyweightShare(
+  kind: ExerciseKind,
+  measures: readonly ExerciseMeasure[],
+): number {
+  return kind === 'bodyweight' && measures.includes('reps') ? 1 : 0
+}
+
+/**
+ * Kilograms of the person's own body one rep lifts: the exercise's share × their body weight,
+ * to 0.1 kg. Null when the exercise lifts none of it or the weight is not known.
+ */
+export function bodyweightLoadKg(share: number, bodyWeightKg: number | null): number | null {
+  if (!(share > 0) || bodyWeightKg === null || !(bodyWeightKg > 0)) return null
+  // The hair added makes an exact half round up (0.35 × 85 is 29.749999… in floating point),
+  // as the numeric rounding in migration 0019 does.
+  return Math.round(share * bodyWeightKg * 10 + 1e-9) / 10
+}
+
+/**
+ * Kilograms one rep of a set moves: the block's bodyweight load plus the weight on the set
+ * (the bar, or a belt on a pull-up). Null when there is neither.
+ */
+export function setLoadKg(set: WorkoutSet, bodyweightKg?: number | null): number | null {
+  const own = bodyweightKg ?? 0
+  if (set.weightKg === null && own <= 0) return null
+  return own + (set.weightKg ?? 0)
+}
+
+/**
+ * Load × reps for one set, the load being bodyweight plus weight (`setLoadKg`); 0 when the
+ * set has no load or no reps, or is not a working set.
+ */
+export function setVolumeKg(set: WorkoutSet, bodyweightKg?: number | null): number {
+  if (!isWorkingSet(set)) return 0
+  return (setLoadKg(set, bodyweightKg) ?? 0) * (set.reps ?? 0)
+}
+
+export function exerciseVolumeKg(block: LoadedSets): number {
+  return block.sets.reduce((sum, set) => sum + setVolumeKg(set, block.bodyweightKg), 0)
 }
 
 export function workoutVolumeKg(workout: Pick<WorkoutInput, 'exercises'>): number {
@@ -94,12 +139,18 @@ export function setMeasureValue(set: WorkoutSet, measure: ExerciseMeasure): numb
 
 /**
  * The value of a set on a metric: a measure's value, or for `volume` the kilograms lifted in
- * the set (weight × reps), null when either is missing. Working or not is not checked here.
+ * the set (load × reps, the load including the block's bodyweight), null when it has no load
+ * or no reps. `weight` stays the weight on the set alone. Working or not is not checked here.
  */
-export function setMetricValue(set: WorkoutSet, metric: SetMetric): number | null {
+export function setMetricValue(
+  set: WorkoutSet,
+  metric: SetMetric,
+  bodyweightKg?: number | null,
+): number | null {
   if (metric !== 'volume') return setMeasureValue(set, metric)
-  if (set.weightKg === null || set.reps === null) return null
-  return set.weightKg * set.reps
+  const load = setLoadKg(set, bodyweightKg)
+  if (load === null || set.reps === null) return null
+  return load * set.reps
 }
 
 /** The exercise's first measure in `MEASURE_ORDER` (weight, reps, time, distance); null with none. */
@@ -129,28 +180,46 @@ const TIE_BREAKS: Readonly<Record<SetMetric, readonly SetMetric[]>> = {
   distance: [],
 }
 
+/** The winner of a ranking: the set, its value on the metric, and its block's bodyweight load. */
+export interface BestSet {
+  set: WorkoutSet
+  value: number
+  bodyweightKg: number | null
+}
+
 /**
- * The best working set by a metric; null when nothing was done or no set recorded it. Ties
- * on kilograms lifted go to the heavier set, then the one with more reps; ties on weight go
- * to more reps; the earlier set wins otherwise.
+ * The best working set by a metric across blocks, each read with its own bodyweight load;
+ * null when nothing was done or no set recorded it. Ties on kilograms lifted go to the
+ * heavier set, then the one with more reps; ties on weight go to more reps; the earlier set
+ * wins otherwise.
  */
-export function bestSetBy(sets: readonly WorkoutSet[], metric: SetMetric): WorkoutSet | null {
-  let best: WorkoutSet | null = null
-  let bestValue = 0
-  for (const set of sets) {
-    if (!isWorkingSet(set)) continue
-    const value = setMetricValue(set, metric)
-    if (value === null) continue
-    if (
-      best === null ||
-      value > bestValue ||
-      (value === bestValue && beatsOnTies(set, best, metric))
-    ) {
-      best = set
-      bestValue = value
+export function bestSetAcross(blocks: readonly LoadedSets[], metric: SetMetric): BestSet | null {
+  let best: BestSet | null = null
+  for (const block of blocks) {
+    const bodyweightKg = block.bodyweightKg ?? null
+    for (const set of block.sets) {
+      if (!isWorkingSet(set)) continue
+      const value = setMetricValue(set, metric, bodyweightKg)
+      if (value === null) continue
+      if (
+        best === null ||
+        value > best.value ||
+        (value === best.value && beatsOnTies(set, best.set, metric))
+      ) {
+        best = { set, value, bodyweightKg }
+      }
     }
   }
   return best
+}
+
+/** The best working set of one block by a metric (`bestSetAcross` for its rules). */
+export function bestSetBy(
+  sets: readonly WorkoutSet[],
+  metric: SetMetric,
+  bodyweightKg?: number | null,
+): WorkoutSet | null {
+  return bestSetAcross([{ sets, bodyweightKg }], metric)?.set ?? null
 }
 
 function beatsOnTies(candidate: WorkoutSet, holder: WorkoutSet, metric: SetMetric): boolean {
@@ -182,16 +251,16 @@ export function bestSet(sets: readonly WorkoutSet[], measure: ExerciseMeasure): 
  * candidate; an unticked set at that position never counts.
  */
 export function bestSetAt(
-  history: readonly { sets: readonly WorkoutSet[] }[],
+  history: readonly LoadedSets[],
   index: number,
   metric: SetMetric,
 ): WorkoutSet | null {
-  const candidates: WorkoutSet[] = []
+  const candidates: LoadedSets[] = []
   for (const entry of history) {
     const set = entry.sets[index]
-    if (set) candidates.push(set)
+    if (set) candidates.push({ sets: [set], bodyweightKg: entry.bodyweightKg })
   }
-  return bestSetBy(candidates, metric)
+  return bestSetAcross(candidates, metric)?.set ?? null
 }
 
 /** A set with any number in it; finishing a session drops the rest. */
@@ -224,10 +293,41 @@ export interface RepeatOptions {
 }
 
 /**
- * A new session from a past one: the same title, exercises and sets, with fresh ids,
- * nothing ticked done and no finish time. The person adjusts the numbers as they go.
+ * Gives every block that has no bodyweight load yet one, from its exercise's share and the
+ * person's body weight (`bodyweightLoadKg`). A block already worked out, to a number or to
+ * null, is left alone, as is one whose exercise or the body weight is not known yet (it is
+ * tried again next time). The phone runs this on a session it is logging so the tally is
+ * right before the save lands; the server works out the stored figure itself.
  */
-export function repeatWorkout(source: Workout, options: RepeatOptions): WorkoutInput {
+export function fillBodyweightLoads(
+  input: WorkoutInput,
+  shareOf: (exerciseId: string) => number | undefined,
+  bodyWeightKg: number | null,
+): WorkoutInput {
+  if (input.exercises.every((block) => block.bodyweightKg !== undefined)) return input
+  return {
+    ...input,
+    exercises: input.exercises.map((block) => {
+      if (block.bodyweightKg !== undefined) return block
+      if (block.exerciseId === null) return { ...block, bodyweightKg: null }
+      const share = shareOf(block.exerciseId)
+      if (share === undefined) return block
+      if (!(share > 0)) return { ...block, bodyweightKg: null }
+      if (bodyWeightKg === null) return block
+      return { ...block, bodyweightKg: bodyweightLoadKg(share, bodyWeightKg) }
+    }),
+  }
+}
+
+/**
+ * A new session from a past one: the same title, exercises and sets, with fresh ids,
+ * nothing ticked done and no finish time. The person adjusts the numbers as they go. The
+ * bodyweight loads are left out: they belong to the day they were worked out on.
+ */
+export function repeatWorkout(
+  source: Pick<WorkoutInput, 'title' | 'exercises'>,
+  options: RepeatOptions,
+): WorkoutInput {
   return {
     day: options.day,
     startedAt: options.startedAt,
@@ -279,7 +379,7 @@ export interface WorkoutsSummary {
 /**
  * What a range of sessions adds up to (the gym Week tiles). Only finished sessions count;
  * one still open has no duration and may yet change. Each session's own rules apply:
- * working sets only, volume from weight × reps.
+ * working sets only, volume from load × reps.
  */
 export function summariseWorkouts(
   workouts: readonly Pick<WorkoutInput, 'day' | 'exercises' | 'startedAt' | 'endedAt'>[],

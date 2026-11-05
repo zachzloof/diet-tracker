@@ -25,7 +25,14 @@ import { createApp } from '../app.js'
 import { SESSION_COOKIE } from '../auth/session-service.js'
 import { db } from '../db/client.js'
 import { EXERCISE_CATALOGUE } from '../db/exercise-catalogue.js'
-import { exercises, users, workoutExercises, workoutSets, workouts } from '../db/schema/index.js'
+import {
+  exercises,
+  users,
+  weightEntries,
+  workoutExercises,
+  workoutSets,
+  workouts,
+} from '../db/schema/index.js'
 import { resetRateLimits } from '../middleware/rate-limit.js'
 import { ensureExerciseCatalogue } from './exercises-service.js'
 
@@ -37,6 +44,9 @@ const ENDED = '2026-10-08T17:48:00.000Z'
 
 const squatId = EXERCISE_CATALOGUE.find((e) => e.name === 'Barbell back squat')?.id ?? ''
 const benchId = EXERCISE_CATALOGUE.find((e) => e.name === 'Barbell bench press')?.id ?? ''
+const pushUpId = EXERCISE_CATALOGUE.find((e) => e.name === 'Push-up')?.id ?? ''
+const pullUpId = EXERCISE_CATALOGUE.find((e) => e.name === 'Pull-up')?.id ?? ''
+const legRaiseId = EXERCISE_CATALOGUE.find((e) => e.name === 'Hanging leg raise')?.id ?? ''
 
 let cookie = ''
 let userId = ''
@@ -290,6 +300,129 @@ describe('PUT /api/v1/workouts/:id', () => {
     const error = apiErrorSchema.parse(await res.json()).error
     expect(error.code).toBe('validation_error')
     expect(await db.select().from(workouts)).toHaveLength(0)
+  })
+})
+
+describe('bodyweight load (D44)', () => {
+  async function weighIn(day: string, weightKg: number): Promise<void> {
+    await db
+      .insert(weightEntries)
+      .values({ id: uuidv7(), userId, day, weightKg })
+      .onConflictDoUpdate({
+        target: [weightEntries.userId, weightEntries.day],
+        set: { weightKg },
+      })
+  }
+  const block = (exerciseId: string, exerciseName: string, sets: WorkoutSet[]) => ({
+    id: uuidv7(),
+    exerciseId,
+    exerciseName,
+    notes: '',
+    sets,
+  })
+  const bodyweightDay = (overrides: Partial<WorkoutInput> = {}) =>
+    pushDay({
+      exercises: [
+        block(pushUpId, 'Push-up', [set({ weightKg: null, reps: 20 })]),
+        block(pullUpId, 'Pull-up', [set({ weightKg: 10, reps: 5 })]),
+        block(legRaiseId, 'Hanging leg raise', [set({ weightKg: null, reps: 12 })]),
+        block(squatId, 'Barbell back squat', [set()]),
+      ],
+      ...overrides,
+    })
+  const loads = (workout: Workout) => workout.exercises.map((b) => b.bodyweightKg)
+
+  it('gives the catalogue its shares and a custom exercise the default for its kind', async () => {
+    const list = await listExercises()
+    const share = (id: string) => list.find((e) => e.id === id)?.bodyweightShare
+    expect([share(pushUpId), share(pullUpId), share(legRaiseId), share(squatId)]).toEqual([
+      1, 1, 0.35, 0,
+    ])
+    expect(list.find((e) => e.name === 'Plank')?.bodyweightShare).toBe(0)
+    for (const entry of EXERCISE_CATALOGUE) expect(share(entry.id)).toBe(entry.bodyweightShare)
+
+    expect((await addExercise(pistol)).bodyweightShare).toBe(1)
+    expect(
+      (await addExercise({ ...pistol, name: 'Hollow hold', measures: ['time'] })).bodyweightShare,
+    ).toBe(0)
+    expect(
+      (await addExercise({ ...pistol, name: 'Crunch', bodyweightShare: 0.3 })).bodyweightShare,
+    ).toBe(0.3)
+    expect(
+      (await addExercise({ ...pistol, name: 'Landmine press', kind: 'barbell' })).bodyweightShare,
+    ).toBe(0)
+    const tooMuch = await send('POST', '/api/v1/exercises', { ...pistol, bodyweightShare: 1.5 })
+    expect(tooMuch.status).toBe(400)
+  })
+
+  it("stamps each block from the person's weight on the session's day", async () => {
+    await weighIn(addDays(DAY, -10), 80)
+    await weighIn(DAY, 82)
+    // On the day: 82. Share 0.35 of 82 = 28.7. A barbell lift has none.
+    expect(loads(await putWorkout(uuidv7(), bodyweightDay()))).toEqual([82, 82, 28.7, null])
+    // Between weigh-ins: the latest one before the day.
+    const earlier = addDays(DAY, -5)
+    expect(loads(await putWorkout(uuidv7(), bodyweightDay({ day: earlier })))[0]).toBe(80)
+    // Before every weigh-in: the earliest one after.
+    expect(loads(await putWorkout(uuidv7(), bodyweightDay({ day: addDays(DAY, -30) })))[0]).toBe(80)
+  })
+
+  it('has no load to give before there is a weight on file', async () => {
+    expect(loads(await putWorkout(uuidv7(), bodyweightDay()))).toEqual([null, null, null, null])
+  })
+
+  it('keeps a load once worked out, never reads the one the phone sent, and stamps new blocks', async () => {
+    await weighIn(DAY, 82)
+    const id = uuidv7()
+    const input = bodyweightDay()
+    await putWorkout(id, input)
+
+    await weighIn(DAY, 85)
+    const extra = block(pullUpId, 'Pull-up', [set({ weightKg: null, reps: 6 })])
+    const resaved = await putWorkout(
+      id,
+      {
+        ...input,
+        exercises: [...input.exercises.map((b) => ({ ...b, bodyweightKg: 5 })), extra],
+      },
+      200,
+    )
+    expect(loads(resaved)).toEqual([82, 82, 28.7, null, 85])
+
+    // A block pointed at another exercise is worked out again.
+    const [first, ...rest] = input.exercises
+    if (!first) throw new Error('fixture')
+    const swapped = await putWorkout(
+      id,
+      { ...input, exercises: [{ ...first, exerciseId: legRaiseId }, ...rest] },
+      200,
+    )
+    expect(loads(swapped)[0]).toBe(29.8)
+  })
+
+  it('keeps the load of a block whose custom exercise was deleted', async () => {
+    await weighIn(DAY, 82)
+    const created = await addExercise(pistol)
+    const id = uuidv7()
+    const input = pushDay({
+      exercises: [block(created.id, created.name, [set({ weightKg: null, reps: 8 })])],
+    })
+    expect(loads(await putWorkout(id, input))).toEqual([82])
+    expect((await send('DELETE', `/api/v1/exercises/${created.id}`)).status).toBe(204)
+    expect(loads(await putWorkout(id, input, 200))).toEqual([82])
+  })
+
+  it('carries the load in the exercise history', async () => {
+    await weighIn(DAY, 82)
+    await putWorkout(uuidv7(), bodyweightDay())
+    const { history } = exerciseHistoryResponseSchema.parse(
+      await (await send('GET', `/api/v1/exercises/${pullUpId}/history`)).json(),
+    )
+    expect(history[0]?.bodyweightKg).toBe(82)
+    const squat = exerciseHistoryResponseSchema.parse(
+      await (await send('GET', `/api/v1/exercises/${squatId}/history`)).json(),
+    )
+    expect(squat.history[0]?.bodyweightKg).toBeNull()
   })
 })
 

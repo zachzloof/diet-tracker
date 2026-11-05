@@ -104,7 +104,8 @@ export const METRIC_UNITS: Readonly<Record<SetMetric, string>> = {
 }
 
 export const METRIC_NOTES: Readonly<Record<SetMetric, string>> = {
-  volume: 'kg lifted in one set (weight × reps)',
+  volume:
+    'kg lifted in one set (weight × reps; a bodyweight exercise adds the bodyweight each rep lifts)',
   weight: 'heaviest weight',
   reps: 'most reps',
   time: 'longest time',

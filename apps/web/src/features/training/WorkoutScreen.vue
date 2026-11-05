@@ -159,16 +159,14 @@ function reopen(): void {
 
 function repeat(): void {
   if (!input.value) return
-  const source: Workout = {
-    id: id.value,
-    ...input.value,
-    createdAt: input.value.startedAt,
-    updatedAt: input.value.startedAt,
-  }
   const newId = uuidv7()
   drafts.start(
     newId,
-    repeatWorkout(source, { day: today.value, startedAt: new Date().toISOString(), newId: uuidv7 }),
+    repeatWorkout(input.value, {
+      day: today.value,
+      startedAt: new Date().toISOString(),
+      newId: uuidv7,
+    }),
   )
   void router.push({ name: 'workout', params: { id: newId } })
 }

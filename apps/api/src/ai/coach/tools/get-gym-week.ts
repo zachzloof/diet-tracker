@@ -10,7 +10,7 @@ import {
 import { listExercises } from '../../../training/exercises-service.js'
 import { listWorkouts } from '../../../training/workouts-service.js'
 import { measuresOf } from '../briefing.js'
-import { dayLabel, metricValueText, setText, weekdayShort, whole } from '../format.js'
+import { METRIC_NOTES, dayLabel, metricValueText, setText, weekdayShort, whole } from '../format.js'
 import { defineTool, empty } from './types.js'
 
 const MAX_SESSIONS = 20
@@ -63,9 +63,7 @@ export const getGymWeek = defineTool({
       lifted_kg: whole(totals.volumeKg),
       minutes: totals.minutes,
       best_means:
-        ctx.profile.preferences.bestBy === 'volume'
-          ? 'kg lifted in one set (weight × reps)'
-          : 'the heaviest weight',
+        ctx.profile.preferences.bestBy === 'volume' ? METRIC_NOTES.volume : 'the heaviest weight',
       session_list: [...current]
         .sort((a, b) => (a.day < b.day ? -1 : 1))
         .slice(0, MAX_SESSIONS)

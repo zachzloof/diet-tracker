@@ -1,5 +1,6 @@
 import {
   MAX_WORKOUTS_RANGE_DAYS,
+  bodyweightLoadKg,
   daysBetween,
   workoutSchema,
   type Workout,
@@ -20,7 +21,8 @@ import {
 } from '../db/schema/index.js'
 import { errors } from '../errors.js'
 import type { Tx } from '../profile/targets-service.js'
-import { usableExerciseIds } from './exercises-service.js'
+import { bodyWeightOn } from '../progress/weight-service.js'
+import { usableExerciseShares } from './exercises-service.js'
 import { toWireSet } from './wire.js'
 
 /**
@@ -51,6 +53,7 @@ function toWireWorkout(
         exerciseId: block.exerciseId,
         exerciseName: block.exerciseName,
         notes: block.notes,
+        bodyweightKg: block.bodyweightKg,
         sets: sets.filter((set) => set.workoutExerciseId === block.id).map(toWireSet),
       })),
     createdAt: row.createdAt.toISOString(),
@@ -122,6 +125,11 @@ export interface UpsertResult {
  * custom exercise deleted meanwhile, or somebody else's) is kept as a name-only block rather
  * than failing the save: the numbers matter more than the link. An id that belongs to
  * another person's session reads as not found.
+ *
+ * Each block's bodyweight load (D44) is the server's: worked out when the block is first
+ * saved, from its exercise's share and the person's weight on the session's day, and kept on
+ * every later save while the block still points at the same exercise. What the phone sent
+ * for it is never read.
  */
 export async function upsertWorkout(
   userId: string,
@@ -153,21 +161,45 @@ export async function upsertWorkout(
     if (!row) throw new Error('workout upsert returned no row')
 
     // Replace the document's body wholesale; the sets cascade with their blocks.
-    await tx.delete(workoutExercises).where(eq(workoutExercises.workoutId, id))
-    const usable = await usableExerciseIds(
+    const previous = await tx
+      .delete(workoutExercises)
+      .where(eq(workoutExercises.workoutId, id))
+      .returning({
+        id: workoutExercises.id,
+        exerciseId: workoutExercises.exerciseId,
+        bodyweightKg: workoutExercises.bodyweightKg,
+      })
+    const shares = await usableExerciseShares(
       tx,
       userId,
       input.exercises.flatMap((block) => (block.exerciseId ? [block.exerciseId] : [])),
     )
-    const blockRows: NewWorkoutExerciseRow[] = input.exercises.map((block, position) => ({
-      id: block.id,
-      userId,
-      workoutId: id,
-      exerciseId: block.exerciseId && usable.has(block.exerciseId) ? block.exerciseId : null,
-      exerciseName: block.exerciseName,
-      position,
-      notes: block.notes,
-    }))
+    const links = input.exercises.map((block) => {
+      const exerciseId = block.exerciseId && shares.has(block.exerciseId) ? block.exerciseId : null
+      const before = previous.find((row) => row.id === block.id)
+      const kept =
+        before && before.exerciseId === exerciseId && before.bodyweightKg !== null
+          ? before.bodyweightKg
+          : undefined
+      return { exerciseId, kept, share: exerciseId ? (shares.get(exerciseId) ?? 0) : 0 }
+    })
+    // The weight is read only when a block needs a load worked out; most saves need none.
+    const bodyWeightKg = links.some((link) => link.kept === undefined && link.share > 0)
+      ? await bodyWeightOn(tx, userId, input.day)
+      : null
+    const blockRows: NewWorkoutExerciseRow[] = input.exercises.map((block, position) => {
+      const link = links[position]
+      return {
+        id: block.id,
+        userId,
+        workoutId: id,
+        exerciseId: link?.exerciseId ?? null,
+        exerciseName: block.exerciseName,
+        bodyweightKg: link?.kept ?? bodyweightLoadKg(link?.share ?? 0, bodyWeightKg),
+        position,
+        notes: block.notes,
+      }
+    })
     const setRows: NewWorkoutSetRow[] = input.exercises.flatMap((block) =>
       block.sets.map((set, position) => ({
         id: set.id,

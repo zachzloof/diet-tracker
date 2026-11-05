@@ -1,6 +1,13 @@
-import type { Workout, WorkoutInput } from '@diet-tracker/shared'
+import {
+  fillBodyweightLoads,
+  type Exercise,
+  type Profile,
+  type Workout,
+  type WorkoutInput,
+} from '@diet-tracker/shared'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { PROFILE_KEY } from '@/features/profile/useProfile'
 import { workoutsApi } from '@/features/training/api'
 import { EXERCISES_KEY, WORKOUTS_KEY, workoutKey } from '@/features/training/keys'
 import { COACH_BRIEF_KEY } from '@/stores/coach'
@@ -58,6 +65,40 @@ function currentUserId(): string {
   return user?.id ?? 'anonymous'
 }
 
+/**
+ * Works out the bodyweight load of any block that has none yet (D44), from the exercise list
+ * and the profile weight already on this phone, so push-ups count in the tally before the
+ * save lands and with no signal. A block it cannot place yet is tried again on the next
+ * change; the server works out the stored figure either way.
+ */
+function withBodyweightLoads(input: WorkoutInput): WorkoutInput {
+  const exercises = queryClient.getQueryData<Exercise[]>(EXERCISES_KEY) ?? []
+  const profile = queryClient.getQueryData<Profile | null>(PROFILE_KEY)
+  return fillBodyweightLoads(
+    input,
+    (exerciseId) => exercises.find((exercise) => exercise.id === exerciseId)?.bodyweightShare,
+    profile?.weightKg ?? null,
+  )
+}
+
+/**
+ * The server's loads are the stored ones (it reads the weigh-in for the session's day, the
+ * phone only the profile weight), so once a save lands each block still in the draft takes
+ * the saved figure and the tally here agrees with every other screen.
+ */
+function withSavedLoads(input: WorkoutInput, saved: Workout): WorkoutInput {
+  const loads = new Map(saved.exercises.map((block) => [block.id, block.bodyweightKg]))
+  const stale = (block: WorkoutInput['exercises'][number]) =>
+    loads.has(block.id) && loads.get(block.id) !== block.bodyweightKg
+  if (!input.exercises.some(stale)) return input
+  return {
+    ...input,
+    exercises: input.exercises.map((block) =>
+      stale(block) ? { ...block, bodyweightKg: loads.get(block.id) ?? null } : block,
+    ),
+  }
+}
+
 function toInput(workout: Workout): WorkoutInput {
   return {
     day: workout.day,
@@ -102,7 +143,7 @@ export const useWorkoutDraftStore = defineStore('workout-draft', () => {
     const draft: WorkoutDraft = {
       id,
       userId: currentUserId(),
-      input,
+      input: withBodyweightLoads(input),
       dirty: true,
       savedAt: null,
       error: null,
@@ -135,7 +176,12 @@ export const useWorkoutDraftStore = defineStore('workout-draft', () => {
     if (!draft) return
     drafts.value = {
       ...drafts.value,
-      [id]: { ...draft, input: change(draft.input), dirty: true, error: null },
+      [id]: {
+        ...draft,
+        input: withBodyweightLoads(change(draft.input)),
+        dirty: true,
+        error: null,
+      },
     }
     persist()
     schedule(id)
@@ -168,7 +214,13 @@ export const useWorkoutDraftStore = defineStore('workout-draft', () => {
         const stillDirty = current.input !== sent
         drafts.value = {
           ...drafts.value,
-          [id]: { ...current, dirty: stillDirty, savedAt: workout.updatedAt, error: null },
+          [id]: {
+            ...current,
+            input: withSavedLoads(current.input, workout),
+            dirty: stillDirty,
+            savedAt: workout.updatedAt,
+            error: null,
+          },
         }
         persist()
         if (stillDirty) schedule(id)

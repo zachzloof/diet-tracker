@@ -10,11 +10,12 @@ import {
   type WeightsQuery,
   type WeightsResponse,
 } from '@diet-tracker/shared'
-import { and, asc, between, desc, eq } from 'drizzle-orm'
+import { and, asc, between, desc, eq, lte } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import { db } from '../db/client.js'
 import { profiles, weightEntries, type WeightEntryRow } from '../db/schema/index.js'
 import { errors } from '../errors.js'
+import type { Tx } from '../profile/targets-service.js'
 
 /**
  * Weigh-ins (slice 5). One row per user and local day. A weigh-in that is the newest one
@@ -51,6 +52,34 @@ export async function listWeights(
     goalWeightKg: profile.goalWeightKg,
     expectedKgPerWeek: profile.pace ? PACE_KG_PER_WEEK[profile.pace] : 0,
   }
+}
+
+/**
+ * The person's body weight on a user-local day, for the bodyweight load of a gym session
+ * (D44): the latest weigh-in on or before the day, else the earliest one after it (a session
+ * older than every weigh-in still on file), else the profile weight. Null before onboarding.
+ * Migration 0019 backdated past sessions with the same rule.
+ */
+export async function bodyWeightOn(tx: Tx, userId: string, day: string): Promise<number | null> {
+  const before = await tx
+    .select({ weightKg: weightEntries.weightKg })
+    .from(weightEntries)
+    .where(and(eq(weightEntries.userId, userId), lte(weightEntries.day, day)))
+    .orderBy(desc(weightEntries.day))
+    .limit(1)
+  if (before[0]) return before[0].weightKg
+  const after = await tx
+    .select({ weightKg: weightEntries.weightKg })
+    .from(weightEntries)
+    .where(eq(weightEntries.userId, userId))
+    .orderBy(asc(weightEntries.day))
+    .limit(1)
+  if (after[0]) return after[0].weightKg
+  const profile = await tx
+    .select({ weightKg: profiles.weightKg })
+    .from(profiles)
+    .where(eq(profiles.userId, userId))
+  return profile[0]?.weightKg ?? null
 }
 
 /** Every weigh-in, oldest first (export and recalibration). */

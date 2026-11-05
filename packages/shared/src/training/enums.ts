@@ -72,7 +72,8 @@ export type ExerciseMeasure = z.infer<typeof exerciseMeasureSchema>
 
 /**
  * What "best" means for a lift that records weight and reps (D39): `volume` is the most
- * kilograms lifted in one set (weight × reps); `weight` is the heaviest weight on the bar.
+ * kilograms lifted in one set (weight × reps, plus the bodyweight a bodyweight exercise lifts,
+ * D44); `weight` is the heaviest weight on the bar.
  * A display preference, `volume` by default; exercises without reps are unaffected.
  */
 export const BEST_BASES = ['volume', 'weight'] as const

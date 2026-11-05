@@ -69,16 +69,31 @@ const RECORDS: { value: string; label: string; measures: ExerciseMeasure[] }[] =
   { value: 'time_distance', label: 'Time and distance', measures: ['time', 'distance'] },
   { value: 'weight_distance', label: 'Weight and distance', measures: ['weight', 'distance'] },
 ]
+/** How much of the person a rep lifts (D44); offered for a bodyweight exercise that counts reps. */
+const SHARES: { value: string; label: string; share: number }[] = [
+  { value: 'all', label: 'All of it (pull-up, dip)', share: 1 },
+  { value: 'half', label: 'About half (sit-up)', share: 0.5 },
+  { value: 'third', label: 'About a third (crunch)', share: 0.3 },
+  { value: 'none', label: 'None', share: 0 },
+]
 const name = ref('')
 const kind = ref<ExerciseKind>('barbell')
 const muscleGroup = ref<MuscleGroup | ''>('')
 const records = ref('weight_reps')
+const share = ref('all')
+const measures = computed(
+  () => RECORDS.find((option) => option.value === records.value)?.measures ?? [],
+)
+const liftsBodyweight = computed(
+  () => kind.value === 'bodyweight' && measures.value.includes('reps'),
+)
 const fieldErrors = ref<Record<string, string[]>>({})
 const formError = ref<string | null>(null)
 
 const kindOptions = EXERCISE_KINDS.map((value) => ({ value, label: EXERCISE_KIND_LABELS[value] }))
 const muscleOptions = MUSCLE_GROUPS.map((value) => ({ value, label: MUSCLE_GROUP_LABELS[value] }))
 const recordOptions = RECORDS.map(({ value, label }) => ({ value, label }))
+const shareOptions = SHARES.map(({ value, label }) => ({ value, label }))
 
 // A kind suggests what a set records; the person can still change it.
 watch(kind, (next) => {
@@ -108,7 +123,11 @@ function submit(): void {
     name: name.value,
     kind: kind.value,
     muscleGroups: muscleGroup.value ? [muscleGroup.value] : [],
-    measures: RECORDS.find((option) => option.value === records.value)?.measures ?? [],
+    measures: measures.value,
+    // Left out for anything else, so the server's default for the kind applies (none).
+    ...(liftsBodyweight.value
+      ? { bodyweightShare: SHARES.find((option) => option.value === share.value)?.share ?? 1 }
+      : {}),
   })
   if (!parsed.success) {
     fieldErrors.value = toValidationDetails(parsed.error).fieldErrors
@@ -118,6 +137,7 @@ function submit(): void {
     onSuccess: (exercise) => {
       name.value = ''
       muscleGroup.value = ''
+      share.value = 'all'
       pick(exercise)
     },
     onError: (error: unknown) => {
@@ -154,6 +174,13 @@ function submit(): void {
         label="A set records"
         :options="recordOptions"
         :error="fieldErrors.measures?.[0] ?? null"
+      />
+      <Select
+        v-if="liftsBodyweight"
+        v-model="share"
+        label="Bodyweight each rep lifts"
+        :options="shareOptions"
+        helper="Counted in your kilograms lifted, at your weight on the day."
       />
       <p v-if="formError" class="text-sm text-over" role="alert">{{ formError }}</p>
       <div class="flex gap-2">

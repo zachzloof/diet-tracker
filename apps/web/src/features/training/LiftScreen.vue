@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import {
   addDays,
-  bestSetBy,
+  bestSetAcross,
   liftMetric,
   primaryMeasure,
-  setMetricValue,
   type ExerciseHistoryEntry,
   type ExerciseMeasure,
   type SetMetric,
@@ -25,7 +24,7 @@ import { usePreferences } from '@/features/profile/usePreferences'
 import { formatDay, formatDayShort } from '@/lib/format'
 import { HISTORY_RANGES, rangeWindow } from '@/lib/ranges'
 import { useUiStore } from '@/stores/ui'
-import { formatMetricValue, setLabel, workoutTitle } from './draft'
+import { bodyweightSetLabel, formatMetricValue, setLabel, workoutTitle } from './draft'
 import { useExerciseTrend, useExercises } from './useTraining'
 
 /**
@@ -65,6 +64,12 @@ const METRIC_NOTES: Readonly<Record<SetMetric, string>> = {
   time: 'longest',
   distance: 'furthest',
 }
+/** The line under the chart's heading; a bodyweight exercise's kilograms include the person (D44). */
+const metricNote = computed(() =>
+  metric.value === 'volume' && (exercise.value?.bodyweightShare ?? 0) > 0
+    ? 'kg lifted in one set, bodyweight and added weight × reps'
+    : METRIC_NOTES[metric.value],
+)
 
 const { today } = useLocalDay()
 const range = ref('90')
@@ -79,14 +84,12 @@ interface Point {
   best: WorkoutSet | null
   value: number | null
 }
-function valueOf(set: WorkoutSet | null): number | null {
-  return set ? setMetricValue(set, metric.value) : null
-}
-// Oldest first for the chart; the API answers newest first.
+// Oldest first for the chart; the API answers newest first. Each session is read with the
+// bodyweight load it had that day (D44).
 const points = computed<Point[]>(() =>
   [...history.history.value].reverse().map((entry) => {
-    const best = bestSetBy(entry.sets, metric.value)
-    return { entry, best, value: valueOf(best) }
+    const top = bestSetAcross([entry], metric.value)
+    return { entry, best: top?.set ?? null, value: top?.value ?? null }
   }),
 )
 const chartPoints = computed(() => points.value.map((p) => p.value))
@@ -107,9 +110,11 @@ function formatValue(value: number | null): string {
 function tileSub(point: Point | null): string | undefined {
   if (!point) return undefined
   const day = formatDayShort(point.entry.day)
-  return metric.value === 'volume' && point.best
-    ? `${setLabel(point.best, measures.value)} · ${day}`
-    : day
+  if (metric.value !== 'volume' || !point.best) return day
+  const set = point.entry.bodyweightKg
+    ? bodyweightSetLabel(point.best)
+    : setLabel(point.best, measures.value)
+  return `${set} · ${day}`
 }
 
 const loading = computed(() => exercises.isLoading.value || history.isLoading.value)
@@ -179,7 +184,7 @@ const labelEvery = computed(() => Math.max(1, Math.ceil(points.value.length / 5)
             <Icon name="trending-up" :size="20" class="text-accent" />
             Best set per session
           </h2>
-          <p class="mt-0.5 text-xs text-fg-muted">{{ METRIC_NOTES[metric] }}</p>
+          <p class="mt-0.5 text-xs text-fg-muted">{{ metricNote }}</p>
           <LineChart
             class="mt-2"
             :points="chartPoints"

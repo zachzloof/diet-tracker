@@ -3,6 +3,8 @@ import {
   biggestDrop,
   biggestGain,
   type LiftChange,
+  type LiftWeek,
+  type SetMetric,
   type WeekComparison,
 } from '@diet-tracker/shared'
 import { computed } from 'vue'
@@ -48,6 +50,11 @@ const hiddenCount = computed(() =>
   Math.max(0, (props.comparison?.lifts.length ?? 0) - (gain.value ? 1 : 0) - others.value.length),
 )
 const previousEmpty = computed(() => (props.comparison?.previous.sessions ?? 0) === 0)
+
+/** A week's best set in the metric it was ranked on, bodyweight said where it counted. */
+function bestLabel(week: LiftWeek, metric: SetMetric): string {
+  return metricSetLabel(week.best, metric, week.bodyweightKg)
+}
 
 function deltaLabel(lift: LiftChange): string {
   return metricDeltaLabel(lift.delta, lift.metric)
@@ -143,8 +150,8 @@ function liftRoute(exerciseId: string | null) {
                 gain.exerciseName
               }}</span>
               <span class="block text-sm text-fg-muted">
-                {{ metricSetLabel(gain.current.best, gain.metric) }}, from
-                {{ metricSetLabel(gain.previous.best, gain.metric) }} {{ before }}
+                {{ bestLabel(gain.current, gain.metric) }}, from
+                {{ bestLabel(gain.previous, gain.metric) }} {{ before }}
               </span>
             </span>
             <span class="flex shrink-0 items-center gap-1">
@@ -188,8 +195,8 @@ function liftRoute(exerciseId: string | null) {
                   lift.exerciseName
                 }}</span>
                 <span class="block truncate text-xs text-fg-muted">
-                  {{ metricSetLabel(lift.current.best, lift.metric) }}, from
-                  {{ metricSetLabel(lift.previous.best, lift.metric) }}
+                  {{ bestLabel(lift.current, lift.metric) }}, from
+                  {{ bestLabel(lift.previous, lift.metric) }}
                 </span>
               </span>
               <Chip :tone="deltaTone(lift)" class="shrink-0"
@@ -214,7 +221,7 @@ function liftRoute(exerciseId: string | null) {
             v-for="(lift, i) in comparison.onlyLastWeek"
             :key="lift.exerciseId ?? lift.exerciseName"
             >{{ i > 0 ? ', ' : '' }}{{ lift.exerciseName }} ({{
-              metricSetLabel(lift.previous.best, lift.metric)
+              bestLabel(lift.previous, lift.metric)
             }})</template
           >.
         </p>

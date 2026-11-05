@@ -4,6 +4,17 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Bodyweight counts (2026-11-05)
+- Push-ups, pull-ups, chin-ups and dips now count toward your kilograms lifted, at your bodyweight. Twenty push-ups at 80 kg are 1,600 kg, where they used to be 0. Weight you add on a pull-up or dip (a belt) counts on top: five with 10 kg are 450 kg.
+- Core work counts for the part of you that moves: hanging leg raises at about a third of your bodyweight, ab wheel rollouts and back extensions at half, Russian twists at three tenths. A plank is timed, so it still adds no kilograms.
+- It uses your weight on the day of the session, from your weigh-ins, so the numbers follow you as your weight changes and an old session keeps the figure it had.
+- Your past sessions have been updated too. Totals on Today, the Workouts list, the Week tiles and Week on week all went up wherever a session held bodyweight work.
+- The session screen says what it is counting under the exercise name ("Each rep counts 75.1 kg of your bodyweight"), and the weight column on a pull-up or dip is headed "+ kg" for what you add. It works with no signal.
+- A pull-up's best set is now ranked with your bodyweight in, so an unweighted set has a best and a trend on its Lifts page; it used to show nothing. Push-ups are still ranked on reps.
+- When you add your own exercise with Bodyweight as its equipment, you can say how much of you a rep lifts: all, about half, about a third or none. Ones you added before count in full.
+- The coach's kilograms include bodyweight as well.
+- API: `bodyweightShare` on every exercise (optional on `POST` and `PATCH /exercises`), `bodyweightKg` on every workout block and exercise-history entry, worked out by the server on `PUT /workouts/:id` (the value sent is ignored). `exercises.bodyweight_share` and `workout_exercises.bodyweight_kg` (migration 0019, which also backdates). Export schema 8. Shared: `bodyweightLoadKg`, `defaultBodyweightShare`, `setLoadKg`, `fillBodyweightLoads`, `bestSetAcross`; `setVolumeKg`, `setMetricValue` and `bestSetBy` take a bodyweight load. D44.
+
 ### The brief keeps up, and AI costs in pounds (2026-11-05)
 - The line at the top of Today now moves with the day. It used to be written once, after your first entry, and then stay put, so by the evening it could say "2,900 kcal short" while the ring said 910 left. It is now rebuilt from your numbers every time you log, so it always agrees with the ring and the bars under it. The gym line does the same after every session change.
 - The app writes that line itself. The AI no longer rephrases it, so it costs nothing and nothing is sent to OpenAI for it. The wording is plainer: "Energy is 910 kcal short with dinner to go: 2,090 of 3,000 kcal so far." The privacy policy is updated to match.

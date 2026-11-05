@@ -2,15 +2,21 @@ import { describe, expect, it } from 'vitest'
 import type { Workout, WorkoutSet } from './schemas.js'
 import {
   bestSet,
+  bestSetAcross,
   bestSetAt,
   bestSetBy,
+  bodyweightLoadKg,
+  defaultBodyweightShare,
   emptyWorkout,
+  exerciseVolumeKg,
+  fillBodyweightLoads,
   lastDoneSession,
   liftMetric,
   primaryMeasure,
   setMetricValue,
   nextSet,
   repeatWorkout,
+  setLoadKg,
   setVolumeKg,
   summariseWorkouts,
   topSet,
@@ -40,6 +46,7 @@ const squat = {
   exerciseId: id(),
   exerciseName: 'Barbell back squat',
   notes: '',
+  bodyweightKg: null,
   sets: [
     set({ weightKg: 100, reps: 5 }),
     set({ weightKg: 100, reps: 5 }),
@@ -52,7 +59,17 @@ const plank = {
   exerciseId: id(),
   exerciseName: 'Plank',
   notes: '',
+  bodyweightKg: null,
   sets: [set({ durationS: 60 })],
+}
+/** Push-ups at 80 kg: every rep lifts the person, and there is no weight on the set. */
+const pushUp = {
+  id: id(),
+  exerciseId: id(),
+  exerciseName: 'Push-up',
+  notes: '',
+  bodyweightKg: 80,
+  sets: [set({ reps: 20 }), set({ reps: 15 }), set({ reps: 12, completed: false })],
 }
 
 const pushA: Workout = {
@@ -76,6 +93,110 @@ describe('set volume', () => {
     expect(setVolumeKg(set({ weightKg: 100, reps: 5, completed: false }))).toBe(0)
     expect(setVolumeKg(set({ durationS: 60 }))).toBe(0)
     expect(setVolumeKg(set({ weightKg: 100, reps: null }))).toBe(0)
+  })
+})
+
+describe('bodyweight (D44)', () => {
+  it('takes all of a bodyweight exercise that counts reps by default, none of anything else', () => {
+    expect(defaultBodyweightShare('bodyweight', ['reps'])).toBe(1)
+    expect(defaultBodyweightShare('bodyweight', ['weight', 'reps'])).toBe(1)
+    expect(defaultBodyweightShare('bodyweight', ['time'])).toBe(0)
+    expect(defaultBodyweightShare('barbell', ['weight', 'reps'])).toBe(0)
+  })
+  it('works out the load per rep as share × body weight, to 0.1 kg', () => {
+    expect(bodyweightLoadKg(1, 82.4)).toBe(82.4)
+    expect(bodyweightLoadKg(0.35, 82.4)).toBe(28.8)
+    // An exact half rounds up, floating point or not: 0.35 × 85 = 29.75.
+    expect(bodyweightLoadKg(0.35, 85)).toBe(29.8)
+    expect(bodyweightLoadKg(0, 82.4)).toBeNull()
+    expect(bodyweightLoadKg(1, null)).toBeNull()
+  })
+  it('adds the load to the weight on the set', () => {
+    expect(setLoadKg(set({ reps: 12 }), 80)).toBe(80)
+    expect(setLoadKg(set({ weightKg: 10, reps: 5 }), 80)).toBe(90)
+    expect(setLoadKg(set({ weightKg: 100, reps: 5 }))).toBe(100)
+    expect(setLoadKg(set({ reps: 12 }))).toBeNull()
+    expect(setLoadKg(set({ reps: 12 }), null)).toBeNull()
+  })
+  it('counts a push-up at the bodyweight it lifts, and a belted pull-up at both', () => {
+    expect(setVolumeKg(set({ reps: 20 }), 80)).toBe(1600)
+    expect(setVolumeKg(set({ weightKg: 10, reps: 5 }), 80)).toBe(450)
+    expect(setVolumeKg(set({ reps: 20, completed: false }), 80)).toBe(0)
+    expect(setVolumeKg(set({ durationS: 60 }), 80)).toBe(0)
+    // 80 × 20 + 80 × 15; the unticked set does not count.
+    expect(exerciseVolumeKg(pushUp)).toBe(2800)
+  })
+  it('adds a bodyweight block into the session and the week', () => {
+    const session = { ...pushA, exercises: [squat, pushUp] }
+    expect(workoutSummary(session).volumeKg).toBe(1307.5 + 2800)
+    expect(summariseWorkouts([session]).volumeKg).toBe(4107.5)
+  })
+  it('ranks kilograms lifted with the bodyweight in, each block at its own load', () => {
+    expect(setMetricValue(set({ reps: 12 }), 'volume', 80)).toBe(960)
+    expect(setMetricValue(set({ weightKg: 10, reps: 5 }), 'volume', 80)).toBe(450)
+    // The weight on the set is still only what was added.
+    expect(setMetricValue(set({ weightKg: 10, reps: 5 }), 'weight', 80)).toBe(10)
+    const belted = set({ weightKg: 10, reps: 5 })
+    const plain = set({ reps: 12 })
+    expect(bestSetBy([belted, plain], 'volume', 80)).toBe(plain)
+    // 78 × 12 = 936 in a lighter week loses to 80 × 12 = 960.
+    const lighter = set({ reps: 12 })
+    expect(
+      bestSetAcross(
+        [
+          { sets: [lighter], bodyweightKg: 78 },
+          { sets: [plain], bodyweightKg: 80 },
+        ],
+        'volume',
+      ),
+    ).toEqual({ set: plain, value: 960, bodyweightKg: 80 })
+    expect(
+      bestSetAt(
+        [
+          { sets: [lighter], bodyweightKg: 78 },
+          { sets: [plain], bodyweightKg: 80 },
+        ],
+        0,
+        'volume',
+      ),
+    ).toBe(plain)
+  })
+})
+
+describe('fillBodyweightLoads', () => {
+  const pullUpId = id()
+  const benchId = id()
+  const shareOf = (exerciseId: string) =>
+    exerciseId === pullUpId ? 1 : exerciseId === benchId ? 0 : undefined
+  const block = (exerciseId: string | null, bodyweightKg?: number | null) => ({
+    id: id(),
+    exerciseId,
+    exerciseName: 'x',
+    notes: '',
+    sets: [],
+    ...(bodyweightKg === undefined ? {} : { bodyweightKg }),
+  })
+  const session = (exercises: ReturnType<typeof block>[]) => ({
+    ...emptyWorkout('2026-10-08', '2026-10-08T17:00:00.000Z'),
+    exercises,
+  })
+  it('works out blocks that have no load yet and leaves the rest alone', () => {
+    const filled = fillBodyweightLoads(
+      session([block(pullUpId), block(benchId), block(null), block(pullUpId, 75)]),
+      shareOf,
+      80,
+    )
+    expect(filled.exercises.map((b) => b.bodyweightKg)).toEqual([80, null, null, 75])
+  })
+  it('waits for an exercise or a body weight it does not know yet', () => {
+    const unknown = fillBodyweightLoads(session([block(id())]), shareOf, 80)
+    expect(unknown.exercises[0]?.bodyweightKg).toBeUndefined()
+    const noWeight = fillBodyweightLoads(session([block(pullUpId), block(benchId)]), shareOf, null)
+    expect(noWeight.exercises.map((b) => b.bodyweightKg)).toEqual([undefined, null])
+  })
+  it('hands back the same document when there is nothing to do', () => {
+    const done = session([block(pullUpId, 80), block(benchId, null)])
+    expect(fillBodyweightLoads(done, shareOf, 80)).toBe(done)
   })
 })
 
@@ -290,6 +411,13 @@ describe('repeatWorkout', () => {
     expect(block?.sets.map((s) => s.weightKg)).toEqual([100, 100, 102.5, 105])
     expect(block?.sets.every((s) => !s.completed)).toBe(true)
     expect(new Set(block?.sets.map((s) => s.id)).size).toBe(4)
+  })
+  it('leaves the bodyweight loads behind: they belong to the day they were worked out', () => {
+    const repeated = repeatWorkout(
+      { ...pushA, exercises: [pushUp] },
+      { day: '2026-11-01', startedAt: '2026-11-01T17:00:00.000Z', newId: id },
+    )
+    expect(repeated.exercises[0]?.bodyweightKg).toBeUndefined()
   })
 })
 

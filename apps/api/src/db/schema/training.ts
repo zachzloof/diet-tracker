@@ -31,6 +31,8 @@ export const exercises = pgTable(
     kind: text('kind').$type<ExerciseKind>().notNull(),
     muscleGroups: jsonb('muscle_groups').$type<MuscleGroup[]>().notNull(),
     measures: jsonb('measures').$type<ExerciseMeasure[]>().notNull(),
+    /** The share of the person's bodyweight one rep lifts, 0 to 1 (D44); 0 for a barbell lift. */
+    bodyweightShare: doublePrecision('bodyweight_share').notNull().default(0),
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     updatedAt: timestamptz('updated_at').notNull().defaultNow(),
   },
@@ -74,6 +76,11 @@ export const workoutExercises = pgTable(
       .references(() => workouts.id, { onDelete: 'cascade' }),
     exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'set null' }),
     exerciseName: text('exercise_name').notNull(),
+    /**
+     * Kilograms of the person's own body each rep lifts (D44): the exercise's share × their
+     * weight on the session's day, worked out when the block is first saved and kept after.
+     */
+    bodyweightKg: doublePrecision('bodyweight_kg'),
     /** Order within the session, from 0. */
     position: integer('position').notNull(),
     notes: text('notes').notNull().default(''),

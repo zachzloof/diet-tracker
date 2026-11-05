@@ -735,3 +735,27 @@ Because a plan further back than that would be deleted within the hour, the API 
 **Assumed in the build, easy to change.** (2) The Planned list sits above the meals, since it is the one list still to act on. (4) A small "640 planned" caption sits under the ring as the chart's legend; it is the one planned number near the chart, and it changes no total. (5) Tomorrow hides water, food groups and vitamins, which have nothing eaten to show. (6) The API refuses eaten food on a future day and anything past tomorrow, so the rule holds for the coach's cards and old clients as well as the screen. (7) A plan can sit on a past day as far back as plans are kept, so a leftover one stays editable. (8) The coach reads plans, keeps them apart from what was eaten and can say where the day would land, but cannot draft one itself; the person picks Planned or Tomorrow on its estimate card.
 
 **Status.** `accepted` (2026-11-04): A, confirmed by the owner, with the tick asking and plans expiring after 48 hours. The owner confirmed option C for when the 48 hours start, and asked for the line on Today.
+
+## D44. Bodyweight counts toward the kilograms lifted (adopted, one number to confirm)
+
+**Context.** The owner found push-ups scoring 0 kg: volume was weight × reps, and a push-up has no weight. Asked for: bodyweight in the total lifted, a push-up and a pull-up at bodyweight, any bodyweight exercise the same, exceptions such as crunches worked out, and past sessions backdated if that does not cost code quality. Three things had options.
+
+**Where the bodyweight comes from.**
+- **A. Worked out when the page is read**, from the weigh-ins and the exercise list. Nothing new stored and backdating is free. But weigh-ins are deleted after a year (D27) while workouts are kept (D36), so an old session's kilograms would drift and then fall back to today's weight; every total would move when a weigh-in was corrected; a deleted custom exercise would lose its share; and every screen and coach tool that adds up volume would need the weigh-ins and the catalogue passed in.
+- **B. Stored on the session block when it is first saved.** Built. `workout_exercises.bodyweight_kg` holds the kilograms of the person one rep lifts: the exercise's share × their weight on the session's day. The session document adds up on its own, like the food log's nutrient snapshots, and history does not move. The cost: a column, a backfill, and a rule for who works it out.
+- **C. Stored on every set.** The simplest maths, but the same number repeated down a block, and a set does not own it.
+
+**Who works it out (under B).** The server, once, when the block is first saved, and it keeps the figure on later saves while the block points at the same exercise. The phone fills in its own estimate from the profile weight so the tally is right offline and before the save lands, then takes the server's figure. What the phone sends is never read, so an old cached copy of the app cannot wipe or skew it.
+
+**How much of you each exercise lifts.** `exercises.bodyweight_share`, 0 to 1. The table is in `docs/TRAINING-MATHS.md`.
+- **Push-up.** **A. 1, all of you.** Built, because the owner said a push-up should score at bodyweight. **B. About 0.65.** What force-plate studies measure: the hands carry roughly 64 to 75% of body weight, depending on the study and the point in the rep, and the feet the rest. More honest as "kilograms moved", and it would sit with the worked-out shares below; it lowers push-up volume by a third. Switching is one migration that rescales the stored loads.
+- **Pull-up, chin-up, dip:** 1.
+- **Worked out, as the owner asked for exceptions:** hanging leg raise 0.35 (both legs), ab wheel rollout 0.5 (as a knee push-up), back extension 0.5 (everything above the hips), Russian twist 0.3 (as a crunch). Approximate by nature; they are there so core work shows up at a sensible size, not to be argued to the decimal.
+- **A person's own exercise:** 1 when its equipment is Bodyweight and a set counts reps, else 0. The add form offers all, about half, about a third or none for those.
+- **Not counted:** the bodyweight moved in a squat, lunge or calf raise. Volume for a loaded lift is the bar by convention.
+
+**Settled in the build.** (1) "Kg lifted in one set" (D39) includes the bodyweight load, so an unweighted pull-up now has a best set, where it used to rank nowhere; a push-up records reps only and is still ranked on reps. (2) "Heaviest weight" stays the weight added. (3) Weight on the day is the latest weigh-in on or before it, else the earliest after, else the profile weight. (4) Migration 0019 backdated every logged block by the same rules. (5) The export gains both fields (schema 8).
+
+**Recommendation.** B for storage. For the push-up, the owner's rule stands as built; option B is the one to pick if the number should mean kilograms actually moved.
+
+**Status.** `adopted` (2026-11-05), built from the owner's request. Open for the owner: push-up at 1 or about 0.65.

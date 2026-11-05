@@ -50,6 +50,7 @@ import { listExercises } from '../../training/exercises-service.js'
 import { listWorkouts } from '../../training/workouts-service.js'
 import { allNotes } from './notes-service.js'
 import {
+  METRIC_NOTES,
   dayLabel,
   fmt,
   keyLabel,
@@ -443,7 +444,7 @@ export function gymLines(
     lines.push('- Week on week: no finished sessions the week before, so nothing to compare.')
   } else {
     lines.push(
-      `- Week on week: lifted ${whole(comparison.current.volumeKg)} kg vs ${whole(comparison.previous.volumeKg)} kg${comparison.volumeChangePct !== null ? ` (${comparison.volumeChangePct > 0 ? '+' : ''}${Math.round(comparison.volumeChangePct * 100)}%)` : ''}; ${comparison.current.sessions} vs ${comparison.previous.sessions} sessions. "Best" means ${profile.preferences.bestBy === 'volume' ? 'kg lifted in one set (weight × reps)' : 'the heaviest weight'}.`,
+      `- Week on week: lifted ${whole(comparison.current.volumeKg)} kg vs ${whole(comparison.previous.volumeKg)} kg${comparison.volumeChangePct !== null ? ` (${comparison.volumeChangePct > 0 ? '+' : ''}${Math.round(comparison.volumeChangePct * 100)}%)` : ''}; ${comparison.current.sessions} vs ${comparison.previous.sessions} sessions. "Best" means ${profile.preferences.bestBy === 'volume' ? METRIC_NOTES.volume : 'the heaviest weight'}.`,
     )
     if (gain) lines.push(`- Biggest gain: ${liftLine(gain, gym.exercises)}.`)
     if (drop) lines.push(`- Biggest drop: ${liftLine(drop, gym.exercises)}.`)

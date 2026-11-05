@@ -102,12 +102,26 @@ const METRIC_MEASURES: Readonly<Record<SetMetric, readonly ExerciseMeasure[]>> =
 /**
  * A set in the metric it was ranked on (D39): "450 kg (30 kg × 15)" for kg lifted in a set,
  * else `setLabel` on the measures that go with the metric: "105 kg × 5", "75 s", "5 km in 30 min".
+ * A set whose block lifts bodyweight (D44) says so, since the kilograms include it:
+ * "960 kg (bodyweight × 12)", "450 kg (bodyweight + 10 kg × 5)".
  */
-export function metricSetLabel(set: WorkoutSet, metric: SetMetric): string {
+export function metricSetLabel(
+  set: WorkoutSet,
+  metric: SetMetric,
+  bodyweightKg?: number | null,
+): string {
   const label = setLabel(set, METRIC_MEASURES[metric])
   if (metric !== 'volume') return label
-  const volume = setMetricValue(set, 'volume')
-  return volume === null ? label : `${formatNumber(volume, 0)} kg (${label})`
+  const volume = setMetricValue(set, 'volume', bodyweightKg)
+  if (volume === null) return label
+  const lifted = `${formatNumber(volume, 0)} kg`
+  return `${lifted} (${bodyweightKg ? bodyweightSetLabel(set) : label})`
+}
+
+/** A set of a block that lifts bodyweight (D44): "bodyweight × 12", "bodyweight + 10 kg × 5". */
+export function bodyweightSetLabel(set: WorkoutSet): string {
+  const added = set.weightKg ? ` + ${formatNumber(set.weightKg, 2)} kg` : ''
+  return `bodyweight${added} × ${set.reps ?? 0}`
 }
 
 /** "450 kg", "12 reps", "1 min 15 s", "5 km": a value in a metric. */
@@ -157,13 +171,11 @@ export function workoutTitle(title: string): string {
 }
 
 /** What a session row needs: a saved session or a draft still on this phone. */
-export type SessionSummary = Pick<
-  Workout,
-  'id' | 'day' | 'title' | 'startedAt' | 'endedAt' | 'exercises'
-> & {
-  /** Not on the server yet (logged offline). */
-  local: boolean
-}
+export type SessionSummary = Pick<Workout, 'id' | 'day' | 'title' | 'startedAt' | 'endedAt'> &
+  Pick<WorkoutInput, 'exercises'> & {
+    /** Not on the server yet (logged offline). */
+    local: boolean
+  }
 
 /**
  * Saved sessions plus the drafts that have not reached the server, newest first. A draft

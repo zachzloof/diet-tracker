@@ -2,12 +2,13 @@ import type { BestBasis, ExerciseMeasure } from './enums.js'
 import type { WorkoutInput, WorkoutSet } from './schemas.js'
 import {
   MEASURE_ORDER,
-  bestSetBy,
+  bestSetAcross,
   isWorkingSet,
   liftMetric,
   setMeasureValue,
-  setMetricValue,
+  setVolumeKg,
   summariseWorkouts,
+  type LoadedSets,
   type SetMetric,
   type WorkoutsSummary,
 } from './stats.js'
@@ -42,9 +43,11 @@ export interface LiftWeek {
   best: WorkoutSet
   /** That set's value on the metric: kg lifted or kg on the bar, reps, seconds or metres. */
   value: number
+  /** The bodyweight load of the block that set was in; null when it lifted none. */
+  bodyweightKg: number | null
   /** Working sets across the week's sessions. */
   sets: number
-  /** Weight × reps across the week's working sets. */
+  /** Load × reps across the week's working sets, bodyweight included. */
   volumeKg: number
   sessions: number
 }
@@ -109,7 +112,7 @@ export interface CompareWeeksOptions {
 interface Bucket {
   exerciseId: string | null
   exerciseName: string
-  blocks: { sets: readonly WorkoutSet[] }[]
+  blocks: LoadedSets[]
   sessions: Set<number>
 }
 
@@ -147,19 +150,21 @@ function recordsReps(buckets: readonly Bucket[]): boolean {
 }
 
 function liftWeek(entry: Bucket, metric: SetMetric): LiftWeek | null {
-  const all = entry.blocks.flatMap((block) => block.sets)
-  const best = bestSetBy(all, metric)
+  const best = bestSetAcross(entry.blocks, metric)
   if (!best) return null
   let sets = 0
   let volumeKg = 0
-  for (const set of all) {
-    if (!isWorkingSet(set)) continue
-    sets += 1
-    volumeKg += (set.weightKg ?? 0) * (set.reps ?? 0)
+  for (const block of entry.blocks) {
+    for (const set of block.sets) {
+      if (!isWorkingSet(set)) continue
+      sets += 1
+      volumeKg += setVolumeKg(set, block.bodyweightKg)
+    }
   }
   return {
-    best,
-    value: setMetricValue(best, metric) ?? 0,
+    best: best.set,
+    value: best.value,
+    bodyweightKg: best.bodyweightKg,
     sets,
     volumeKg,
     sessions: entry.sessions.size,

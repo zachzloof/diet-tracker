@@ -115,7 +115,7 @@ function topLift(workout: Workout, inputs: BriefingInputs): string | null {
     const measure = primaryMeasure(measures)
     if (!measure) continue
     const metric = liftMetric(measure, inputs.profile.preferences.bestBy, measures.includes('reps'))
-    const best = bestSetBy(block.sets, metric)
+    const best = bestSetBy(block.sets, metric, block.bodyweightKg)
     if (best) return `${block.exerciseName.toLowerCase()} ${setText(best, measures)}`
   }
   return null

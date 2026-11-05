@@ -503,6 +503,29 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ---
 
+## Follow-up - Bodyweight counts toward the kilograms lifted (D44)
+
+**Status:** done (2026-11-05)
+
+**Goal.** From the owner: bodyweight exercises were not counting at all. A push-up scored 0 kg; it should score at bodyweight, a pull-up the same, any bodyweight exercise the same, with exceptions such as crunches worked out, and past sessions backdated if that does not cost code quality.
+
+**Cause.** Volume was `weight × reps` and a bodyweight rep has no weight.
+
+**Shipped.** Shared: `bodyweightLoadKg`, `defaultBodyweightShare`, `setLoadKg`, `fillBodyweightLoads`, `bestSetAcross`; `setVolumeKg`, `exerciseVolumeKg`, `setMetricValue`, `bestSetBy`, `bestSetAt` and `compareWeeks` read a block's bodyweight load; `bodyweightShare` on the exercise schemas and `bodyweightKg` on blocks and history entries. DB: `exercises.bodyweight_share`, `workout_exercises.bodyweight_kg`, migration 0019 with the catalogue's shares and the backfill. API: `upsertWorkout` works the load out once per block from `bodyWeightOn`; `exerciseHistory` returns it; custom exercises default by kind. Web: the draft store fills loads offline and takes the server's after a save; the line under the exercise name and "+ kg"; the share choice when adding a bodyweight exercise; bodyweight wording on the lift page and the week card. Coach: its totals and best sets include it, `get_workout` names the load. The rules are in `docs/TRAINING-MATHS.md`.
+
+**Done when.**
+- [x] Push-ups show up in the totals at bodyweight. *Walked at 390x844 dark and 360 as Finn (75.1 kg today) against Vite and the API on a private Postgres: a new session with 20 push-ups and 5 pull-ups with 10 kg read "1,928 kg lifted" in the tally (75.1 × 20 + 85.1 × 5), "Each rep counts 75.1 kg of your bodyweight" under each, and the same on the Workouts list and the Week tiles. No horizontal scroll, no console errors beyond the signed-out 401s.*
+- [x] Past sessions are backdated. *Migration 0019 run on a copy of a database at 0018 with bodyweight blocks added first: push-ups on 16 Oct (before the first weigh-in) got 74.4 kg, the earliest weigh-in; pull-ups on 3 Nov 74.9 kg, the weigh-in the day before; a hanging leg raise 26.2 kg; a custom bodyweight exercise 74.9 kg; a plank and 18 barbell blocks none. Run twice; the second run applied nothing. The 16 Oct session then read 6,024 kg on its screen.*
+- [x] Exceptions are worked out. *The share table in TRAINING-MATHS. `training.test.ts`: the catalogue's shares match the code, a hanging leg raise at 82 kg stores 28.7 kg.*
+- [x] The figure is the server's and does not move. *`training.test.ts`: the weight on the day is the latest weigh-in before it, else the earliest after; a re-save after a new weigh-in keeps 82 while a new block gets 85; a value of 5 sent by the client is ignored; a block keeps its load after its custom exercise is deleted; no weight on file gives no load.*
+- [x] Typecheck, lint, tests (shared 234, api 202, web 62). The API suite migrates a fresh database, 0019 included.
+
+**Deferrals.** No real-phone check and not checked on Railway; the migration runs on the next deploy. Docker was not running, so the tests and the walk used a private Postgres. Existing custom exercises cannot have their share changed in the app (there is no edit screen for an exercise). Under "Heaviest weight" an unweighted pull-up still has no best. See OUTSTANDING.
+
+**Decisions it depends on.** D44, D35, D36, D39, D19, D27.
+
+---
+
 ## Ideas after slice 6 (not planned)
 
 - Coach chat moved to Slice 11 (D41) on 2026-11-01.

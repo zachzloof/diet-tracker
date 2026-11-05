@@ -57,6 +57,8 @@ export const getWorkoutTool = defineTool({
               exercise: block.exerciseName,
               exercise_id: block.exerciseId,
               notes: block.notes || null,
+              // Why lifted_kg is more than the weights below add up to (D44).
+              ...(block.bodyweightKg ? { bodyweight_kg_counted_per_rep: block.bodyweightKg } : {}),
               sets: block.sets.map((set) => ({
                 set: setText(set, measures),
                 done: set.completed,

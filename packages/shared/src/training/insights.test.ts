@@ -198,6 +198,32 @@ describe('compareWeeks', () => {
     expect(result.lifts[0]).toMatchObject({ metric: 'volume', delta: 200, deltaPct: null })
   })
 
+  it('counts the bodyweight a block lifts in the totals and in a best set (D44)', () => {
+    const PULL_UP = id()
+    const pullUps = (bodyweightKg: number, sets: WorkoutSet[]) => ({
+      ...block(PULL_UP, 'Pull-up', sets),
+      bodyweightKg,
+    })
+    const before = [session('2026-10-01', [pullUps(80, [set({ reps: 8 }), set({ reps: 6 })])])]
+    const after = [
+      session('2026-10-08', [
+        pullUps(79, [set({ reps: 10 }), set({ weightKg: 10, reps: 5 })]),
+        block(BENCH, 'Barbell bench press', [set({ weightKg: 80, reps: 5 })]),
+      ]),
+    ]
+    const result = compareWeeks(after, before, {
+      measureOf: (exerciseId) => (exerciseId === PULL_UP ? 'weight' : null),
+    })
+    // 80 × 8 + 80 × 6 last week; 79 × 10 + (79 + 10) × 5 + the bench's 400 this week.
+    expect(result.previous.volumeKg).toBe(1120)
+    expect(result.current.volumeKg).toBe(790 + 445 + 400)
+    const lift = result.lifts.find((entry) => entry.exerciseId === PULL_UP)
+    expect(lift).toMatchObject({ metric: 'volume', delta: 150 })
+    expect(lift?.current).toMatchObject({ value: 790, bodyweightKg: 79, volumeKg: 1235 })
+    expect(lift?.previous).toMatchObject({ value: 640, bodyweightKg: 80, volumeKg: 1120 })
+    expect(lift?.current.best.reps).toBe(10)
+  })
+
   it('is empty on both sides with nothing finished', () => {
     const result = compareWeeks([thisWeek[2]!], [])
     expect(result.current.sessions).toBe(0)

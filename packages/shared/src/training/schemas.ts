@@ -37,6 +37,12 @@ function unique<T>(values: readonly T[]): T[] {
   return [...new Set(values)]
 }
 
+/**
+ * The share of the person's bodyweight one rep of an exercise lifts, 0 to 1 (D44): 1 for a
+ * pull-up, about a third for a hanging leg raise, 0 for a barbell lift.
+ */
+const bodyweightShare = z.number().min(0).max(1)
+
 export const exerciseInputSchema = z.object({
   name: exerciseName,
   kind: exerciseKindSchema,
@@ -49,6 +55,8 @@ export const exerciseInputSchema = z.object({
     .min(1, 'Pick what a set records')
     .transform(unique)
     .pipe(z.array(exerciseMeasureSchema).min(1, 'Pick what a set records')),
+  /** Left out, the server takes `defaultBodyweightShare` for the kind and measures. */
+  bodyweightShare: bodyweightShare.optional(),
 })
 export type ExerciseInput = z.infer<typeof exerciseInputSchema>
 
@@ -58,6 +66,7 @@ export const exerciseSchema = z.object({
   kind: exerciseKindSchema,
   muscleGroups: z.array(muscleGroupSchema),
   measures: z.array(exerciseMeasureSchema),
+  bodyweightShare,
   /** True for the person's own exercises; false for the shared catalogue. */
   custom: z.boolean(),
   lastUsedAt: z.iso.datetime().nullable(),
@@ -96,6 +105,12 @@ export const workoutSetSchema = z.object({
 export type WorkoutSet = z.infer<typeof workoutSetSchema>
 
 /**
+ * Kilograms of the person's own body each rep of a block lifts (D44): the exercise's share ×
+ * their body weight on the session's day, to 0.1 kg. Null when the exercise lifts none.
+ */
+const bodyweightKg = z.number().min(0).max(MAX_SET_WEIGHT_KG).nullable()
+
+/**
  * One exercise block in a session, in order. `exerciseId` points at the catalogue or a custom
  * exercise and is the key for progress; `exerciseName` is a snapshot so the block still reads
  * after a custom exercise is deleted (D35).
@@ -105,6 +120,11 @@ export const workoutExerciseInputSchema = z.object({
   exerciseId: z.uuid().nullable(),
   exerciseName: exerciseName,
   notes: shortText(500),
+  /**
+   * The phone's own working-out, so its tally is right before the save lands and offline
+   * (`fillBodyweightLoads`). The server never reads it: it works out the stored figure itself.
+   */
+  bodyweightKg: bodyweightKg.optional(),
   sets: z
     .array(workoutSetSchema)
     .max(MAX_SETS_PER_EXERCISE, `An exercise can have up to ${MAX_SETS_PER_EXERCISE} sets`),
@@ -128,7 +148,8 @@ export const workoutInputSchema = z.object({
 })
 export type WorkoutInput = z.infer<typeof workoutInputSchema>
 
-export const workoutExerciseSchema = workoutExerciseInputSchema
+/** A saved block: the bodyweight load is the server's, worked out when the block was first saved. */
+export const workoutExerciseSchema = workoutExerciseInputSchema.extend({ bodyweightKg })
 export type WorkoutExercise = z.infer<typeof workoutExerciseSchema>
 
 export const workoutSchema = workoutInputSchema.extend({
@@ -155,6 +176,8 @@ export const exerciseHistoryEntrySchema = z.object({
   workoutId: z.uuid(),
   day: z.iso.date(),
   title: z.string(),
+  /** The block's bodyweight load that day, so its sets rank and add up as they did then. */
+  bodyweightKg,
   sets: z.array(workoutSetSchema),
 })
 export type ExerciseHistoryEntry = z.infer<typeof exerciseHistoryEntrySchema>

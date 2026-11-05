@@ -1,9 +1,8 @@
 import {
-  bestSetBy,
+  bestSetAcross,
   coachToolArgsSchemas,
   liftMetric,
   primaryMeasure,
-  setMetricValue,
   type Exercise,
   type SetMetric,
 } from '@diet-tracker/shared'
@@ -61,8 +60,8 @@ export const getLiftHistory = defineTool({
     )
     // Oldest first, as the lift page charts them; the API answers newest first.
     const points = [...history].reverse().map((entry) => {
-      const best = bestSetBy(entry.sets, metric)
-      return { entry, best, value: best ? setMetricValue(best, metric) : null }
+      const top = bestSetAcross([entry], metric)
+      return { entry, best: top?.set ?? null, value: top?.value ?? null }
     })
     const latest = points[points.length - 1]!
     const best = points.reduce<(typeof points)[number] | null>(
