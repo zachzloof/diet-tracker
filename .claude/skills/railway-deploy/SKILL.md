@@ -27,6 +27,7 @@ Migrations run before the server on every deploy so schema and code cannot disag
 | OPENAI_COACH_MODEL | Optional. The coach's model (D41); unset, it uses `OPENAI_MODEL`. Set it to try a cheaper tier for chat without touching estimation |
 | AI_COACH_DAILY_TURN_CAP | Coach turns per person per local day; default 60. Separate from `AI_DAILY_CALL_CAP` so a long chat never blocks logging |
 | OWNER_EMAIL | Optional (D42). The email of the one account that sees the AI costs row under You and may read `GET /api/v1/ai/costs`. Unset, the route answers 404 for everyone. Set it to the owner's own account on Railway |
+| USD_TO_GBP | Optional (D42). Pounds per US dollar for the cost view's pound figures; default 0.74. OpenAI bills in dollars, so set it to the rate the card gets. The token prices are in code (`packages/shared/src/ai/pricing.ts`), not in the env |
 | NODE_ENV / LOG_LEVEL | `production` / `info` |
 | WEB_DIST_DIR | Optional. Absolute path of the built SPA; the Dockerfile sets `/app/public`. Unset locally (the API finds `apps/web/dist`) |
 

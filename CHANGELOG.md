@@ -4,6 +4,13 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### The brief keeps up, and AI costs in pounds (2026-11-05)
+- The line at the top of Today now moves with the day. It used to be written once, after your first entry, and then stay put, so by the evening it could say "2,900 kcal short" while the ring said 910 left. It is now rebuilt from your numbers every time you log, so it always agrees with the ring and the bars under it. The gym line does the same after every session change.
+- The app writes that line itself. The AI no longer rephrases it, so it costs nothing and nothing is sent to OpenAI for it. The wording is plainer: "Energy is 910 kcal short with dinner to go: 2,090 of 3,000 kcal so far." The privacy policy is updated to match.
+- For the owner: the AI costs screen now shows pounds. A £ / Tokens switch sits in the header, pounds first. It shows the total for the last 30 days and the average per day, split into tokens in, tokens out and web searches, then by purpose and by person. Each call is priced at OpenAI's list price for the model that answered it, with the lower rate for cached input, and turned into pounds at $1 = £0.74 unless `USD_TO_GBP` says otherwise. The screen names the date the prices were read. A call on a model the price list does not know is counted and left out of the money, and the screen says how many.
+- Calls logged before today have no cached-input count, so they are priced as if nothing was cached and read a little high until they leave the 30-day window.
+- API: `getBrief` makes no model call and reads no cache; `coach_briefs` is no longer written (still exported and purged). `ai_calls.cached_input_tokens` (migration 0018). `GET /ai/costs` adds `cachedInputTokens`, `inputCostUsd`, `outputCostUsd`, `searchCostUsd` and `unpricedCalls` per row, plus `pricesAsOf` and `usdToGbp`. New optional env `USD_TO_GBP`. `pnpm ai:smoke:brief` is removed. Shared: `packages/shared/src/ai/pricing.ts`. Web: `features/you/CostsScreen.vue`.
+
 ### Planned food (2026-11-04)
 - When you log food you can now pick Planned beside Breakfast, Lunch, Dinner and Snack: food you mean to eat and haven't yet. It works on every way of logging: Describe, Meals, My foods, Manual and the coach's cards. The button reads "Add to planned".
 - The ring and the macro and water bars show planned food in a lighter tone running on from what you've eaten. The numbers stay what you've eaten: kcal left, the amounts beside each bar, day met, the week and your streak ignore a plan until you eat it. A small "640 planned" under the ring says how much is shaded.
