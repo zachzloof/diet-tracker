@@ -61,6 +61,12 @@ export const apiEnvSchema = z.object({
    * means nobody; the route then answers 404 for everyone.
    */
   OWNER_EMAIL: optionalString,
+  /**
+   * D42: pounds per US dollar, used only to show the cost view in pounds. OpenAI bills in
+   * dollars, so this is the one number in the view that is not from the bill; set it to the
+   * rate your card charges.
+   */
+  USD_TO_GBP: z.coerce.number().positive().default(0.74),
 
   /** Absolute path of the built SPA. Defaults to apps/web/dist relative to the API. */
   WEB_DIST_DIR: optionalString,

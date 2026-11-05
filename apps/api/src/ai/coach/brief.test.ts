@@ -1,5 +1,6 @@
 import {
   ACCOUNT_EXPORT_SCHEMA_VERSION,
+  AI_PRICES_AS_OF,
   RETENTION_DAYS,
   accountExportSchema,
   addDays,
@@ -15,7 +16,7 @@ import {
   localDay,
   type CoachBriefHalf,
 } from '@diet-tracker/shared'
-import { eq, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { purgeExpiredData } from '../../account/retention.js'
@@ -25,21 +26,14 @@ import { env } from '../../env.js'
 import { resetRateLimits } from '../../middleware/rate-limit.js'
 import { ensureExerciseCatalogue } from '../../training/exercises-service.js'
 import { coachModel } from './agent.js'
-import {
-  acceptableSentence,
-  briefModel,
-  draftBrief,
-  getBrief,
-  numbersIn,
-  type BriefWriter,
-} from './brief.js'
+import { draftBrief, getBrief } from './brief.js'
 import { loadBriefingInputs } from './briefing.js'
 import { finn, scripted, seedAll, send, signUp, tess, type Account } from './test-helpers.js'
 
 /**
- * The daily brief (slice 11c) against real Postgres: the drafts for both halves from the
- * seeded data, the invitation on an empty day, the model's sentence accepted or refused,
- * the once-a-day cache, the chat it opens, the owner's cost view and the export.
+ * The daily brief (slice 11c) against real Postgres: the lines for both halves from the
+ * seeded data, the invitation on an empty day, the line moving with the log with no model
+ * call and nothing stored, the chat it opens, the owner's cost view and the export.
  */
 
 const TZ = 'Europe/London'
@@ -50,16 +44,32 @@ const atOne = () => new Date(`${today()}T13:00:00.000Z`)
 let finnAccount: Account
 let tessAccount: Account
 
-/** A writer that answers with a fixed sentence and counts its calls. */
-function writer(sentence: string): BriefWriter & { calls: number } {
-  const fake = {
-    calls: 0,
-    async write() {
-      fake.calls += 1
-      return { sentence, model: 'fake-brief-model' }
-    },
-  }
-  return fake
+/**
+ * One manual entry of `kcal` for lunch today, through the API as the app logs it. It is
+ * rich in protein, so energy stays the further behind of the two and leads the line.
+ */
+async function logFood(account: Account, kcal: number): Promise<void> {
+  const res = await send(account.cookie, 'POST', '/api/v1/log/entries', {
+    day: today(),
+    meal: 'lunch',
+    loggedAt: new Date().toISOString(),
+    entries: [
+      {
+        name: 'Rice bowl',
+        quantity: 1,
+        unit: 'bowl',
+        grams: 300,
+        nutrients: { ...emptyNutrientVector(), energy_kcal: kcal, protein_g: 60 },
+        foodGroups: emptyFoodGroupServes(),
+        source: 'manual',
+        foodId: null,
+        aiCallId: null,
+        assumptions: [],
+        confidence: null,
+      },
+    ],
+  })
+  expect(res.status).toBe(201)
 }
 
 beforeEach(async () => {
@@ -75,12 +85,10 @@ beforeEach(async () => {
   env.OPENAI_API_KEY = 'test-only-key'
   env.AI_DAILY_CALL_CAP = 150
   env.OWNER_EMAIL = undefined
-  briefModel.override = writer('unused')
   coachModel.override = scripted([{ text: 'Hello.' }])
 })
 
 afterEach(() => {
-  briefModel.override = null
   coachModel.override = null
   env.OPENAI_API_KEY = ''
   env.OWNER_EMAIL = undefined
@@ -93,21 +101,15 @@ describe('the draft', () => {
     expect(draft.empty).toBe(false)
     const energy = inputs.dayScore.scores.energy_kcal!
     const protein = inputs.dayScore.scores.protein_g!
-    expect(draft.facts.join('\n')).toContain(
-      `Energy: ${Math.round(energy.actual).toLocaleString('en-GB')} of ${Math.round(energy.target).toLocaleString('en-GB')} kcal so far`,
-    )
-    expect(draft.facts.join('\n')).toContain(
-      `Protein: ${Math.round(protein.actual)} of ${Math.round(protein.target)} g so far`,
-    )
     // The sentence leads with whichever of the two is furthest behind, and says what is left.
     const behind = (energy.ratio ?? 0) <= (protein.ratio ?? 0) ? energy : protein
+    const unit = behind.key === 'energy_kcal' ? 'kcal' : 'g'
+    const n = (value: number) => Math.round(value).toLocaleString('en-GB')
     expect(draft.sentence).toMatch(/^(Energy|Protein) is [\d,]+ (kcal|g) short with /)
-    expect(draft.sentence).toContain(
-      `${Math.round(behind.target - behind.actual).toLocaleString('en-GB')} ${behind.key === 'energy_kcal' ? 'kcal' : 'g'} short`,
-    )
+    expect(draft.sentence).toContain(`${n(behind.target - behind.actual)} ${unit} short`)
+    // The eaten and target numbers are the ones the Today tiles print.
+    expect(draft.sentence).toContain(`${n(behind.actual)} of ${n(behind.target)} ${unit} so far.`)
     expect(draft.sentence).toContain('to go')
-    // Every number in the sentence is one of the facts', so the model can be held to the same rule.
-    expect(acceptableSentence(draft.sentence, draft.facts)).toBe(draft.sentence)
     expect(draft.sentence.length).toBeLessThanOrEqual(160)
   })
 
@@ -118,9 +120,7 @@ describe('the draft', () => {
     expect(draft.sentence).toMatch(
       /^3 of 6 sessions this week; last was .+ on \w{3}: .+ kg × \d+\.$/,
     )
-    expect(draft.facts.join('\n')).toContain('This week: 3 of 6 planned sessions done.')
-    expect(draft.facts.join('\n')).toMatch(/Week on week: Overhead press: 400 kg lifted/)
-    expect(acceptableSentence(draft.sentence, draft.facts)).toBe(draft.sentence)
+    expect(draft.sentence.length).toBeLessThanOrEqual(160)
   })
 
   it('invites the first entry on an empty day instead of judging, for both halves', async () => {
@@ -162,95 +162,54 @@ describe('the draft', () => {
     const inputs = await loadBriefingInputs(fresh.id, fresh.profile, new Date())
     expect(draftBrief(inputs, 'diet').empty).toBe(true)
   })
-
-  it('accepts a sentence only when its numbers are in the facts and it fits a line', () => {
-    const facts = [
-      '- Protein: 110 of 150 g so far, short, 40 g left.',
-      '- Energy: 1,900 of 2,500 kcal.',
-    ]
-    expect(acceptableSentence('Protein is 40 g short: 110 of 150 g.', facts)).toBe(
-      'Protein is 40 g short: 110 of 150 g.',
-    )
-    expect(acceptableSentence('You have had 1,900 of 2,500 kcal.', facts)).toBe(
-      'You have had 1,900 of 2,500 kcal.',
-    )
-    expect(acceptableSentence('Protein is 45 g short.', facts)).toBeNull()
-    expect(acceptableSentence('   ', facts)).toBeNull()
-    expect(acceptableSentence('x'.repeat(161), facts)).toBeNull()
-    expect(numbersIn('1,900 kcal and 2.5 serves on 2026-11-02')).toEqual([
-      '1900',
-      '2.5',
-      '2026',
-      '11',
-      '02',
-    ])
-  })
 })
 
 describe('getBrief', () => {
-  it("stores the model's sentence once a day and answers from the cache after that", async () => {
-    const inputs = await loadBriefingInputs(finnAccount.id, finnAccount.profile, atOne())
-    const draft = draftBrief(inputs, 'diet')
-    const polished = writer(draft.sentence.replace(' so far.', '.'))
-    briefModel.override = polished
-    const first = await getBrief(finnAccount.id, finnAccount.profile, 'diet', atOne())
-    expect(first).toMatchObject({
-      half: 'diet',
-      day: today(),
-      text: draft.sentence.replace(' so far.', '.'),
-      model: 'fake-brief-model',
-      empty: false,
-    })
-    expect(polished.calls).toBe(1)
-    const rows = await db.select().from(coachBriefs).where(eq(coachBriefs.userId, finnAccount.id))
-    expect(rows).toHaveLength(1)
-    expect(rows[0]).toMatchObject({ half: 'diet', day: today(), text: first.text })
-
-    const again = await getBrief(finnAccount.id, finnAccount.profile, 'diet', new Date())
-    expect(again.text).toBe(first.text)
-    expect(polished.calls).toBe(1)
-  })
-
-  it("falls back to the app's own sentence when the model adds a number, and stores nothing", async () => {
-    const invented = writer('Protein is 999 g short with dinner to go.')
-    briefModel.override = invented
-    const brief = await getBrief(finnAccount.id, finnAccount.profile, 'diet', atOne())
-    expect(invented.calls).toBe(1)
-    expect(brief.model).toBeNull()
-    expect(brief.text).toMatch(/^(Energy|Protein) is [\d,]+ (kcal|g) short with /)
-    expect(await db.select().from(coachBriefs)).toHaveLength(0)
-  })
-
-  it('never asks the model on an empty day, without a key, or at the daily cap', async () => {
-    const counting = writer('Anything.')
-    briefModel.override = counting
-    const fresh = await signUp('quiet@example.com', finn.profile)
+  it('moves with the log: each call is built from the numbers as they are now', async () => {
+    const fresh = await signUp('mover@example.com', finn.profile)
     const empty = await getBrief(fresh.id, fresh.profile, 'diet', atOne())
-    expect(empty).toMatchObject({ empty: true, model: null })
+    expect(empty).toMatchObject({ half: 'diet', day: today(), empty: true, model: null })
     expect(empty.text).toMatch(/^Nothing logged yet/)
 
-    env.OPENAI_API_KEY = ''
-    const noKey = await getBrief(finnAccount.id, finnAccount.profile, 'diet', atOne())
-    expect(noKey.model).toBeNull()
+    const energyLeft = async () => {
+      const inputs = await loadBriefingInputs(fresh.id, fresh.profile, atOne())
+      const energy = inputs.dayScore.scores.energy_kcal!
+      return Math.round(energy.target - energy.actual).toLocaleString('en-GB')
+    }
+    await logFood(fresh, 400)
+    const first = await getBrief(fresh.id, fresh.profile, 'diet', atOne())
+    expect(first).toMatchObject({ empty: false, model: null })
+    expect(first.text).toContain(`Energy is ${await energyLeft()} kcal short`)
 
-    env.OPENAI_API_KEY = 'test-only-key'
-    env.AI_DAILY_CALL_CAP = 1
-    await db.insert(aiCalls).values({
+    // More food the same day: the line follows, where the cached one used to stand still.
+    await logFood(fresh, 600)
+    const second = await getBrief(fresh.id, fresh.profile, 'diet', atOne())
+    expect(second.text).toContain(`Energy is ${await energyLeft()} kcal short`)
+    expect(second.text).not.toBe(first.text)
+  })
+
+  it('never asks a model and stores nothing, even with a key and under the cap', async () => {
+    const brief = await getBrief(finnAccount.id, finnAccount.profile, 'diet', atOne())
+    expect(brief.model).toBeNull()
+    expect(brief.text).toMatch(/^(Energy|Protein) is [\d,]+ (kcal|g) short with /)
+    await getBrief(finnAccount.id, finnAccount.profile, 'training', atOne())
+    expect(await db.select().from(coachBriefs)).toHaveLength(0)
+    expect(await db.select().from(aiCalls)).toHaveLength(0)
+  })
+
+  it('ignores a line a model stored earlier in the day', async () => {
+    await db.insert(coachBriefs).values({
       id: uuidv7(),
       userId: finnAccount.id,
-      purpose: 'estimate',
-      model: 'x',
-      inputTokens: 1,
-      outputTokens: 1,
-      latencyMs: 1,
-      ok: true,
-      error: null,
-      webSearchCalls: 0,
+      half: 'diet',
+      day: today(),
+      text: 'Energy is 9,999 kcal short with lunch and dinner to go.',
+      model: 'old-brief-model',
+      generatedAt: new Date(),
     })
-    const capped = await getBrief(finnAccount.id, finnAccount.profile, 'diet', atOne())
-    expect(capped.model).toBeNull()
-    expect(counting.calls).toBe(0)
-    expect(await db.select().from(coachBriefs)).toHaveLength(0)
+    const brief = await getBrief(finnAccount.id, finnAccount.profile, 'diet', atOne())
+    expect(brief.model).toBeNull()
+    expect(brief.text).not.toContain('9,999')
   })
 })
 
@@ -262,10 +221,9 @@ describe('/api/v1/coach/brief and the chat it opens', () => {
   }
 
   it('answers each half, and opening the brief starts a chat with it as the first assistant line', async () => {
-    briefModel.override = writer('Protein is on track; keep going.')
     const diet = await brief(finnAccount.cookie, 'diet')
     expect(diet.half).toBe('diet')
-    expect(diet.model).toBe('fake-brief-model')
+    expect(diet.model).toBeNull()
     const gym = await brief(finnAccount.cookie, 'training')
     expect(gym.half).toBe('training')
 
@@ -312,9 +270,16 @@ describe('/api/v1/coach/brief and the chat it opens', () => {
     expect(bad.status).toBe(400)
   })
 
-  it('exports the briefs with the account and purges them under retention', async () => {
-    briefModel.override = writer('Protein is on track; keep going.')
-    await brief(finnAccount.cookie, 'diet')
+  it('still exports the briefs a model once wrote and purges them under retention', async () => {
+    await db.insert(coachBriefs).values({
+      id: uuidv7(),
+      userId: finnAccount.id,
+      half: 'diet',
+      day: today(),
+      text: 'Protein is on track; keep going.',
+      model: 'fake-brief-model',
+      generatedAt: new Date(),
+    })
     const old = addDays(today(), -(RETENTION_DAYS + 17))
     await db.insert(coachBriefs).values({
       id: uuidv7(),
@@ -344,7 +309,7 @@ describe('/api/v1/coach/brief and the chat it opens', () => {
 })
 
 describe('/api/v1/ai/costs (owner only)', () => {
-  it('is 404 for everyone until OWNER_EMAIL names an account, then lists calls by person and purpose', async () => {
+  it('is 404 for everyone until OWNER_EMAIL names an account, then lists calls and their cost by person and purpose', async () => {
     const me = await send(finnAccount.cookie, 'GET', '/api/v1/me')
     expect(authResponseSchema.parse(await me.json()).user.owner).toBe(false)
     expect((await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs')).status).toBe(404)
@@ -354,31 +319,40 @@ describe('/api/v1/ai/costs (owner only)', () => {
     expect(authResponseSchema.parse(await meAgain.json()).user.owner).toBe(true)
     expect((await send(tessAccount.cookie, 'GET', '/api/v1/ai/costs')).status).toBe(404)
 
-    const row = (userId: string, purpose: 'coach' | 'estimate', ok: boolean, searches = 0) => ({
+    const row = (
+      userId: string,
+      purpose: 'coach' | 'estimate',
+      model: string,
+      extra: { ok?: boolean; searches?: number; cached?: number | null } = {},
+    ) => ({
       id: uuidv7(),
       userId,
       purpose,
-      model: 'x',
-      inputTokens: 100,
-      outputTokens: 10,
+      model,
+      inputTokens: 1_000_000,
+      cachedInputTokens: extra.cached ?? null,
+      outputTokens: 100_000,
       latencyMs: 5,
-      ok,
-      error: ok ? null : 'boom',
-      webSearchCalls: searches,
+      ok: extra.ok ?? true,
+      error: (extra.ok ?? true) ? null : 'boom',
+      webSearchCalls: extra.searches ?? 0,
     })
-    await db
-      .insert(aiCalls)
-      .values([
-        row(finnAccount.id, 'coach', true),
-        row(finnAccount.id, 'coach', false),
-        row(finnAccount.id, 'estimate', true, 2),
-        row(tessAccount.id, 'estimate', true),
-        { ...row(tessAccount.id, 'estimate', true), createdAt: addDaysDate(-40) },
-      ])
+    await db.insert(aiCalls).values([
+      // Two coach rounds on a dated snapshot, 400k of each million read from the cache.
+      row(finnAccount.id, 'coach', 'gpt-5.5-2026-04-23', { cached: 400_000 }),
+      row(finnAccount.id, 'coach', 'gpt-5.5-2026-04-23', { cached: 400_000, ok: false }),
+      // An estimate logged before cached tokens were recorded, with two searches.
+      row(finnAccount.id, 'estimate', 'gpt-5.5', { searches: 2 }),
+      // A model with no listed price: counted, never priced.
+      row(tessAccount.id, 'estimate', 'some-unlisted-model'),
+      { ...row(tessAccount.id, 'estimate', 'gpt-5.5'), createdAt: addDaysDate(-40) },
+    ])
     const res = await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs')
     expect(res.status).toBe(200)
     const costs = aiCostsResponseSchema.parse(await res.json())
     expect(costs.days).toBe(30)
+    expect(costs.pricesAsOf).toBe(AI_PRICES_AS_OF)
+    expect(costs.usdToGbp).toBe(env.USD_TO_GBP)
     expect(costs.rows).toEqual([
       {
         userId: finnAccount.id,
@@ -386,9 +360,15 @@ describe('/api/v1/ai/costs (owner only)', () => {
         purpose: 'coach',
         calls: 2,
         failed: 1,
-        inputTokens: 200,
-        outputTokens: 20,
+        inputTokens: 2_000_000,
+        cachedInputTokens: 800_000,
+        outputTokens: 200_000,
         webSearchCalls: 0,
+        // 1.2M fresh at $5/M + 800k cached at $0.50/M; 200k out at $30/M.
+        inputCostUsd: 6.4,
+        outputCostUsd: 6,
+        searchCostUsd: 0,
+        unpricedCalls: 0,
       },
       {
         userId: finnAccount.id,
@@ -396,9 +376,14 @@ describe('/api/v1/ai/costs (owner only)', () => {
         purpose: 'estimate',
         calls: 1,
         failed: 0,
-        inputTokens: 100,
-        outputTokens: 10,
+        inputTokens: 1_000_000,
+        cachedInputTokens: 0,
+        outputTokens: 100_000,
         webSearchCalls: 2,
+        inputCostUsd: 5,
+        outputCostUsd: 3,
+        searchCostUsd: 0.02,
+        unpricedCalls: 0,
       },
       {
         userId: tessAccount.id,
@@ -406,9 +391,14 @@ describe('/api/v1/ai/costs (owner only)', () => {
         purpose: 'estimate',
         calls: 1,
         failed: 0,
-        inputTokens: 100,
-        outputTokens: 10,
+        inputTokens: 1_000_000,
+        cachedInputTokens: 0,
+        outputTokens: 100_000,
         webSearchCalls: 0,
+        inputCostUsd: 0,
+        outputCostUsd: 0,
+        searchCostUsd: 0,
+        unpricedCalls: 1,
       },
     ])
   })

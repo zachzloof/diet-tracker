@@ -91,8 +91,8 @@ export const coachRoutes = new Hono<AppEnv>()
   })
 
   /**
-   * Today's one-line brief for a half (slice 11c): cached for the day once the model has
-   * written it; the app's own line (an invitation when nothing is logged) otherwise.
+   * Today's one-line brief for a half (slice 11c): the app's own line from the numbers as
+   * they are now (an invitation when nothing is logged). No model call, nothing stored.
    */
   .post('/brief', requireJson, jsonBody(coachBriefRequestSchema), async (c) => {
     const { user } = requireAuth(c)

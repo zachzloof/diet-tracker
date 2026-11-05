@@ -64,7 +64,7 @@ export const accountExportSchema = z.object({
   coachThreads: z.array(exportedCoachThreadSchema),
   /** Lines the person asked the coach to remember (slice 11b). */
   coachNotes: z.array(coachNoteSchema),
-  /** The one-line daily briefs the model wrote (slice 11c), oldest first. */
+  /** The one-line daily briefs a model wrote before 2026-11-05 (slice 11c), oldest first. */
   coachBriefs: z.array(coachBriefSchema),
   aiUsage: z.object({
     calls: z.number().int().min(0),

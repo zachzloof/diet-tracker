@@ -71,7 +71,7 @@ import {
  *
  * Since slice 11c the sections are exported one by one: the weekly review is written from
  * the same PERSON, TARGETS and THIS WEEK lines (`weekly-review.ts`), and the daily brief
- * (`brief.ts`) reads the same inputs, so the three never disagree on a number.
+ * (`brief.ts`) builds its line from the same inputs, so the three never disagree on a number.
  */
 
 export interface BriefingInputs {
@@ -408,17 +408,6 @@ export function gymComparison(gym: NonNullable<BriefingInputs['gym']>, profile: 
     measureOf,
     basis: profile.preferences.bestBy,
   })
-}
-
-/** The gym Week card's "biggest gain" as one line, or null with nothing to compare. */
-export function biggestGainLine(
-  gym: NonNullable<BriefingInputs['gym']>,
-  profile: Profile,
-): string | null {
-  const comparison = gymComparison(gym, profile)
-  if (comparison.previous.sessions === 0) return null
-  const gain = biggestGain(comparison)
-  return gain ? liftLine(gain, gym.exercises) : null
 }
 
 export function gymLines(

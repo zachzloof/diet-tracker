@@ -109,10 +109,10 @@ export function useDeleteThread() {
 }
 
 /**
- * Today's one-line brief for a half (slice 11c). The server caches it for the day once
- * the model has written it, so refetching is cheap; the key is dropped by log and session
- * writes so an empty day's invitation gives way to the real line as soon as something is
- * logged. Runs only once AI features are allowed.
+ * Today's one-line brief for a half (slice 11c). The server builds it from the current
+ * numbers on every call (no model), and the key is dropped by log and session writes, so
+ * the line moves with the day. Runs only once AI features are allowed, because the line
+ * is the way into the coach.
  */
 export function useCoachBrief(
   half: MaybeRefOrGetter<CoachBriefHalf>,

@@ -2,9 +2,9 @@ import { z } from 'zod'
 
 /**
  * The daily brief (slice 11c, D41): one line on Today in each half, built in code from
- * the coach's briefing with the model asked only for the sentence. Generated at most
- * once a day per half when Today opens (D17's pattern), cached on the day, and opened
- * as the first assistant line of a new chat when tapped.
+ * the coach's briefing every time it is asked for, so it moves with the log. No model
+ * writes it (since 2026-11-05). Tapping it opens a new chat with the line as the first
+ * assistant message.
  */
 
 /** The two halves of the app (D38), as the router names them. */
@@ -12,7 +12,7 @@ export const COACH_BRIEF_HALVES = ['diet', 'training'] as const
 export const coachBriefHalfSchema = z.enum(COACH_BRIEF_HALVES)
 export type CoachBriefHalf = z.infer<typeof coachBriefHalfSchema>
 
-/** One line on a phone; a longer sentence from the model is replaced by the app's own. */
+/** One line on a phone. */
 export const COACH_BRIEF_MAX_CHARS = 160
 
 export const coachBriefSchema = z.object({
@@ -21,8 +21,8 @@ export const coachBriefSchema = z.object({
   day: z.iso.date(),
   text: z.string().min(1).max(COACH_BRIEF_MAX_CHARS),
   /**
-   * The model that wrote the sentence, or null when the app's own sentence is shown: nothing
-   * logged yet (an invitation, never judged), no key, the daily cap, or a failed call.
+   * Null for every brief built today: the app writes the line. Set only on the stored
+   * briefs a model wrote before 2026-11-05, which the export still carries.
    */
   model: z.string().nullable(),
   generatedAt: z.iso.datetime(),
@@ -37,13 +37,9 @@ export type CoachBriefRequest = z.infer<typeof coachBriefRequestSchema>
 export const coachBriefResponseSchema = z.object({ brief: coachBriefSchema })
 export type CoachBriefResponse = z.infer<typeof coachBriefResponseSchema>
 
-/** What the model answers with (Structured Outputs): the sentence and nothing else. */
-export const coachBriefSentenceSchema = z.object({ sentence: z.string() })
-export type CoachBriefSentence = z.infer<typeof coachBriefSentenceSchema>
-
 /**
  * `POST /coach/threads` takes an optional body: `brief` opens the chat with that half's
- * brief as the first assistant line (reusing today's unanswered brief thread if there is one).
+ * brief as the first assistant line (reusing an unanswered brief thread with the same line).
  */
 export const coachThreadCreateSchema = z.object({
   brief: coachBriefHalfSchema.optional(),

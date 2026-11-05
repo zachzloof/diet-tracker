@@ -49,7 +49,7 @@ export const coachApi = {
     })
     return thread
   },
-  /** Today's one-line brief for a half, written once a day (slice 11c). */
+  /** Today's one-line brief for a half, rebuilt from the current numbers on every call (slice 11c). */
   async brief(half: CoachBriefHalf): Promise<CoachBrief> {
     const { brief } = await request('/coach/brief', coachBriefResponseSchema, {
       method: 'POST',

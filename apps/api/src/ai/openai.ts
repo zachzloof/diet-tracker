@@ -79,7 +79,7 @@ export interface StructuredCall<T> {
   timeoutMs?: number
   /** Defaults to `low`; searches read better at `medium`. */
   reasoningEffort?: ReasoningEffort
-  /** The model to call; defaults to `OPENAI_MODEL` (the coach's brief uses the coach's model). */
+  /** The model to call; defaults to `OPENAI_MODEL`. */
   model?: string
 }
 
@@ -122,6 +122,8 @@ export async function logCall(row: {
   purpose: AiPurpose
   model: string
   inputTokens: number | null
+  /** The part of `inputTokens` read from the prompt cache; priced lower in the cost view. */
+  cachedInputTokens: number | null
   outputTokens: number | null
   latencyMs: number
   ok: boolean
@@ -139,6 +141,7 @@ export async function logCall(row: {
       purpose: row.purpose,
       model: row.model,
       inputTokens: row.inputTokens,
+      cachedInputTokens: row.cachedInputTokens,
       outputTokens: row.outputTokens,
       latencyMs: row.latencyMs,
       ok: row.ok,
@@ -181,6 +184,7 @@ export async function callStructured<T>(call: StructuredCall<T>): Promise<Struct
       )
       const latencyMs = Math.round(performance.now() - start)
       const inputTokens = response.usage?.input_tokens ?? null
+      const cachedInputTokens = response.usage?.input_tokens_details?.cached_tokens ?? null
       const outputTokens = response.usage?.output_tokens ?? null
       webSearchCalls = countWebSearches(response.output)
       const parsed = response.output_parsed
@@ -197,6 +201,7 @@ export async function callStructured<T>(call: StructuredCall<T>): Promise<Struct
           purpose: call.purpose,
           model: response.model,
           inputTokens,
+          cachedInputTokens,
           outputTokens,
           latencyMs,
           ok: false,
@@ -212,6 +217,7 @@ export async function callStructured<T>(call: StructuredCall<T>): Promise<Struct
         purpose: call.purpose,
         model: response.model,
         inputTokens,
+        cachedInputTokens,
         outputTokens,
         latencyMs,
         ok: true,
@@ -236,6 +242,7 @@ export async function callStructured<T>(call: StructuredCall<T>): Promise<Struct
         purpose: call.purpose,
         model,
         inputTokens: null,
+        cachedInputTokens: null,
         outputTokens: null,
         latencyMs,
         ok: false,

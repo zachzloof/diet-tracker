@@ -12,10 +12,10 @@ import { useCoachBrief, useOpenBrief } from './useCoach'
 
 /**
  * The one-line daily brief at the top of Today (slice 11c): where things stand and what
- * is left, in the coach's words, from the same numbers as the tiles below. Tapping it
- * opens a chat that starts with the line. Nothing shows until AI features are allowed
- * (the sentence is written by the model), and nothing shows when it cannot be fetched:
- * the brief is a bonus, never a blocker.
+ * is left, built by the app from the same numbers as the tiles below and refreshed after
+ * every log or session write. Tapping it opens a chat that starts with the line. Nothing
+ * shows until AI features are allowed (the line is the way into the coach), and nothing
+ * shows when it cannot be fetched: the brief is a bonus, never a blocker.
  */
 const props = defineProps<{ half: CoachBriefHalf }>()
 

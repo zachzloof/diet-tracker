@@ -16,6 +16,11 @@ export const aiCalls = pgTable(
     purpose: text('purpose').$type<AiPurpose>().notNull(),
     model: text('model').notNull(),
     inputTokens: integer('input_tokens'),
+    /**
+     * The part of `input_tokens` read from OpenAI's prompt cache, billed at about a tenth
+     * (D42). Null on failed attempts and on every row logged before 2026-11-05.
+     */
+    cachedInputTokens: integer('cached_input_tokens'),
     outputTokens: integer('output_tokens'),
     latencyMs: integer('latency_ms').notNull(),
     ok: boolean('ok').notNull(),

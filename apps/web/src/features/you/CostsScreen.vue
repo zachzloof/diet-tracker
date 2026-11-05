@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { groupAiCosts, sumAiCosts, type AiCostRow, type AiPurpose } from '@diet-tracker/shared'
-import { computed } from 'vue'
+import {
+  groupAiCosts,
+  sumAiCosts,
+  totalAiCostUsd,
+  type AiCostTotals,
+  type AiPurpose,
+} from '@diet-tracker/shared'
+import { computed, ref } from 'vue'
 import AppShell from '@/components/ui/AppShell.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import Icon from '@/components/ui/Icon.vue'
+import PillToggle, { type PillOption } from '@/components/ui/PillToggle.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import StatTile from '@/components/ui/StatTile.vue'
 import { useAiCosts } from '@/features/coach/useCoach'
@@ -12,12 +19,27 @@ import { formatDay } from '@/lib/format'
 import { useUiStore } from '@/stores/ui'
 
 /**
- * The owner's AI cost view (slice 11c): calls, tokens and web searches for the last 30
- * days, by purpose and by person. Reachable from a Costs row under You that only the
- * account named by `OWNER_EMAIL` sees; anyone else gets the API's 404 here.
+ * The owner's AI cost view (slice 11c): what the last 30 days of OpenAI calls cost, by
+ * purpose and by person, in pounds or in tokens (the pill in the header switches). The
+ * money is worked out on the server from OpenAI's list prices per model and arrives in
+ * dollars; this screen only applies the exchange rate. Reachable from a Costs row under
+ * You that only the account named by `OWNER_EMAIL` sees; anyone else gets the API's 404.
  */
 const ui = useUiStore()
 const costs = useAiCosts()
+
+type Unit = 'money' | 'tokens'
+const UNITS: readonly PillOption[] = [
+  { value: 'money', label: '£' },
+  { value: 'tokens', label: 'Tokens' },
+]
+const unit = ref<Unit>('money')
+const unitModel = computed({
+  get: () => unit.value,
+  set: (value: string) => {
+    unit.value = value === 'tokens' ? 'tokens' : 'money'
+  },
+})
 
 const PURPOSE_LABELS: Readonly<Record<AiPurpose, string>> = {
   explain_plan: 'Plan explanations',
@@ -43,16 +65,24 @@ function compact(value: number): string {
   return value.toLocaleString(undefined)
 }
 
-function line(
-  row: Pick<AiCostRow, 'calls' | 'failed' | 'inputTokens' | 'outputTokens' | 'webSearchCalls'>,
-): string {
-  const parts = [
-    `${row.calls} ${row.calls === 1 ? 'call' : 'calls'}`,
-    `${compact(row.inputTokens)} in`,
-    `${compact(row.outputTokens)} out`,
-  ]
+/** Dollars from the server as pounds: "£12.34", or pence under 10p, where calls live. */
+function pounds(usd: number): string {
+  const gbp = usd * (costs.data.value?.usdToGbp ?? 0)
+  if (gbp <= 0) return '£0'
+  if (gbp < 0.001) return '<0.1p'
+  if (gbp < 0.1) return `${(gbp * 100).toFixed(1)}p`
+  return `£${gbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function line(row: AiCostTotals): string {
+  const calls = `${row.calls} ${row.calls === 1 ? 'call' : 'calls'}`
+  const parts =
+    unit.value === 'money'
+      ? [pounds(totalAiCostUsd(row)), calls]
+      : [calls, `${compact(row.inputTokens)} in`, `${compact(row.outputTokens)} out`]
   if (row.webSearchCalls > 0)
     parts.push(`${row.webSearchCalls} ${row.webSearchCalls === 1 ? 'search' : 'searches'}`)
+  if (unit.value === 'money' && row.unpricedCalls > 0) parts.push(`${row.unpricedCalls} unpriced`)
   if (row.failed > 0) parts.push(`${row.failed} failed`)
   return parts.join(' · ')
 }
@@ -60,6 +90,9 @@ function line(
 
 <template>
   <AppShell title="AI costs" :back="{ name: 'you' }">
+    <template #header-right>
+      <PillToggle v-model="unitModel" label="Show costs in" :options="UNITS" />
+    </template>
     <div class="space-y-4">
       <div v-if="costs.isLoading.value" class="space-y-4" aria-busy="true">
         <div class="grid grid-cols-2 gap-3">
@@ -83,13 +116,45 @@ function line(
       </Card>
 
       <template v-else-if="costs.data.value && totals">
-        <p class="px-1 text-sm text-fg-muted">
+        <p v-if="unit === 'money'" class="px-1 text-sm text-fg-muted">
+          Every OpenAI call since {{ formatDay(costs.data.value.since.slice(0, 10)) }}, the last
+          {{ costs.data.value.days }} days, at OpenAI's list prices on
+          {{ formatDay(costs.data.value.pricesAsOf) }} and $1 = £{{ costs.data.value.usdToGbp }}.
+          <template v-if="totals.unpricedCalls > 0">
+            {{ totals.unpricedCalls }}
+            {{ totals.unpricedCalls === 1 ? 'call' : 'calls' }} ran on a model with no listed price
+            and {{ totals.unpricedCalls === 1 ? 'is' : 'are' }} left out of the money.
+          </template>
+        </p>
+        <p v-else class="px-1 text-sm text-fg-muted">
           Every OpenAI call since {{ formatDay(costs.data.value.since.slice(0, 10)) }}, the last
           {{ costs.data.value.days }} days. Tokens are what the bill is made of; searches are billed
           per call on top.
         </p>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div v-if="unit === 'money'" class="grid grid-cols-2 gap-3">
+          <StatTile
+            label="Total"
+            :value="pounds(totalAiCostUsd(totals))"
+            :sub="`${pounds(totalAiCostUsd(totals) / costs.data.value.days)} a day`"
+          />
+          <StatTile
+            label="Searches"
+            :value="pounds(totals.searchCostUsd)"
+            :sub="`${totals.webSearchCalls.toLocaleString()} web ${totals.webSearchCalls === 1 ? 'search' : 'searches'}`"
+          />
+          <StatTile
+            label="Tokens in"
+            :value="pounds(totals.inputCostUsd)"
+            sub="prompt and replay"
+          />
+          <StatTile
+            label="Tokens out"
+            :value="pounds(totals.outputCostUsd)"
+            sub="answers and reasoning"
+          />
+        </div>
+        <div v-else class="grid grid-cols-2 gap-3">
           <StatTile
             label="Calls"
             :value="totals.calls.toLocaleString()"

@@ -1,5 +1,6 @@
 export * from './account-api.js'
 export * from './ai/costs.js'
+export * from './ai/pricing.js'
 export * from './ai/schemas.js'
 export * from './api.js'
 export * from './auth.js'
