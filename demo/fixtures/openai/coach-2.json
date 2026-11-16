@@ -1,0 +1,514 @@
+{
+ "kind": "coach",
+ "index": 2,
+ "model": "gpt-5.5",
+ "status": 200,
+ "contentType": "text/event-stream; charset=utf-8",
+ "recordedAt": "2026-11-16T15:16:56.976Z",
+ "chunks": [
+  {
+   "atMs": 870,
+   "text": "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_0bc6946367b0d2cc016afb1e65703c87d29cfb2ffc54523323\",\"object\":\"response\",\"created_at\":1794842213,\"status\":\"in_progress\",\"access_programs\":null,\"background\":false,\"completed_at\":null,\"error\":null,\"frequency_penalty\":0.0,\"image\":{\"context_compression\":\"disabled\"},\"incomplete_details\":null,\"input_transformations\":[],\"instructions\":null,\"max_output_tokens\":700,\"max_tool_calls\":null,\"model\":\"gpt-5.5-2026-04-23\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":null,\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"current_turn\",\"effort\":\"low\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"service_tier\":\"auto\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[{\"type\":\"function\",\"description\":\"What the person ate on one day: entries grouped by meal with kcal and macros, the totals against that day’s targets, and whether the day was met, plus anything planned and not eaten yet, listed apart and in none of the totals. Tomorrow can be read for its plan. Use for a specific day, not for today or this week (the briefing has those).\",\"name\":\"get_day_food\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"day\":{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"}},\"required\":[\"day\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Seven scored days ending on week_end: per day met or not with kcal and protein, the averages against targets, and the ranked gaps. The briefing already has the week ending today; use this for an earlier week.\",\"name\":\"get_week_food\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"week_end\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"week_end\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"A month of days: for each day with anything logged, whether it was met with its kcal and protein, plus the counts. Use for \\\"how was October\\\" or \\\"how many days did I log last month\\\".\",\"name\":\"get_month_food\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"month\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"month\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Every target (energy, macros, fibre, water, limits, vitamins, minera"
+  },
+  {
+   "atMs": 871,
+   "text": "ls, food groups) with the engine’s reason and whether the person pinned it, the engine’s inputs (BMR, activity, TDEE, goal adjustment, floor), and the hist"
+  },
+  {
+   "atMs": 871,
+   "text": "ory of target versions. The briefing has the main targets; use this for a vitamin, mineral or food group, or for \\\"why\\\" and \\\"when did it change\\\".\",\"name\":\"get_targets\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"additionalProperties\":false,\"required\":[]},\"strict\":true},{\"type\":\"function\",\"description\":\"Gym sessions in the seven days ending on week_end (title, day, exercises, working sets, kg lifted, minutes), the week totals against the planned training days, and week on week per lift against the seven days before. The briefing has the week ending today; use this for an earlier week.\",\"name\":\"get_gym_week\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"week_end\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"week_end\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"One gym session in full: exercises in order with every set (weight, reps, time, distance, done or not), notes and how it felt. Give a session id from an earlier result, or a day to get that day’s sessions.\",\"name\":\"get_workout\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"id\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},{\"type\":\"null\"}]},\"day\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"id\",\"day\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"One exercise over its last sessions (1 to 20): the best working set in each on the person’s \\\"best\\\" basis (kg lifted in one set, or the heaviest weight; reps, time or distance for other exercises), the best and the latest, and the change from the first session in the window to the last. Match by exercise_id or by part of the name (\\\"squat\\\").\",\"name\":\"get_lift_history\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"exercise_id\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},{\"type\":\"null\"}]},\"exercise_name\":{\"anyOf\":[{\"type\":\"string\",\"maxLength\":60},{\"type\":\"null\"}]},\"sessions\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":1,\"maximum\":20},{\"type\":\"null\"}]}},\"required\":[\"exercise_id\",\"exercise_name\",\"sessions\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Weigh-ins over the last N days (7 to 365) with the seven-day trend, the rate in kg a week, the change over the window, the goal weight and the pace the plan expects. The briefing has the last 28 days; use this for a longer or shorter window.\",\"name\":\"get_weight_history\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"days\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":7,\"maximum\":365},{\"type\":\"null\"}]}},\"required\":[\"days\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The plan check (recalibration): whether it is due, what the last 14 days of logged intake and weigh-ins show against the expected pace, and the engine’s proposal if any. The briefing has the status; use this for the evidence behind it.\",\"name\":\"get_recalibration\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"additionalProperties\":false,\"required\":[]},\"strict\":true},{\"type\":\"function\",\"description\":\"Search the person’s saved foods (My foods) by name or brand: up to 20 verified foods with their serving and the kcal, protein, carbs and fat per serving. Use when suggesting what to eat from what they already log.\",\"name\":\"search_my_foods\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"maxLength\":80}},\"required\":[\"query\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The person’s saved meals (named sets of ingredients they log in one go), filtered b"
+  },
+  {
+   "atMs": 871,
+   "text": "y part of the name or all of them with an empty query: up to 20, each with its ingredients and the kcal and protein of one portion.\",\"name\":\"search_meals\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"maxLength\":80}},\"required\":[\"query\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The exercises the person can log: the shared catalogue and their own, most recently used first, filtered by part of the name or a muscle group. Returns ids for get_lift_history.\",\"name\":\"list_exercises\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"query\":{\"anyOf\":[{\"type\":\"string\",\"maxLength\":60},{\"type\":\"null\"}]},\"muscle_group\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"chest\",\"back\",\"shoulders\",\"biceps\",\"triceps\",\"forearms\",\"core\",\"quads\",\"hamstrings\",\"glutes\",\"calves\",\"full_body\"]},{\"type\":\"null\"}]}},\"required\":[\"query\",\"muscle_group\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The AI weekly review already written for the week containing week_end (summary, wins, the two changes, encouragement), if the person opened their Week screen that week. Never writes a new one.\",\"name\":\"get_weekly_review\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"week_end\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"week_end\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a food log entry from what the person says they ate (\\\"2 eggs and toast\\\"). Runs the app’s estimator and returns an estimate card with the items, grams, kcal and macros; the person reviews and confirms it with a tap. Nothing is logged by this call. Use when they ask to log, add or record food; pass the meal and day only when they said them.\",\"name\":\"draft_food_log\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":500},\"day\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]},\"meal\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"breakfast\",\"lunch\",\"dinner\",\"snack\"]},{\"type\":\"null\"}]}},\"required\":[\"text\",\"day\",\"meal\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a change to one target as a card the person applies with a tap: the number now, the number after, the targets the engine recomputes from it (fat and carbs when energy or protein moves), and any floor or range warning. value null clears a pin so the engine’s number comes back. Nothing changes until the person taps Apply. Use when they ask to change, raise, lower, set or reset a target; never pin a value under the safety floor. reason is one short line shown on the card, written to the person (\\\"You asked for 200 kcal less\\\"), never about them (\\\"User asked...\\\").\",\"name\":\"draft_target_change\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"key\":{\"type\":\"string\",\"enum\":[\"energy_kcal\",\"protein_g\",\"carbs_g\",\"fat_g\",\"fiber_g\",\"sugar_g\",\"added_sugar_g\",\"saturated_fat_g\",\"omega3_g\",\"sodium_mg\",\"potassium_mg\",\"calcium_mg\",\"iron_mg\",\"magnesium_mg\",\"zinc_mg\",\"iodine_ug\",\"vitamin_a_ug\",\"vitamin_c_mg\",\"vitamin_d_ug\",\"vitamin_b12_ug\",\"folate_ug\",\"vitamin_e_mg\",\"vitamin_k_ug\",\"water_ml\",\"alcohol_std_drinks\",\"vegetables\",\"fruit\",\"whole_grains\",\"protein_foods\",\"dairy_or_alt\",\"legumes\",\"nuts_seeds\"]},\"value\":{\"anyOf\":[{\"type\":\"number\",\"minimum\":0,\"maximum\":100000},{\"type\":\"null\"}]},\"reason\":{\"type\":\"string\",\"maxLength\":200}},\"required\":[\"key\",\"value\",\"reason\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a gym session as a card the person starts with a tap: a title, the exercises in order (by id from list_exercises, get_workout or get_lift_history, or by name) and the planned sets (weight kg, reps, time s, distance m; null leaves a field for them to fill). The card shows last time’s sets beside each exercise. Noth"
+  },
+  {
+   "atMs": 872,
+   "text": "ing is saved by this call. To plan \\\"like last week\\\", read that session with get_gym_week or get_workout first and build from it.\",\"name\":\"draft_workout\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":60},\"day\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]},\"exercises\":{\"minItems\":1,\"maxItems\":30,\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"exercise_id\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},{\"type\":\"null\"}]},\"exercise_name\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":80},\"sets\":{\"minItems\":1,\"maxItems\":30,\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"weight_kg\":{\"anyOf\":[{\"type\":\"number\",\"minimum\":0,\"maximum\":1000},{\"type\":\"null\"}]},\"reps\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":0,\"maximum\":1000},{\"type\":\"null\"}]},\"time_s\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":0,\"maximum\":86400},{\"type\":\"null\"}]},\"distance_m\":{\"anyOf\":[{\"type\":\"number\",\"minimum\":0,\"maximum\":1000000},{\"type\":\"null\"}]}},\"required\":[\"weight_kg\",\"reps\",\"time_s\",\"distance_m\"],\"additionalProperties\":false}}},\"required\":[\"exercise_id\",\"exercise_name\",\"sets\"],\"additionalProperties\":false}},\"notes\":{\"type\":\"string\",\"maxLength\":300}},\"required\":[\"title\",\"day\",\"exercises\",\"notes\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a saved meal from the person’s own foods (ids from search_my_foods) as a card they save with a tap: a name and the ingredients with amounts in grams or servings. Saved meals log in a few taps with no estimate. Nothing is saved by this call. Use when they ask to save, create or remember a meal; search their foods first and only use ids you were given.\",\"name\":\"draft_meal\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":80},\"items\":{\"minItems\":1,\"maxIt"
+  },
+  {
+   "atMs": 873,
+   "text": "ems\":20,\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"food_id\":{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},\"amount\":{\"type\":\"number\",\"exclusiveMinimum\":0,\"maximum\":100000},\"unit\":{\"type\":\"string\",\"enum\":[\"g\",\"serving\"]}},\"required\":[\"food_id\",\"amount\",\"unit\"],\"additionalProperties\":false}},\"meal\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"breakfast\",\"lunch\",\"dinner\",\"snack\"]},{\"type\":\"null\"}]}},\"required\":[\"name\",\"items\",\"meal\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a note to remember about the person (\\\"left knee sore since Tuesday\\\", \\\"prefers training in the morning\\\") as a card they confirm with a tap. Confirmed notes appear in every later briefing. Nothing is kept by this call. Use when they ask you to remember, note or keep in mind something that is not already in their profile.\",\"name\":\"remember_note\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":200}},\"required\":[\"text\"],\"additionalProperties\":false},\"strict\":true}],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":null,\"user\":null,\"metadata\":{}},\"sequence_number\":0}\n\nevent: response.in_progress\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"resp_0bc6946367b0d2cc016afb1e65703c87d29cfb2ffc54523323\",\"object\":\"response\",\"created_at\":1794842213,\"status\":\"in_progress\",\"access_programs\":null,\"background\":false,\"completed_at\":null,\"error\":null,\"frequency_penalty\":0.0,\"image\":{\"context_compression\":\"disabled\"},\"incomplete_details\":null,\"input_transformations\":[],\"instructions\":null,\"max_output_tokens\":700,\"max_tool_calls\":null,\"model\":\"gpt-5.5-2026-04-23\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":null,\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"current_turn\",\"effort\":\"low\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"service_tier\":\"auto\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[{\"type\":\"function\",\"description\":\"What the person ate on one day: entries grouped by meal with kcal and macros, the totals against that day’s targets, and whether the day was met, plus anything planned and not eaten yet, listed apart and in none of the totals. Tomorrow can be read for its plan. Use for a specific day, not for today or this week (the briefing has those).\",\"name\":\"get_day_food\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"day\":{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"}},\"required\":[\"day\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Seven scored days ending on week_end: per day met or not with kcal and protein, the averages against targets, and the ranked gaps. The briefing already has the week ending today; use this for an earlier week.\",\"name\":\"get_week_food\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"week_end\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"week_end\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"A month of days: for each day with anything logged, whether it was met with its kcal and protein, plus the counts. Use for \\\"how was October\\\" or \\\"how many days did I log last month\\\".\",\"name\":\"get_month_food\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"month\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"month\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Every target (energy, macros, fibre, water, limits, vitamins, minerals, food gr"
+  },
+  {
+   "atMs": 874,
+   "text": "oups) with the engine’s reason and whether the person pinned it, the engine’s inputs (BMR, activity, TDEE, goal adjustment, floor), and the history of target versions. The briefing has the main targets; use this for a vitamin, mineral or food group, or for \\\"why\\\" and \\\"when did it change\\\".\",\"name\":\"get_targets\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"additionalProperties\":false,\"required\":[]},\"strict\":true},{\"type\":\"function\",\"description\":\"Gym sessions in the seven days ending on week_end (title, day, exercises, working sets, kg lifted, minutes), the week totals against the planned training days, and week on week per lift against the seven days before. The briefing has the week ending today; use this for an earlier week.\",\"name\":\"get_gym_week\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"week_end\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"week_end\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"One gym session in full: exercises in order with every set (weight, reps, time, distance, done or not), notes and how it felt. Give a session id from an earlier result, or a day to get that day’s sessions.\",\"name\":\"get_workout\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"id\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},{\"type\":\"null\"}]},\"day\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"id\",\"day\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"One exercise over its last sessions (1 to 20): the best working set in each on the person’s \\\"best\\\" basis (kg lifted in one set, or the heaviest weight; reps, time or distance for other exercises), the best and the latest, and the change from the first session in the window to the last. Match by exercise_id or by part of the name (\\\"squat\\\").\",\"name\":\"get_lift_history\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"exercise_id\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},{\"type\":\"null\"}]},\"exercise_name\":{\"anyOf\":[{\"type\":\"string\",\"maxLength\":60},{\"type\":\"null\"}]},\"sessions\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":1,\"maximum\":20},{\"type\":\"null\"}]}},\"required\":[\"exercise_id\",\"exercise_name\",\"sessions\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Weigh-ins over the last N days (7 to 365) with the seven-day trend, the rate in kg a week, the change over the window, the goal weight and the pace the plan expects. The briefing has the last 28 days; use this for a longer or shorter window.\",\"name\":\"get_weight_history\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"days\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":7,\"maximum\":365},{\"type\":\"null\"}]}},\"required\":[\"days\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The plan check (recalibration): whether it is due, what the last 14 days of logged intake and weigh-ins show against the expected pace, and the engine’s proposal if any. The briefing has the status; use this for the evidence behind it.\",\"name\":\"get_recalibration\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"additionalProperties\":false,\"required\":[]},\"strict\":true},{\"type\":\"function\",\"description\":\"Search the person’s saved foods (My foods) by name or brand: up to 20 verified foods with their serving and the kcal, protein, carbs and fat per serving. Use when suggesting what to eat from what they already log.\",\"name\":\"search_my_foods\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"maxLength\":80}},\"required\":[\"query\"],\"additionalProperties\""
+  },
+  {
+   "atMs": 877,
+   "text": ":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The person’s saved meals (named sets of ingredients they log in one go), filtered by part of the name or all of them with an empty query: up to 20, each with its ingredients and the kcal and protein of one portion.\",\"name\":\"search_meals\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"maxLength\":80}},\"required\":[\"query\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The exercises the person can log: the shared catalogue and their own, most recently used first, filtered by part of the name or a muscle group. Returns ids for get_lift_history.\",\"name\":\"list_exercises\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"query\":{\"anyOf\":[{\"type\":\"string\",\"maxLength\":60},{\"type\":\"null\"}]},\"muscle_group\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"chest\",\"back\",\"shoulders\",\"biceps\",\"triceps\",\"forearms\",\"core\",\"quads\",\"hamstrings\",\"glutes\",\"calves\",\"full_body\"]},{\"type\":\"null\"}]}},\"required\":[\"query\",\"muscle_group\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The AI weekly review already written for the week containing week_end (summary, wins, the two changes, encouragement), if the person opened their Week screen that week. Never writes a new one.\",\"name\":\"get_weekly_review\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"week_end\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"week_end\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a food log entry from what the person says they ate (\\\"2 eggs and toast\\\"). Runs the app’s estimator and returns an estimate card with the items, grams, kcal and macros; the person reviews and confirms it with a tap. Nothing is logged by this call. Use when they ask to log, add or record food; pass the meal and day only when they said them.\",\"name\":\"draft_food_log\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":500},\"day\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]},\"meal\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"breakfast\",\"lunch\",\"dinner\",\"snack\"]},{\"type\":\"null\"}]}},\"required\":[\"text\",\"day\",\"meal\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a change to one target as a card the person applies with a tap: the number now, the number after, the targets the engine recomputes from it (fat and carbs when energy or protein moves), and any floor or range warning. value null clears a pin so the engine’s number comes back. Nothing changes until the person taps Apply. Use when they ask to change, raise, lower, set or reset a target; never pin a value under the safety floor. reason is one short line shown on the card, written to the person (\\\"You asked for 200 kcal less\\\"), never about them (\\\"User asked...\\\").\",\"name\":\"draft_target_change\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"key\":{\"type\":\"string\",\"enum\":[\"energy_kcal\",\"protein_g\",\"carbs_g\",\"fat_g\",\"fiber_g\",\"sugar_g\",\"added_sugar_g\",\"saturated_fat_g\",\"omega3_g\",\"sodium_mg\",\"potassium_mg\",\"calcium_mg\",\"iron_mg\",\"magnesium_mg\",\"zinc_mg\",\"iodine_ug\",\"vitamin_a_ug\",\"vitamin_c_mg\",\"vitamin_d_ug\",\"vitamin_b12_ug\",\"folate_ug\",\"vitamin_e_mg\",\"vitamin_k_ug\",\"water_ml\",\"alcohol_std_drinks\",\"vegetables\",\"fruit\",\"whole_grains\",\"protein_foods\",\"dairy_or_alt\",\"legumes\",\"nuts_seeds\"]},\"value\":{\"anyOf\":[{\"type\":\"number\",\"minimum\":0,\"maximum\":100000},{\"type\":\"null\"}]},\"reason\":{\"type\":\"string\",\"maxLength\":200}},\"required\":[\"key\",\"value\",\"reason\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a gym session as a card the person starts with a tap: a title, the exercises in order (by id from list_exercises, get_workout or get_lift_history, or by name) and the planned "
+  },
+  {
+   "atMs": 877,
+   "text": "sets (weight kg, reps, time s, distance m; null leaves a field for them to fill). The card shows last time’s sets beside each exercise. Nothing is saved by this call. To plan \\\"like last week\\\", read that session with get_gym_week or get_workout first and build from it.\",\"name\":\"draft_workout\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":60},\"day\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]},\"exercises\":{\"minItems\":1,\"maxItems\":30,\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"exercise_id\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},{\"type\":\"null\"}]},\"exercise_name\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":80},\"sets\":{\"minItems\":1,\"maxItems\":30,\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"weight_kg\":{\"anyOf\":[{\"type\":\"number\",\"minimum\":0,\"maximum\":1000},{\"type\":\"null\"}]},\"reps\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":0,\"maximum\":1000},{\"type\":\"null\"}]},\"time_s\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":0,\"maximum\":86400},{\"type\":\"null\"}]},\"distance_m\":{\"anyOf\":[{\"type\":\"number\",\"minimum\":0,\"maximum\":1000000},{\"type\":\"null\"}]}},\"required\":[\"weight_kg\",\"reps\",\"time_s\",\"distance_m\"],\"additionalProperties\":false}}},\"required\":[\"exercise_id\",\"exercise_name\",\"sets\"],\"additionalProperties\":false}},\"notes\":{\"type\":\"string\",\"maxLength\":300}},\"required\":[\"title\",\"day\",\"exercises\",\"notes\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a saved meal from the person’s own foods (ids from search_my_foods) as a card they save with a tap: a name and the ingredients with amounts in grams or servings. Saved meals log in a few taps with no estimate. Nothing is saved by this call. Use when they ask to save, create or remember a meal; search their foods first and only use ids you were given.\",\"name\":\"draft_meal\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":80},\"items\":{\"minItems\":1,\"maxItems\":20,\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"food_id\":{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},\"amount\":{\"type\":\"number\",\"exclusiveMinimum\":0,\"maximum\":100000},\"unit\":{\"type\":\"string\",\"enum\":[\"g\",\"serving\"]}},\"required\":[\"food_id\",\"amount\",\"unit\"],\"additionalProperties\":false}},\"meal\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"breakfast\",\"lunch\",\"dinner\",\"snack\"]},{\"type\":\"null\"}]}},\"required\":[\"name\",\"items\",\"meal\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a note to remember about the person (\\\"left knee sore since Tuesday\\\", \\\"prefers training in the morning\\\") as a card they confirm with a tap. Confirmed notes appear in every later briefing. Nothing is kept by this call. Use when they ask you to remember, note or keep in mind something that is not already in their profile.\",\"name\":\"remember_note\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":200}},\"required\":[\"text\"],\"additionalProperties\":false},\"strict\":true}],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":null,\"user\":null,\"metadata\":{}},\"sequence_number\":1}\n\n"
+  },
+  {
+   "atMs": 1701,
+   "text": "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"item\":{\"id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"type\":\"message\",\"status\":\"in_progress\",\"content\":[],\"phase\":\"final_answer\",\"role\":\"assistant\"},\"output_index\":0,\"sequence_number\":2}\n\n"
+  },
+  {
+   "atMs": 1705,
+   "text": "event: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"content_index\":0,\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"output_index\":0,\"part\":{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"\"},\"sequence_number\":3}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"Yes\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"CacqjiR08vzRb\",\"output_index\":0,\"sequence_number\":4}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" —\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"wJ8IKJ07N3usSq\",\"output_index\":0,\"sequence_number\":5}\n\n"
+  },
+  {
+   "atMs": 1756,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" looking\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"zu0TLewu\",\"output_index\":0,\"sequence_number\":6}\n\n"
+  },
+  {
+   "atMs": 1818,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" at\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"lHGoyvQOt2q4r\",\"output_index\":0,\"sequence_number\":7}\n\n"
+  },
+  {
+   "atMs": 1825,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 1825,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" your\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"bWbx05KM9c0\",\"output_index\":0,\"sequence_number\":8}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" last\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"zZcMfI9eZad\",\"output_index\":0,\"sequence_number\":9}\n\n"
+  },
+  {
+   "atMs": 1829,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"YHbNJbeuPbqyJBp\",\"output_index\":0,\"sequence_number\":10}\n\n"
+  },
+  {
+   "atMs": 1831,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"5\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"S8VvXvGIyA3akXQ\",\"output_index\":0,\"sequence_number\":11}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" bar\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"m7Bap6sSY2E4\",\"output_index\":0,\"sequence_number\":12}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"bell\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"ZnKGkuG1Hd59\",\"output_index\":0,\"sequence_number\":13}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" bench\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"mRnsmMaskW\",\"output_index\":0,\"sequence_number\":14}\n\n"
+  },
+  {
+   "atMs": 1873,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" press\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"qbWaP9WttG\",\"output_index\":0,\"sequence_number\":15}\n\n"
+  },
+  {
+   "atMs": 1874,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" sessions\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"IB52qnA\",\"output_index\":0,\"sequence_number\":16}\n\n"
+  },
+  {
+   "atMs": 1875,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\",\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"cUZkapNULo7q9ft\",\"output_index\":0,\"sequence_number\":17}\n\n"
+  },
+  {
+   "atMs": 1931,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 1932,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" it\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"CZ2GJzA1fU7yC\",\"output_index\":0,\"sequence_number\":18}\n\n"
+  },
+  {
+   "atMs": 1939,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"’s\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"nzCYQuGwSumVFk\",\"output_index\":0,\"sequence_number\":19}\n\n"
+  },
+  {
+   "atMs": 1943,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" still\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"IVOQ1hNUr8\",\"output_index\":0,\"sequence_number\":20}\n\n"
+  },
+  {
+   "atMs": 1946,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" going\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"WhDysE10EL\",\"output_index\":0,\"sequence_number\":21}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" up\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"svmydXAWkb4dK\",\"output_index\":0,\"sequence_number\":22}\n\n"
+  },
+  {
+   "atMs": 1991,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\".\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"vQvDCOFE6HJp0J2\",\"output_index\":0,\"sequence_number\":23}\n\n"
+  },
+  {
+   "atMs": 1999,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" Your\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"16cXIW2ITpe\",\"output_index\":0,\"sequence_number\":24}\n\n"
+  },
+  {
+   "atMs": 2004,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" best\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"eGxuF14sjWg\",\"output_index\":0,\"sequence_number\":25}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" set\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"wLdNNXBEfI87\",\"output_index\":0,\"sequence_number\":26}\n\n"
+  },
+  {
+   "atMs": 2047,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" moved\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"1bT3Zu1tmx\",\"output_index\":0,\"sequence_number\":27}\n\n"
+  },
+  {
+   "atMs": 2049,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" from\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"o2JOrYJkr1q\",\"output_index\":0,\"sequence_number\":28}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"WLruhTEYFsStCPP\",\"output_index\":0,\"sequence_number\":29}\n\n"
+  },
+  {
+   "atMs": 2102,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 2103,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"80\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"IBPgfU0DjPwsa6\",\"output_index\":0,\"sequence_number\":30}\n\n"
+  },
+  {
+   "atMs": 2115,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" kg\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"eEq4fC809syAF\",\"output_index\":0,\"sequence_number\":31}\n\n"
+  },
+  {
+   "atMs": 2116,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" ×\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"Jrb1Mk54Z6frVg\",\"output_index\":0,\"sequence_number\":32}\n\n"
+  },
+  {
+   "atMs": 2119,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"O08MF2sQK2LVrvm\",\"output_index\":0,\"sequence_number\":33}\n\n"
+  },
+  {
+   "atMs": 2124,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"6\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"BQBBRLu7NIG14Sc\",\"output_index\":0,\"sequence_number\":34}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" on\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"3MEkPEGbgf3Rv\",\"output_index\":0,\"sequence_number\":35}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" Thu\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"XSHG0zJ38B5R\",\"output_index\":0,\"sequence_number\":36}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"xeJSRQf5bKKcXr7\",\"output_index\":0,\"sequence_number\":37}\n\n"
+  },
+  {
+   "atMs": 2161,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 2162,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"15\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"THxRwSOuoWqqiR\",\"output_index\":0,\"sequence_number\":38}\n\n"
+  },
+  {
+   "atMs": 2172,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" Oct\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"9OBDqxPU5hl0\",\"output_index\":0,\"sequence_number\":39}\n\n"
+  },
+  {
+   "atMs": 2181,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" to\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"EvSc1u5mi6bRB\",\"output_index\":0,\"sequence_number\":40}\n\n"
+  },
+  {
+   "atMs": 2188,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"oWI3aS8Sp4ebpmo\",\"output_index\":0,\"sequence_number\":41}\n\n"
+  },
+  {
+   "atMs": 2194,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"85\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"4N3qU67UyMqCQ1\",\"output_index\":0,\"sequence_number\":42}\n\n"
+  },
+  {
+   "atMs": 2199,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" kg\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"b09XknmcMXpvl\",\"output_index\":0,\"sequence_number\":43}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" ×\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"DDNay0af2pqTFY\",\"output_index\":0,\"sequence_number\":44}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"ciiL55B1VzWF3io\",\"output_index\":0,\"sequence_number\":45}\n\n"
+  },
+  {
+   "atMs": 2219,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"6\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"4768dBXGQ087S0R\",\"output_index\":0,\"sequence_number\":46}\n\n"
+  },
+  {
+   "atMs": 2233,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" on\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"8djoXejREHZcu\",\"output_index\":0,\"sequence_number\":47}\n\n"
+  },
+  {
+   "atMs": 2237,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" Thu\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"6UPv34UPi7q5\",\"output_index\":0,\"sequence_number\":48}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"NNKgyo9PPwXLCEN\",\"output_index\":0,\"sequence_number\":49}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"12\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"FyOHn20SCeZFiZ\",\"output_index\":0,\"sequence_number\":50}\n\n"
+  },
+  {
+   "atMs": 2278,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" Nov\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"1pOUiIlbpldW\",\"output_index\":0,\"sequence_number\":51}\n\n"
+  },
+  {
+   "atMs": 2288,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\",\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"Ook9rM1euB0otON\",\"output_index\":0,\"sequence_number\":52}\n\n"
+  },
+  {
+   "atMs": 2335,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" +\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"MwtlUq7B7WSqex\",\"output_index\":0,\"sequence_number\":53}\n\n"
+  },
+  {
+   "atMs": 2347,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"30\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"3vY4dOnZAnZimG\",\"output_index\":0,\"sequence_number\":54}\n\n"
+  },
+  {
+   "atMs": 2348,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" kg\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"bgASmWTUG4WBt\",\"output_index\":0,\"sequence_number\":55}\n\n"
+  },
+  {
+   "atMs": 2349,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" lifted\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"Uwm5yKeyp\",\"output_index\":0,\"sequence_number\":56}\n\n"
+  },
+  {
+   "atMs": 2391,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" (+\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"ti9uMO5uGtunx\",\"output_index\":0,\"sequence_number\":57}\n\n"
+  },
+  {
+   "atMs": 2395,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"6\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"RrKTiAuia5SL1gJ\",\"output_index\":0,\"sequence_number\":58}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"%).\\n\\n\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"SvwzEw7ZiTb\",\"output_index\":0,\"sequence_number\":59}\n\n"
+  },
+  {
+   "atMs": 2492,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 2493,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"You\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"YrJLB9Zvxu7S9\",\"output_index\":0,\"sequence_number\":60}\n\n"
+  },
+  {
+   "atMs": 2498,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 2498,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"’re\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"TCdipx6AS1o3m\",\"output_index\":0,\"sequence_number\":61}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" eating\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"KycTNyaXT\",\"output_index\":0,\"sequence_number\":62}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" enough\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"RbX5Y6Ovu\",\"output_index\":0,\"sequence_number\":63}\n\n"
+  },
+  {
+   "atMs": 2508,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" overall\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"XcRLtQXK\",\"output_index\":0,\"sequence_number\":64}\n\n"
+  },
+  {
+   "atMs": 2517,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\":\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"ceieNXyh7kKs6ZR\",\"output_index\":0,\"sequence_number\":65}\n\n"
+  },
+  {
+   "atMs": 2526,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" this\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"YWSkzkDrMCw\",\"output_index\":0,\"sequence_number\":66}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" week\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"EGRjzMaiLQt\",\"output_index\":0,\"sequence_number\":67}\n\n"
+  },
+  {
+   "atMs": 2567,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 2567,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" you\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"6qa9jb4snDZz\",\"output_index\":0,\"sequence_number\":68}\n\n"
+  },
+  {
+   "atMs": 2576,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" averaged\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"VP5o0sl\",\"output_index\":0,\"sequence_number\":69}\n\n"
+  },
+  {
+   "atMs": 2581,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"l8kKqrkY0avU3HZ\",\"output_index\":0,\"sequence_number\":70}\n\n"
+  },
+  {
+   "atMs": 2582,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"290\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"qdyXWwrgyw6YK\",\"output_index\":0,\"sequence_number\":71}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"1\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"NIftpHeweq9UV7M\",\"output_index\":0,\"sequence_number\":72}\n\n"
+  },
+  {
+   "atMs": 2623,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" /\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"mwVYcHFhGpH6cJ\",\"output_index\":0,\"sequence_number\":73}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"WyJeR84Kflv30W5\",\"output_index\":0,\"sequence_number\":74}\n\n"
+  },
+  {
+   "atMs": 2638,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"301\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"xMHDP6tQkZDBw\",\"output_index\":0,\"sequence_number\":75}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"0\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"HTm3bVwatyQNFJC\",\"output_index\":0,\"sequence_number\":76}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" kcal\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"9pJCJxKzdTB\",\"output_index\":0,\"sequence_number\":77}\n\n"
+  },
+  {
+   "atMs": 2687,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" (\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"cxeBd9zbaAUxRK\",\"output_index\":0,\"sequence_number\":78}\n\n"
+  },
+  {
+   "atMs": 2690,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 2690,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"96\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"UmfujyWEGruheG\",\"output_index\":0,\"sequence_number\":79}\n\n"
+  },
+  {
+   "atMs": 2698,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"%)\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"pqL1GnxiTZwzKm\",\"output_index\":0,\"sequence_number\":80}\n\n"
+  },
+  {
+   "atMs": 2705,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" and\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"DX0zzuBQxtmV\",\"output_index\":0,\"sequence_number\":81}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" protein\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"TTOHbK7A\",\"output_index\":0,\"sequence_number\":82}\n\n"
+  },
+  {
+   "atMs": 2771,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" was\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"mQO9pGg2aJld\",\"output_index\":0,\"sequence_number\":83}\n\n"
+  },
+  {
+   "atMs": 2778,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"OYeA9nnndfunYeY\",\"output_index\":0,\"sequence_number\":84}\n\n"
+  },
+  {
+   "atMs": 2792,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"171\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"gz9tKOL8EY16X\",\"output_index\":0,\"sequence_number\":85}\n\n"
+  },
+  {
+   "atMs": 2816,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" /\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"UQeTyADTq2qwGI\",\"output_index\":0,\"sequence_number\":86}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"cRDnKK60pjU2jDD\",\"output_index\":0,\"sequence_number\":87}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"155\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"m2NeJiI2UedHC\",\"output_index\":0,\"sequence_number\":88}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" g\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"GtLyU2zCnsDgyc\",\"output_index\":0,\"sequence_number\":89}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" (\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"4cxsyVAujlhluF\",\"output_index\":0,\"sequence_number\":90}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"111\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"6EGH2p5xJHsMG\",\"output_index\":0,\"sequence_number\":91}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"%).\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"HgoH4VlOOwKqI\",\"output_index\":0,\"sequence_number\":92}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" Your\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"1ziKPq5WSKj\",\"output_index\":0,\"sequence_number\":93}\n\n"
+  },
+  {
+   "atMs": 2855,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" weight\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"kWfMoTg0r\",\"output_index\":0,\"sequence_number\":94}\n\n"
+  },
+  {
+   "atMs": 2882,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" trend\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"8rnCfUD559\",\"output_index\":0,\"sequence_number\":95}\n\n"
+  },
+  {
+   "atMs": 2899,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 2899,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" is\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"YnpTuNrj69SqH\",\"output_index\":0,\"sequence_number\":96}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" also\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"5blKD72uyWH\",\"output_index\":0,\"sequence_number\":97}\n\n"
+  },
+  {
+   "atMs": 2901,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" on\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"3ntxx9jhxQz5O\",\"output_index\":0,\"sequence_number\":98}\n\n"
+  },
+  {
+   "atMs": 2901,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" track\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"nEq8A2Y7a7\",\"output_index\":0,\"sequence_number\":99}\n\n"
+  },
+  {
+   "atMs": 2908,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" at\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"lydeHuqlvemhN\",\"output_index\":0,\"sequence_number\":100}\n\n"
+  },
+  {
+   "atMs": 2913,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" +\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"H3hyPTWArIBl5t\",\"output_index\":0,\"sequence_number\":101}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"0\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"zBh9Q6tFqdH7kaA\",\"output_index\":0,\"sequence_number\":102}\n\n"
+  },
+  {
+   "atMs": 2916,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 2918,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\".\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"yFiiRNbNLVefXw5\",\"output_index\":0,\"sequence_number\":103}\n\n"
+  },
+  {
+   "atMs": 2973,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"2\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"ajZx5lUNMJLcfsi\",\"output_index\":0,\"sequence_number\":104}\n\n"
+  },
+  {
+   "atMs": 2988,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" kg\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"9leUbCgbnhVOI\",\"output_index\":0,\"sequence_number\":105}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" a\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"tCHzJym9gPxyih\",\"output_index\":0,\"sequence_number\":106}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" week\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"cWrwVuY1OmY\",\"output_index\":0,\"sequence_number\":107}\n\n"
+  },
+  {
+   "atMs": 3025,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\",\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"I4Pp7PZEUY06V2Z\",\"output_index\":0,\"sequence_number\":108}\n\n"
+  },
+  {
+   "atMs": 3039,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" close\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"ioQ7TTeQI9\",\"output_index\":0,\"sequence_number\":109}\n\n"
+  },
+  {
+   "atMs": 3039,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" to\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"solW8DykC21YG\",\"output_index\":0,\"sequence_number\":110}\n\n"
+  },
+  {
+   "atMs": 3045,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" the\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"IrEZYRhlaqeT\",\"output_index\":0,\"sequence_number\":111}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" plan\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"dHE0P1glqlw\",\"output_index\":0,\"sequence_number\":112}\n\n"
+  },
+  {
+   "atMs": 3083,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\".\\n\\n\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"29BfkBOHnC6Yz\",\"output_index\":0,\"sequence_number\":113}\n\n"
+  },
+  {
+   "atMs": 3088,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"Next\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"Ux6QMP9ia0pP\",\"output_index\":0,\"sequence_number\":114}\n\n"
+  },
+  {
+   "atMs": 3093,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" step\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"bAETCv5Vkzr\",\"output_index\":0,\"sequence_number\":115}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\":\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"j5GcHHLCQG0Fl5g\",\"output_index\":0,\"sequence_number\":116}\n\n"
+  },
+  {
+   "atMs": 3094,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" keep\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"Rc7X7zh5Nfw\",\"output_index\":0,\"sequence_number\":117}\n\n"
+  },
+  {
+   "atMs": 3099,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" the\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"gjfjpndjcELw\",\"output_index\":0,\"sequence_number\":118}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"D7eb5HcSfCMhOkV\",\"output_index\":0,\"sequence_number\":119}\n\n"
+  },
+  {
+   "atMs": 3151,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"301\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"IOEg0R6aXtfOY\",\"output_index\":0,\"sequence_number\":120}\n\n"
+  },
+  {
+   "atMs": 3163,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 3165,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"0\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"ooRuZAbqhnjwcQ5\",\"output_index\":0,\"sequence_number\":121}\n\n"
+  },
+  {
+   "atMs": 3175,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 3177,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" kcal\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"B2jVoFdlF05\",\"output_index\":0,\"sequence_number\":122}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" target\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"okBzoTrtC\",\"output_index\":0,\"sequence_number\":123}\n\n"
+  },
+  {
+   "atMs": 3178,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\",\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"wjv56zKPkedJRUY\",\"output_index\":0,\"sequence_number\":124}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" and\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"t6t6uOggU72N\",\"output_index\":0,\"sequence_number\":125}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" make\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"Z1NEz9age26\",\"output_index\":0,\"sequence_number\":126}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" the\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"Iu3HzACbB2fL\",\"output_index\":0,\"sequence_number\":127}\n\n"
+  },
+  {
+   "atMs": 3203,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" missing\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"KCPRpqfo\",\"output_index\":0,\"sequence_number\":128}\n\n"
+  },
+  {
+   "atMs": 3207,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 3207,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" calories\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"dXigLtf\",\"output_index\":0,\"sequence_number\":129}\n\n"
+  },
+  {
+   "atMs": 3255,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" mostly\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"5ZRCPY5JA\",\"output_index\":0,\"sequence_number\":130}\n\n"
+  },
+  {
+   "atMs": 3267,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" carbs\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"Wds03f5wHY\",\"output_index\":0,\"sequence_number\":131}\n\n"
+  },
+  {
+   "atMs": 3311,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" around\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"1UORroY8m\",\"output_index\":0,\"sequence_number\":132}\n\n"
+  },
+  {
+   "atMs": 3370,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 3371,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" upper\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"zt5AVWT1Dp\",\"output_index\":0,\"sequence_number\":133}\n\n"
+  },
+  {
+   "atMs": 3429,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 3431,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" days\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"FvgFHsTEM2D\",\"output_index\":0,\"sequence_number\":134}\n\n"
+  },
+  {
+   "atMs": 3497,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" rather\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"tgBhGHBkv\",\"output_index\":0,\"sequence_number\":135}\n\n"
+  },
+  {
+   "atMs": 3503,
+   "text": "event: response.output_text"
+  },
+  {
+   "atMs": 3503,
+   "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" than\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"dwFsmQYcISk\",\"output_index\":0,\"sequence_number\":136}\n\n"
+  },
+  {
+   "atMs": 3517,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" more\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"K023oQK65nJ\",\"output_index\":0,\"sequence_number\":137}\n\n"
+  },
+  {
+   "atMs": 3548,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" fat\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"WhJHfxAyXt8f\",\"output_index\":0,\"sequence_number\":138}\n\n"
+  },
+  {
+   "atMs": 3574,
+   "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\".\",\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"obfuscation\":\"aNtED9H83nPIbR2\",\"output_index\":0,\"sequence_number\":139}\n\n"
+  },
+  {
+   "atMs": 3623,
+   "text": "event: response.output_text.done\ndata: {\"type\":\"response.output_text.done\",\"content_index\":0,\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"logprobs\":[],\"output_index\":0,\"sequence_number\":140,\"text\":\"Yes — looking at your last 5 barbell bench press sessions, it’s still going up. Your best set moved from 80 kg × 6 on Thu 15 Oct to 85 kg × 6 on Thu 12 Nov, +30 kg lifted (+6%).\\n\\nYou’re eating enough overall: this week you averaged 2901 / 3010 kcal (96%) and protein was 171 / 155 g (111%). Your weight trend is also on track at +0.2 kg a week, close to the plan.\\n\\nNext step: keep the 3010 kcal target, and make the missing calories mostly carbs around upper days rather than more fat.\"}\n\n"
+  },
+  {
+   "atMs": 3630,
+   "text": "event: response.content_part.done\ndata: {\"type\":\"response.content_part.done\",\"content_index\":0,\"item_id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"output_index\":0,\"part\":{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"Yes — looking at your last 5 barbell bench press sessions, it’s still going up. Your best set moved from 80 kg × 6 on Thu 15 Oct to 85 kg × 6 on Thu 12 Nov, +30 kg lifted (+6%).\\n\\nYou’re eating enough overall: this week you averaged 2901 / 3010 kcal (96%) and protein was 171 / 155 g (111%). Your weight trend is also on track at +0.2 kg a week, close to the plan.\\n\\nNext step: keep the 3010 kcal target, and make the missing calories mostly carbs around upper days rather than more fat.\"},\"sequence_number\":141}\n\n"
+  },
+  {
+   "atMs": 3637,
+   "text": "event: response.output_item"
+  },
+  {
+   "atMs": 3637,
+   "text": ".done\ndata: {\"type\":\"response.output_item.done\",\"item\":{\"id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"type\":\"message\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"Yes — looking at your last 5 barbell bench press sessions, it’s still going up. Your best set moved from 80 kg × 6 on Thu 15 Oct to 85 kg × 6 on Thu 12 Nov, +30 kg lifted (+6%).\\n\\nYou’re eating enough overall: this week you averaged 2901 / 3010 kcal (96%) and protein was 171 / 155 g (111%). Your weight trend is also on track at +0.2 kg a week, close to the plan.\\n\\nNext step: keep the 3010 kcal target, and make the missing calories mostly carbs around upper days rather than more fat.\"}],\"phase\":\"final_answer\",\"role\":\"assistant\"},\"output_index\":0,\"sequence_number\":142}\n\n"
+  },
+  {
+   "atMs": 3651,
+   "text": "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_0bc6946367b0d2cc016afb1e65703c87d29cfb2ffc54523323\",\"object\":\"response\",\"created_at\":1794842213,\"status\":\"completed\",\"access_programs\":null,\"background\":false,\"completed_at\":1794842216,\"error\":null,\"frequency_penalty\":0.0,\"image\":{\"context_compression\":\"disabled\"},\"incomplete_details\":null,\"input_transformations\":[],\"instructions\":null,\"max_output_tokens\":700,\"max_tool_calls\":null,\"model\":\"gpt-5.5-2026-04-23\",\"moderation\":null,\"output\":[{\"id\":\"msg_0bc6946367b0d2cc016afb1e66fa1487d2b928cd3316007cec\",\"type\":\"message\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"Yes — looking at your last 5 barbell bench press sessions, it’s still going up. Your best set moved from 80 kg × 6 on Thu 15 Oct to 85 kg × 6 on Thu 12 Nov, +30 kg lifted (+6%).\\n\\nYou’re eating enough overall: this week you averaged 2901 / 3010 kcal (96%) and protein was 171 / 155 g (111%). Your weight trend is also on track at +0.2 kg a week, close to the plan.\\n\\nNext step: keep the 3010 kcal target, and make the missing calories mostly carbs around upper days rather than more fat.\"}],\"phase\":\"final_answer\",\"role\":\"assistant\"}],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":null,\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"current_turn\",\"effort\":\"low\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"service_tier\":\"default\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[{\"type\":\"function\",\"description\":\"What the person ate on one day: entries grouped by meal with kcal and macros, the totals against that day’s targets, and whether the day was met, plus anything planned and not eaten yet, listed apart and in none of the totals. Tomorrow can be read for its plan. Use for a specific day, not for today or this week (the briefing has those).\",\"name\":\"get_day_food\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"day\":{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"}},\"required\":[\"day\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Seven scored days ending on week_end: per day met or not with kcal and protein, the averages against targets, and the ranked gaps. The briefing already has the week ending today; use this for an earlier week.\",\"name\":\"get_week_food\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"week_end\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"week_end\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"A month of days: for each day with anything logged, whether it was met with its kcal and protein, plus the counts. Use for \\\"how was October\\\" or \\\"how many days did I log last month\\\".\",\"name\":\"get_month_food\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"month\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"month\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Every target (energy, macros, fibre, water, limits, vitamins, minerals, food groups) with the engine’s reason and whether the person pinned it, the engine’s inputs (BMR, activity, TDEE, goal adjustment, floor), and the history of target versions. The briefing has the main targets; use this for a vitamin, mineral or food group, or for \\\"why\\\" and \\\"when did it change\\\".\",\"name\":\"get_targets\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"additionalProperties\":false,\"required\":[]},\"strict\":true},{\"type\":\"function\",\"description\":\"Gym sessions in the seven days ending on week_end (title, day, exercises, working sets, kg lifted, minutes), the week totals against the planned training days, and week on week per lift against the seven days before. The briefing has the week ending today; use this for an earlier week.\",\"name\":\"get_gym_week\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"week_end\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"week_end\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"One gym session in full: exercises in order with every set (weight, reps, time, distance, done or not), notes and how it felt. Give a session id from an earlier result, or a day to get that day’s sessions.\",\"name\":\"get_workout\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"id\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},{\"type\":\"null\"}]},\"day\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"id\",\"day\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"One exercise over its last sessions (1 to 20): the best working set in each on the person’s \\\"best\\\" basis (kg lifted in one set, or the heaviest weight; reps, time or distance for other exercises), the best and the latest, and the change from the first session in the window to the last. Match by exercise_id or by part of the name (\\\"squat\\\").\",\"name\":\"get_lift_history\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"exercise_id\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},{\"type\":\"null\"}]},\"exercise_name\":{\"anyOf\":[{\"type\":\"string\",\"maxLength\":60},{\"type\":\"null\"}]},\"sessions\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":1,\"maximum\":20},{\"type\":\"null\"}]}},\"required\":[\"exercise_id\",\"exercise_name\",\"sessions\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Weigh-ins over the last N days (7 to 365) with the seven-day trend, the rate in kg a week, the change over the window, the goal weight and the pace the plan expects. The briefing has the last 28 days; use this for a longer or shorter window.\",\"name\":\"get_weight_history\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"days\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":7,\"maximum\":365},{\"type\":\"null\"}]}},\"required\":[\"days\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The plan check (recalibration): whether it is due, what the last 14 days of logged intake and weigh-ins show against the expected pace, and the engine’s proposal if any. The briefing has the status; use this for the evidence behind it.\",\"name\":\"get_recalibration\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"additionalProperties\":false,\"required\":[]},\"strict\":true},{\"type\":\"function\",\"description\":\"Search the person’s saved foods (My foods) by name or brand: up to 20 verified foods with their serving and the kcal, protein, carbs and fat per serving. Use when suggesting what to eat from what they already log.\",\"name\":\"search_my_foods\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"maxLength\":80}},\"required\":[\"query\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The person’s saved meals (named sets of ingredients they log in one go), filtered by part of the name or all of them with an empty query: up to 20, each with its ingredients and the kcal and protein of one portion.\",\"name\":\"search_meals\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"maxLength\":80}},\"required\":[\"query\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The exercises the person can log: the shared catalogue and their own, most recently used first, filtered by part of the name or a muscle group. Returns ids for get_lift_history.\",\"name\":\"list_exercises\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"query\":{\"anyOf\":[{\"type\":\"string\",\"maxLength\":60},{\"type\":\"null\"}]},\"muscle_group\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"chest\",\"back\",\"shoulders\",\"biceps\",\"triceps\",\"forearms\",\"core\",\"quads\",\"hamstrings\",\"glutes\",\"calves\",\"full_body\"]},{\"type\":\"null\"}]}},\"required\":[\"query\",\"muscle_group\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"The AI weekly review already written for the week containing week_end (summary, wins, the two changes, encouragement), if the person opened their Week screen that week. Never writes a new one.\",\"name\":\"get_weekly_review\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"week_end\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]}},\"required\":[\"week_end\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a food log entry from what the person says they ate (\\\"2 eggs and toast\\\"). Runs the app’s estimator and returns an estimate card with the items, grams, kcal and macros; the person reviews and confirms it with a tap. Nothing is logged by this call. Use when they ask to log, add or record food; pass the meal and day only when they said them.\",\"name\":\"draft_food_log\",\"output_schema\":nu"
+  },
+  {
+   "atMs": 3653,
+   "text": "ll,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":500},\"day\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]},\"meal\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"breakfast\",\"lunch\",\"dinner\",\"snack\"]},{\"type\":\"null\"}]}},\"required\":[\"text\",\"day\",\"meal\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a change to one target as a card the person applies with a tap: the number now, the number after, the targets the engine recomputes from it (fat and carbs when energy or protein moves), and any floor or range warning. value null clears a pin so the engine’s number comes back. Nothing changes until the person taps Apply. Use when they ask to change, raise, lower, set or reset a target; never pin a value under the safety floor. reason is one short line shown on the card, written to the person (\\\"You asked for 200 kcal less\\\"), never about them (\\\"User asked...\\\").\",\"name\":\"draft_target_change\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"key\":{\"type\":\"string\",\"enum\":[\"energy_kcal\",\"protein_g\",\"carbs_g\",\"fat_g\",\"fiber_g\",\"sugar_g\",\"added_sugar_g\",\"saturated_fat_g\",\"omega3_g\",\"sodium_mg\",\"potassium_mg\",\"calcium_mg\",\"iron_mg\",\"magnesium_mg\",\"zinc_mg\",\"iodine_ug\",\"vitamin_a_ug\",\"vitamin_c_mg\",\"vitamin_d_ug\",\"vitamin_b12_ug\",\"folate_ug\",\"vitamin_e_mg\",\"vitamin_k_ug\",\"water_ml\",\"alcohol_std_drinks\",\"vegetables\",\"fruit\",\"whole_grains\",\"protein_foods\",\"dairy_or_alt\",\"legumes\",\"nuts_seeds\"]},\"value\":{\"anyOf\":[{\"type\":\"number\",\"minimum\":0,\"maximum\":100000},{\"type\":\"null\"}]},\"reason\":{\"type\":\"string\",\"maxLength\":200}},\"required\":[\"key\",\"value\",\"reason\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a gym session as a card the person starts with a tap: a title, the exercises in order (by id from list_exercises, get_workout or get_lift_history, or by name) and the planned sets (weight kg, reps, time s, distance m; null leaves a field for them to fill). The card shows last time’s sets beside each exercise. Nothing is saved by this call. To plan \\\"like last week\\\", read that session with get_gym_week or get_workout first and build from it.\",\"name\":\"draft_workout\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":60},\"day\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"},{\"type\":\"null\"}]},\"exercises\":{\"minItems\":1,\"maxItems\":30,\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"exercise_id\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},{\"type\":\"null\"}]},\"exercise_name\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":80},\"sets\":{\"minItems\":1,\"maxItems\":30,\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"weight_kg\":{\"anyOf\":[{\"type\":\"number\",\"minimum\":0,\"maximum\":1000},{\"type\":\"null\"}]},\"reps\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":0,\"maximum\":1000},{\"type\":\"null\"}]},\"time_s\":{\"anyOf\":[{\"type\":\"integer\",\"minimum\":0,\"maximum\":86400},{\"type\":\"null\"}]},\"distance_m\":{\"anyOf\":[{\"type\":\"number\",\"minimum\":0,\"maximum\":1000000},{\"type\":\"null\"}]}},\"required\":[\"weight_kg\",\"reps\",\"time_s\",\"distance_m\"],\"additionalProperties\":false}}},\"required\":[\"exercise_id\",\"exercise_name\",\"sets\"],\"additionalProperties\":false}},\"notes\":{\"type\":\"string\",\"maxLength\":300}},\"required\":[\"title\",\"day\",\"exercises\",\"notes\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a saved meal from the person’s own foods (ids from search_my_foods) as a card they save with a tap: a name and the ingredients with amounts in grams or servings. Saved meals log in a few taps with no estimate. Nothing is saved by this call. Use when they ask to save, create or remember a meal; search their foods first and only use ids you were given.\",\"name\":\"draft_meal\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":80},\"items\":{\"minItems\":1,\"maxItems\":20,\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"food_id\":{\"type\":\"string\",\"pattern\":\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\"},\"amount\":{\"type\":\"number\",\"exclusiveMinimum\":0,\"maximum\":100000},\"unit\":{\"type\":\"string\",\"enum\":[\"g\",\"serving\"]}},\"required\":[\"food_id\",\"amount\",\"unit\"],\"additionalProperties\":false}},\"meal\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"breakfast\",\"lunch\",\"dinner\",\"snack\"]},{\"type\":\"null\"}]}},\"required\":[\"name\",\"items\",\"meal\"],\"additionalProperties\":false},\"strict\":true},{\"type\":\"function\",\"description\":\"Draft a note to remember about the person (\\\"left knee sore since Tuesday\\\", \\\"prefers training in the morning\\\") as a card they confirm with a tap. Confirmed notes appear in every later briefing. Nothing is kept by this call. Use when they ask you to remember, note or keep in mind something that is not already in their profile.\",\"name\":\"remember_note\",\"output_schema\":null,\"parameters\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":200}},\"required\":[\"text\"],\"additionalProperties\":false},\"strict\":true}],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":{\"input_tokens\":6610,\"input_tokens_details\":{\"cache_write_tokens\":0,\"cache_write_tokens_details\":{\"ttl_12h_tokens\":0,\"ttl_30m_tokens\":0},\"cached_tokens\":5632},\"output_tokens\":140,\"output_tokens_details\":{\"reasoning_tokens\":0},\"total_tokens\":6750},\"user\":null,\"metadata\":{}},\"sequence_number\":143}\n\n"
+  }
+ ]
+}

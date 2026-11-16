@@ -1,0 +1,25 @@
+{
+  "name": "@diet-tracker/demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Repeatable Playwright recording of the Minori walkthrough video. See README.md.",
+  "scripts": {
+    "record": "node --conditions=development --import tsx run.ts",
+    "review": "node review.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@diet-tracker/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.23.0",
+    "playwright": "1.63.0",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.0",
+    "uuid": "^14.0.2"
+  }
+}

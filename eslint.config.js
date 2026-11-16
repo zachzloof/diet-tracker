@@ -21,6 +21,8 @@ export default defineConfigWithVueTs(
       'apps/api/drizzle/**',
       'apps/web/android/**',
       'apps/web/ios/**',
+      'demo/.cache/**',
+      'demo/output/**',
     ],
   },
   js.configs.recommended,
@@ -51,6 +53,7 @@ export default defineConfigWithVueTs(
     files: [
       'apps/api/**/*.ts',
       'packages/**/*.ts',
+      'demo/**/*.{ts,mjs}',
       'eslint.config.js',
       '**/vite.config.ts',
       '**/vitest.config.ts',

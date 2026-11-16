@@ -29,3 +29,7 @@ apps/web/ios/App/App/capacitor.config.json
 apps/web/android/app/src/main/assets/public/
 apps/web/android/app/src/main/assets/capacitor.config.json
 apps/web/android/app/src/main/assets/capacitor.plugins.json
+
+# demo recording: scratch (web build, raw takes) and the finished videos
+demo/.cache/
+demo/output/

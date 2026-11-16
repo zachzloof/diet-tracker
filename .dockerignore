@@ -15,3 +15,5 @@ apps/web/ios
 !**/.env.example
 *.md
 !README.md
+# the portfolio video recorder (local only, never in the image)
+demo

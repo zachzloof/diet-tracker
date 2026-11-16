@@ -10,6 +10,7 @@ Free, phone-first nutrition and gym tracker in two halves behind a Food / Gym sw
 - `CHANGELOG.md` - what shipped per slice.
 - `docs/OUTSTANDING.md` - what is deferred or waiting on a decision after slice 5; the owner revisits it after a week of real use.
 - `.claude/skills/` - project skills (table below). Read the relevant one before touching its area.
+- `demo/` - the portfolio walkthrough video: `pnpm demo:record` seeds its own `minori_demo` database, runs the app on a pinned clock with recorded AI answers, films a 390x844 walkthrough with Playwright and cuts it with ffmpeg into `demo/output/`. Its `README.md` says how to change it; a UI change can break a step in `demo/record.ts`. Kept out of the Docker image.
 
 ## Stack (reasons in docs/DECISIONS.md)
 | Layer | Choice |
@@ -34,6 +35,7 @@ pnpm db:generate    # drizzle-kit: schema.ts -> SQL migration
 pnpm db:migrate
 pnpm db:seed
 docker compose up -d db
+pnpm demo:record    # the portfolio video (demo/README.md)
 ```
 
 ## Non-negotiables
