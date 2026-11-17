@@ -333,7 +333,12 @@ function retry(): void {
       </p>
 
       <template v-if="score && prefs.nutrientDetail === 'full' && !planOnly">
-        <FoodGroupsCard :score="score" :entries="foodEntries" :is-today="isToday" />
+        <FoodGroupsCard
+          :score="score"
+          :entries="foodEntries"
+          :planned="log.plannedFoodGroups.value"
+          :is-today="isToday"
+        />
         <MicronutrientGrid :score="score" :entries="foodEntries" :is-today="isToday" />
       </template>
     </div>

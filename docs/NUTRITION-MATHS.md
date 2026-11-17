@@ -201,7 +201,7 @@ The share of minimum targets (fibre, the 14 vitamins, minerals and omega-3, the 
 
 ### 2.4 Planned food (D43)
 
-Food marked planned is food someone means to eat and has not eaten. It counts for nothing: it is not in the day's totals, not in the entry count that decides whether a day is logged (2.1), and so not in day met, the week, the streak, gaps, recalibration or any number the coach quotes. Every number on screen is what was eaten. A plan only adds a lighter tone to the energy ring and the macro and water bars, running on from the eaten amount and stopping at the end of the bar.
+Food marked planned is food someone means to eat and has not eaten. It counts for nothing: it is not in the day's totals, not in the entry count that decides whether a day is logged (2.1), and so not in day met, the week, the streak, gaps, recalibration or any number the coach quotes. Every number on screen is what was eaten. A plan only adds a lighter tone to the energy ring, the macro and water bars and the food-group pips, running on from the eaten amount and stopping at the end of the bar; a food group also says "+ 1 planned" beside its eaten serves.
 
 Ticked off, it becomes an ordinary entry and counts from then on, in the meal the person picks when they tick it. Today can reach one day ahead (`MAX_PLAN_DAYS_AHEAD`) and that day can hold plans and nothing else.
 
@@ -301,6 +301,7 @@ BMR 1189. TDEE 1843. Energy 1843 − 275 = 1568, rounded 1570 kcal (deficit 14.9
 
 ## Change log for this page
 
+- 2026-11-17 (D43): planned food shades the food-group pips too, with "+ N planned" beside the eaten serves. Display only: the serves scored are still what was eaten. Section 2.4.
 - 2026-11-04 (D43): planned food. An entry can be planned instead of eaten; it is left out of the day's totals and entry count, so no score, streak or review changes. No number or band in the engine changed.
 - 2026-11-04 (D43): a plan never ticked off is deleted 48 hours after its day ends, and none can be added further back. The tick asks which meal. No total changes.
 - 2026-10-31 (D40): uncapped energy. A profile flag marks the energy target a floor: met from 95% with no upper line, close from 90%, never over; the number and everything derived from it are unchanged. The week's "energy over plan" gap is skipped for it. Sections 1.12, 2 and 2.2.

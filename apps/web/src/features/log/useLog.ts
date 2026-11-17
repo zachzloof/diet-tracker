@@ -11,6 +11,7 @@ import {
   type DayLogResponse,
   type EstimateRequest,
   type Food,
+  type FoodGroupServes,
   type FoodInput,
   type NutrientVector,
   type UpdateEntryRequest,
@@ -39,7 +40,8 @@ export function dayQueryOptions(day: string) {
 /**
  * One day's entries and totals, with anything queued offline for that day folded in so
  * the log and the ring already count it. Re-runs when `day` changes. `summary` is what was
- * eaten; `plannedTotals` is what is still to come (D43), for the lighter tone on the charts.
+ * eaten; `plannedTotals` and `plannedFoodGroups` are what is still to come (D43), for the lighter
+ * tone on the charts and the food-group pips.
  */
 export function useDayLog(day: MaybeRefOrGetter<string>) {
   const queue = useQueueStore()
@@ -64,14 +66,19 @@ export function useDayLog(day: MaybeRefOrGetter<string>) {
       entryCount: start.entryCount + eaten.filter((e) => !isWaterEntry(e)).length,
     }
   })
-  const plannedTotals = computed<NutrientVector | null>(() => {
+  const plannedSum = computed(() => {
     const planned = entries.value.filter((e) => e.planned)
-    return planned.length > 0 ? sumPortions(planned).totals : null
+    return planned.length > 0 ? sumPortions(planned) : null
   })
+  const plannedTotals = computed<NutrientVector | null>(() => plannedSum.value?.totals ?? null)
+  const plannedFoodGroups = computed<FoodGroupServes | null>(
+    () => plannedSum.value?.foodGroups ?? null,
+  )
   return {
     entries,
     summary,
     plannedTotals,
+    plannedFoodGroups,
     pending,
     /** True once the server (or the offline mirror) has answered for this day. */
     hasData: computed(() => query.data.value !== undefined),

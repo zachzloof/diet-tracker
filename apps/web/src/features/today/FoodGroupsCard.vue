@@ -4,6 +4,7 @@ import {
   FOOD_GROUP_KEYS,
   type DayScore,
   type FoodGroupKey,
+  type FoodGroupServes,
   type LogEntry,
 } from '@diet-tracker/shared'
 import { computed, ref, useId } from 'vue'
@@ -16,17 +17,27 @@ import ContributorsPanel from './ContributorsPanel.vue'
 
 /**
  * Food-group serves as pips: one per target serve, filled as the day goes. Tap a group to
- * see which of the day's entries supplied it; one group is open at a time.
+ * see which of the day's entries supplied it; one group is open at a time. Food still
+ * planned (D43) shades the pips after the eaten serves and adds "+ 1 planned" beside the
+ * numbers, which stay what was eaten.
  */
-const props = defineProps<{ score: DayScore; entries: LogEntry[]; isToday: boolean }>()
+const props = defineProps<{
+  score: DayScore
+  entries: LogEntry[]
+  isToday: boolean
+  planned?: FoodGroupServes | null
+}>()
 
 const rows = computed(() =>
   FOOD_GROUP_KEYS.flatMap((key: FoodGroupKey) => {
     const score = props.score.scores[key]
     if (!score) return []
-    return [{ key, label: FOOD_GROUPS[key].label, score, info: score.kind === 'info' }]
+    const planned = props.planned?.[key] ?? 0
+    return [{ key, label: FOOD_GROUPS[key].label, score, info: score.kind === 'info', planned }]
   }),
 )
+
+const anyPlanned = computed(() => rows.value.some((row) => row.planned >= 0.05))
 
 const open = ref<FoodGroupKey | null>(null)
 const panelId = useId()
@@ -61,6 +72,9 @@ function serves(value: number): string {
               <span>
                 <span class="font-semibold text-fg">{{ serves(row.score.actual) }}</span>
                 / {{ serves(row.score.target) }}
+                <span v-if="row.planned >= 0.05" class="text-xs whitespace-nowrap">
+                  + {{ serves(row.planned) }} planned
+                </span>
               </span>
               <StatusDot v-if="!row.info" :status="row.score.status" />
               <span v-else class="text-xs">info</span>
@@ -75,6 +89,7 @@ function serves(value: number): string {
           <ServePips
             class="mt-1.5"
             :value="row.score.actual"
+            :planned="row.planned"
             :target="row.score.target"
             :label="`${row.label}: ${serves(row.score.actual)} of ${serves(row.score.target)} serves`"
             :color="row.info ? 'carbs' : 'fibre'"
@@ -93,8 +108,11 @@ function serves(value: number): string {
       </li>
     </ul>
     <p class="mt-2 text-xs text-fg-muted">
-      Tap a group to see where its serves came from. Legumes and nuts are shown for information and
-      never scored.
+      Tap a group to see where its serves came from.
+      <template v-if="anyPlanned"
+        >The lighter tone is food you've planned and not eaten yet.</template
+      >
+      Legumes and nuts are shown for information and never scored.
     </p>
   </Card>
 </template>
