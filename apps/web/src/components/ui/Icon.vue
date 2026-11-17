@@ -42,6 +42,7 @@ export type IconName =
   | 'lock'
   | 'file-text'
   | 'trending-up'
+  | 'trending-down'
   | 'shield'
   | 'utensils'
   | 'dumbbell'
@@ -93,6 +94,7 @@ const PATHS: Record<IconName, string> = {
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   'file-text': 'M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h8',
   'trending-up': 'M3 17l6-6 4 4 8-8M15 7h6v6',
+  'trending-down': 'M3 7l6 6 4-4 8 8M15 17h6v-6',
   shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
   utensils: 'M4 3v6a3 3 0 0 0 6 0V3M7 3v18M20 14V3c-2.5 1-4 3.5-4 7v4zM20 14v7',
   dumbbell: 'M2 12h2M20 12h2M6 7v10M18 7v10M9 5v14M15 5v14M9 12h6',

@@ -25,6 +25,7 @@ import { aiCalls, coachBriefs, coachMessages, coachThreads } from '../../db/sche
 import { env } from '../../env.js'
 import { resetRateLimits } from '../../middleware/rate-limit.js'
 import { ensureExerciseCatalogue } from '../../training/exercises-service.js'
+import { clearBillingCache, openaiBilling, type CostsQuery } from '../billing.js'
 import { coachModel } from './agent.js'
 import { draftBrief, getBrief } from './brief.js'
 import { loadBriefingInputs } from './briefing.js'
@@ -350,9 +351,12 @@ describe('/api/v1/ai/costs (owner only)', () => {
     const res = await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs')
     expect(res.status).toBe(200)
     const costs = aiCostsResponseSchema.parse(await res.json())
-    expect(costs.days).toBe(30)
+    // The default window is the last seven days, today included.
+    expect(costs.period).toBe('7d')
+    expect(costs.days).toBe(7)
     expect(costs.pricesAsOf).toBe(AI_PRICES_AS_OF)
     expect(costs.usdToGbp).toBe(env.USD_TO_GBP)
+    expect(costs.billed).toEqual({ status: 'off' })
     expect(costs.rows).toEqual([
       {
         userId: finnAccount.id,
@@ -369,8 +373,10 @@ describe('/api/v1/ai/costs (owner only)', () => {
         outputCostUsd: 6,
         searchCostUsd: 0,
         unpricedCalls: 0,
+        estimatedCalls: 0,
       },
       {
+        // No estimate on gpt-5.5 ever recorded its cache, so it is priced uncached.
         userId: finnAccount.id,
         email: 'finn@example.com',
         purpose: 'estimate',
@@ -384,6 +390,7 @@ describe('/api/v1/ai/costs (owner only)', () => {
         outputCostUsd: 3,
         searchCostUsd: 0.02,
         unpricedCalls: 0,
+        estimatedCalls: 1,
       },
       {
         userId: tessAccount.id,
@@ -399,8 +406,118 @@ describe('/api/v1/ai/costs (owner only)', () => {
         outputCostUsd: 0,
         searchCostUsd: 0,
         unpricedCalls: 1,
+        estimatedCalls: 1,
       },
     ])
+    expect(costs.models.map((m) => [m.model, m.calls, m.priced])).toEqual([
+      ['gpt-5.5', 3, true],
+      ['some-unlisted-model', 1, false],
+    ])
+    expect(costs.daily).toHaveLength(7)
+    expect(costs.daily.at(-1)?.day).toBe(costs.to)
+    expect(costs.daily.reduce((sum, d) => sum + d.calls, 0)).toBe(4)
+    // 12.4 + 8.02 dollars, all of it today.
+    expect(costs.daily.at(-1)?.costUsd).toBeCloseTo(20.42, 6)
+    expect(costs.previous?.calls).toBe(0)
+
+    // Thirty days: the call 40 days back falls in the thirty before.
+    const month = aiCostsResponseSchema.parse(
+      await (await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs?period=30d')).json(),
+    )
+    expect(month.days).toBe(30)
+    expect(month.previous?.calls).toBe(1)
+    expect(month.previous?.costUsd).toBeCloseTo(8, 6)
+
+    // All time runs from the first call, so it holds every row.
+    const all = aiCostsResponseSchema.parse(
+      await (await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs?period=all')).json(),
+    )
+    expect(all.previous).toBeNull()
+    expect(all.rows.reduce((sum, r) => sum + r.calls, 0)).toBe(5)
+    expect(all.daily[0]?.day).toBe(all.from)
+
+    expect((await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs?period=year')).status).toBe(400)
+  })
+
+  it('prices a coach round from before cache counts at the cached share seen since', async () => {
+    env.OWNER_EMAIL = 'finn@example.com'
+    const coach = (cached: number | null) => ({
+      id: uuidv7(),
+      userId: finnAccount.id,
+      purpose: 'coach' as const,
+      model: 'gpt-5.5-2026-04-23',
+      inputTokens: 1_000_000,
+      cachedInputTokens: cached,
+      outputTokens: 0,
+      latencyMs: 5,
+      ok: true,
+      error: null,
+      webSearchCalls: 0,
+    })
+    // One recorded round at 80% cached, one old round with no count.
+    await db.insert(aiCalls).values([coach(800_000), coach(null)])
+    const costs = aiCostsResponseSchema.parse(
+      await (await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs?period=today')).json(),
+    )
+    const row = costs.rows[0]
+    expect(row?.estimatedCalls).toBe(1)
+    expect(row?.cachedInputTokens).toBe(1_600_000)
+    // Each round: 200k fresh × $5/M + 800k cached × $0.50/M = $1.40, not $5 for the old one.
+    expect(row?.inputCostUsd).toBeCloseTo(2.8, 6)
+  })
+
+  it("sets OpenAI's own bill beside the estimate when an admin key is configured", async () => {
+    env.OWNER_EMAIL = 'finn@example.com'
+    const asked: CostsQuery[] = []
+    openaiBilling.override = async (query) => {
+      asked.push(query)
+      return {
+        object: 'page',
+        has_more: false,
+        next_page: null,
+        data: [
+          {
+            object: 'bucket',
+            start_time: query.end_time - 86_400,
+            end_time: query.end_time,
+            results: [
+              {
+                object: 'organization.costs.result',
+                amount: { value: 0.031, currency: 'usd' },
+                line_item: 'gpt-5.5, input',
+              },
+              {
+                object: 'organization.costs.result',
+                amount: { value: '0.012', currency: 'usd' },
+                line_item: 'gpt-5.5, output',
+              },
+            ],
+          },
+        ],
+      }
+    }
+    try {
+      const costs = aiCostsResponseSchema.parse(
+        await (await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs')).json(),
+      )
+      expect(asked[0]?.bucket_width).toBe('1d')
+      expect(asked[0]?.group_by).toEqual(['line_item'])
+      if (costs.billed.status !== 'ok') throw new Error(`billed is ${costs.billed.status}`)
+      expect(costs.billed.costUsd).toBeCloseTo(0.043, 6)
+      expect(costs.billed.daily).toHaveLength(7)
+      expect(costs.billed.lineItems[0]).toEqual({ lineItem: 'gpt-5.5, input', costUsd: 0.031 })
+
+      // A bad answer is reported, never thrown, and not kept.
+      clearBillingCache()
+      openaiBilling.override = async () => ({ data: 'nope' })
+      const broken = aiCostsResponseSchema.parse(
+        await (await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs')).json(),
+      )
+      expect(broken.billed.status).toBe('error')
+    } finally {
+      openaiBilling.override = null
+      clearBillingCache()
+    }
   })
 })
 

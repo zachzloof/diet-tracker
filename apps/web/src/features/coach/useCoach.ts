@@ -1,4 +1,5 @@
 import type {
+  AiCostPeriod,
   AiCostsResponse,
   CoachBrief,
   CoachBriefHalf,
@@ -147,18 +148,25 @@ export function useOpenBrief() {
 }
 
 /** The owner's AI cost view (slice 11c). */
-export function useAiCosts() {
+export function useAiCosts(period: MaybeRefOrGetter<AiCostPeriod>) {
   const query = useQuery(
-    queryOptions({
-      queryKey: ['ai', 'costs'] as const,
-      queryFn: (): Promise<AiCostsResponse> => coachApi.costs(),
-      staleTime: 60_000,
-      retry: false,
+    computed(() => {
+      const value = toValue(period)
+      return queryOptions({
+        queryKey: ['ai', 'costs', value] as const,
+        queryFn: (): Promise<AiCostsResponse> => coachApi.costs(value),
+        staleTime: 60_000,
+        retry: false,
+        // Keep the last period on screen while the next one loads.
+        placeholderData: (previous: AiCostsResponse | undefined) => previous,
+      })
     }),
   )
   return {
     data: computed(() => query.data.value ?? null),
     isLoading: query.isPending,
+    /** True while a newly picked period loads behind the last one's numbers. */
+    isPlaceholder: query.isPlaceholderData,
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,

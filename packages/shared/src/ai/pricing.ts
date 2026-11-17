@@ -49,8 +49,12 @@ export const WEB_SEARCH_USD_PER_CALL = 0.01
  * or "gpt-5-mini" would be charged as "gpt-5".
  */
 export function modelPrice(model: string): ModelPrice | null {
-  const name = model.replace(/-\d{4}-\d{2}-\d{2}$/, '')
-  return AI_MODEL_PRICES_USD_PER_M[name] ?? null
+  return AI_MODEL_PRICES_USD_PER_M[pricedModelName(model)] ?? null
+}
+
+/** The model a call is priced as: its name without a trailing snapshot date. */
+export function pricedModelName(model: string): string {
+  return model.replace(/-\d{4}-\d{2}-\d{2}$/, '')
 }
 
 export interface AiUsage {

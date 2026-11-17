@@ -8,6 +8,7 @@ import {
   coachThreadResponseSchema,
   coachThreadSchema,
   coachThreadsResponseSchema,
+  type AiCostPeriod,
   type AiCostsResponse,
   type CoachBrief,
   type CoachBriefHalf,
@@ -57,9 +58,9 @@ export const coachApi = {
     })
     return brief
   },
-  /** The owner's cost view; 404 for anyone else. */
-  costs(): Promise<AiCostsResponse> {
-    return request('/ai/costs', aiCostsResponseSchema)
+  /** The owner's cost view for one period; 404 for anyone else. */
+  costs(period: AiCostPeriod): Promise<AiCostsResponse> {
+    return request(`/ai/costs?period=${period}`, aiCostsResponseSchema)
   },
   get(id: string): Promise<CoachThreadResponse> {
     return request(`/coach/threads/${id}`, coachThreadResponseSchema)

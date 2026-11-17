@@ -28,6 +28,8 @@ Migrations run before the server on every deploy so schema and code cannot disag
 | AI_COACH_DAILY_TURN_CAP | Coach turns per person per local day; default 60. Separate from `AI_DAILY_CALL_CAP` so a long chat never blocks logging |
 | OWNER_EMAIL | Optional (D42). The email of the one account that sees the AI costs row under You and may read `GET /api/v1/ai/costs`. Unset, the route answers 404 for everyone. Set it to the owner's own account on Railway |
 | USD_TO_GBP | Optional (D42). Pounds per US dollar for the cost view's pound figures; default 0.74. OpenAI bills in dollars, so set it to the rate the card gets. The token prices are in code (`packages/shared/src/ai/pricing.ts`), not in the env |
+| OPENAI_ADMIN_KEY | Optional (D45, proposed). An OpenAI admin key (`sk-admin-…`) read only by the owner's cost view to show what OpenAI actually billed; never used for model calls. It can manage the whole OpenAI organisation, so it lives only in Railway's variables. Unset, the view shows its own estimate alone |
+| OPENAI_PROJECT_ID | Optional (D45). Narrows that billed figure to one OpenAI project (`proj_…`), the one holding the production key, so local runs and smoke tests drop out. Unset counts the whole organisation |
 | NODE_ENV / LOG_LEVEL | `production` / `info` |
 | WEB_DIST_DIR | Optional. Absolute path of the built SPA; the Dockerfile sets `/app/public`. Unset locally (the API finds `apps/web/dist`) |
 

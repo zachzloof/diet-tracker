@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { sumAiCosts, totalAiCostUsd } from './costs.js'
-import { AI_PRICES_AS_OF, aiCostUsd, modelPrice } from './pricing.js'
+import { aiCostWindow, cachedShare, groupAiCosts, sumAiCosts, totalAiCostUsd } from './costs.js'
+import { AI_PRICES_AS_OF, aiCostUsd, modelPrice, pricedModelName } from './pricing.js'
 
 describe('modelPrice', () => {
   it('reads a dated snapshot as its model and matches nothing else loosely', () => {
@@ -84,6 +84,7 @@ describe('sumAiCosts', () => {
       outputCostUsd: 0.25,
       searchCostUsd: 0.01,
       unpricedCalls: 1,
+      estimatedCalls: 1,
     }
     const totals = sumAiCosts([row, row])
     expect(totals).toEqual({
@@ -97,7 +98,80 @@ describe('sumAiCosts', () => {
       outputCostUsd: 0.5,
       searchCostUsd: 0.02,
       unpricedCalls: 2,
+      estimatedCalls: 2,
     })
     expect(totalAiCostUsd(totals)).toBeCloseTo(1.52, 10)
+  })
+})
+
+describe('pricedModelName', () => {
+  it('drops a snapshot date and nothing else', () => {
+    expect(pricedModelName('gpt-5.5-2026-04-23')).toBe('gpt-5.5')
+    expect(pricedModelName('gpt-5-mini')).toBe('gpt-5-mini')
+  })
+})
+
+describe('cachedShare', () => {
+  it('is cached over input from the calls that recorded it, null with nothing to go on', () => {
+    // Coach rounds after 2026-11-05: 4,000 of every 5,500 input tokens were cache hits.
+    expect(cachedShare({ inputTokens: 55_000, cachedInputTokens: 40_000 })).toBeCloseTo(0.7273, 4)
+    expect(cachedShare({ inputTokens: 0, cachedInputTokens: 0 })).toBeNull()
+    expect(cachedShare({ inputTokens: 10, cachedInputTokens: 50 })).toBe(1)
+  })
+
+  it('brings an old coach round priced as uncached down to its likely cost', () => {
+    // 5,500 in with no cache count: uncached it reads $0.0275 of input; at the 72.7% share
+    // seen since, 4,000 cached and 1,500 fresh, it reads $0.0095, like the recorded rounds.
+    const share = cachedShare({ inputTokens: 55_000, cachedInputTokens: 40_000 }) ?? 0
+    const usage = { inputTokens: 5500, outputTokens: 0, webSearchCalls: 0 }
+    const uncached = aiCostUsd('gpt-5.5', { ...usage, cachedInputTokens: 0 })
+    const estimated = aiCostUsd('gpt-5.5', {
+      ...usage,
+      cachedInputTokens: Math.round(5500 * share),
+    })
+    expect(uncached?.inputUsd).toBeCloseTo(0.0275, 10)
+    expect(estimated?.inputUsd).toBeCloseTo(0.0095, 10)
+  })
+})
+
+describe('aiCostWindow', () => {
+  it('ends today and runs the period back, today counting as one of its days', () => {
+    expect(aiCostWindow('today', '2026-11-17', '2026-09-25')).toEqual({
+      from: '2026-11-17',
+      to: '2026-11-17',
+    })
+    expect(aiCostWindow('7d', '2026-11-17', null)).toEqual({ from: '2026-11-11', to: '2026-11-17' })
+    expect(aiCostWindow('30d', '2026-11-17', null).from).toBe('2026-10-19')
+  })
+
+  it('runs all from the first call, or today when there is none', () => {
+    expect(aiCostWindow('all', '2026-11-17', '2026-09-25').from).toBe('2026-09-25')
+    expect(aiCostWindow('all', '2026-11-17', null).from).toBe('2026-11-17')
+  })
+})
+
+describe('groupAiCosts', () => {
+  it('puts the most expensive group first, even with fewer calls', () => {
+    const base = {
+      userId: null,
+      email: null,
+      failed: 0,
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      outputTokens: 0,
+      webSearchCalls: 0,
+      outputCostUsd: 0,
+      searchCostUsd: 0,
+      unpricedCalls: 0,
+      estimatedCalls: 0,
+    }
+    const groups = groupAiCosts(
+      [
+        { ...base, purpose: 'estimate', calls: 10, inputCostUsd: 0.1 },
+        { ...base, purpose: 'coach', calls: 3, inputCostUsd: 0.5 },
+      ],
+      (row) => row.purpose,
+    )
+    expect(groups.map((g) => g.key)).toEqual(['coach', 'estimate'])
   })
 })
