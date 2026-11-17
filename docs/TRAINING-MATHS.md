@@ -206,6 +206,56 @@ The card leads with the biggest gain (its best set this week against the previou
 then the three totals with their change, then up to four other exercises by the size of their
 move, then "New this week" and "Not this week". Nothing here feeds a target.
 
+## Progress over a range
+
+Gym > Progress (pushed from You in the gym half and from Gym > Week) reads a range of 4 weeks,
+3 months, 6 months or a year ending today (`training/progress.ts`). It loads two year-long reads,
+this year and the year before (one read may ask for at most 365 days), and slices them on the
+phone. Everything here counts **finished** sessions only, by the rules above (working sets,
+volume as load × reps with bodyweight). Nothing here feeds a target.
+
+- **The range and the one before.** A range of `n` days ends today, today included
+  (`windowEnding`). The range before is the `n` days that end the day before it starts
+  (`previousWindow`). Its totals are compared only when the data read reaches back over all of
+  it; otherwise there is no comparison rather than a comparison with days never read.
+- **Totals and averages.** Sessions, days trained, working sets, volume and minutes, as in
+  "Week totals"; sessions a week = `sessions × 7 / days in the range`; time a session =
+  `minutes / sessions`; sets a session = `working sets / sessions`; feel = the mean of the
+  1-to-5 feel over the sessions that recorded one. Each total's change is
+  `(this − before) / before`, undefined when the range before had none. The tiles say
+  "+12% on before".
+- **Week by week.** Monday-to-Sunday weeks across the range, empty weeks included
+  (`weeklyTotals`). Only days inside the range count, so the first and last weeks can be part
+  weeks. The chart shows one measure at a time (kg lifted, sessions or sets) with the mean of
+  the weeks shown as a hairline.
+- **Streaks.** A week counts when it holds at least one finished session. The streak is the
+  weeks in a row that count, ending this week; a week with no session yet does not end it
+  until the week is over, so on a Tuesday before training the streak runs to last week. The
+  longest streak is the longest run in the data read (two years at most).
+- **Calendar.** The range as weeks (columns) by weekday (Monday at the top). A day with a
+  finished session is shaded 1 to 4 by `ceil(4 × its working sets / the most working sets on
+  any day in the range)`: the busiest day is 4, and a session with nothing ticked is still 1.
+- **By weekday.** Finished sessions in the range on each weekday, Monday first.
+- **Muscle groups.** Working sets per muscle group. A set counts once for **every** group its
+  exercise lists (a bench press set is a chest set and a triceps set), so the groups add up to
+  more than the sets done. A block whose exercise is unknown (a deleted custom exercise) or
+  lists no group counts under "Not grouped" so nothing done goes missing. Sets a week =
+  `sets × 7 / days in the range`.
+- **Estimated one-rep max (Epley).** For a working set with a load (bodyweight load plus
+  weight, D44) and 1 to 12 reps: `e1RM = load × (1 + reps / 30)`, to 0.1 kg; one rep is the
+  load itself. Past 12 reps the estimate says more about endurance than strength, so those sets
+  are left out (`E1RM_MAX_REPS`). Each session's estimate for an exercise is the best over its
+  sets. The change is the latest session's estimate against the first in the range, in kg and
+  as `(latest − first) / first`; an exercise estimated once has no change. Strength lists the
+  six exercises with the most sessions in the range; "most improved" is the biggest positive
+  relative change. 100 kg × 5 reads 116.7 kg; a pull-up of 8 at 80 kg bodyweight 101.3 kg.
+- **Records.** A session in the range whose best working set of an exercise beats every
+  earlier finished session of it in the data read, on the metric its lift page ranks it on
+  ("What best means": kg lifted in one set or the heaviest weight, else reps, time or
+  distance). A tie is not a record, and the first session of an exercise is not one either:
+  there was nothing to beat. Because the data read starts two years back, "every earlier
+  session" means every one since then; the card names that date.
+
 ## Repeating a session
 
 A repeat copies the title, the exercises and every set (weight, reps, time, distance) with
@@ -215,11 +265,17 @@ Bodyweight loads are not copied; they are worked out for the new day.
 
 ## Not yet
 
-Estimated one-rep max and personal records across all time arrive in slice 9 and will be
-written up here first (the week-on-week card only looks one week back). Training days feeding water, protein, the weekly
+Records further back than the two years Progress reads, and an estimated one-rep max on the
+session screen itself. Training days feeding water, protein, the weekly
 review and recalibration are slice 10 and will be written up in `NUTRITION-MATHS.md`.
 
 ## Change log
+
+- **2026-11-17**: Progress over a range for the gym half (`training/progress.ts`): totals and
+  averages against the range before, week-by-week totals, week streaks, the training calendar,
+  sessions by weekday, working sets per muscle group, estimated one-rep max by Epley (1 to 12
+  reps, bodyweight load included) and records against every earlier session read. New rules;
+  no existing rule changed.
 
 - **2026-11-05** (D44, decided by the owner): **Rule change:** a push-up lifts 0.7 of
   bodyweight, where it was all of it; the loads already stored were rescaled (migration 0020),

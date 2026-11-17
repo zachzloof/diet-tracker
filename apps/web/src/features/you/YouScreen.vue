@@ -8,6 +8,7 @@ import Card from '@/components/ui/Card.vue'
 import Icon, { type IconName } from '@/components/ui/Icon.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { useLogout, useSession } from '@/features/auth/useSession'
+import { useAppMode } from '@/features/mode/useAppMode'
 import { useProfile } from '@/features/profile/useProfile'
 import InstallHint from '@/features/pwa/InstallHint.vue'
 import { useTargets } from '@/features/targets/useTargets'
@@ -18,6 +19,7 @@ const profile = useProfile()
 const targets = useTargets()
 const appVersion = __APP_VERSION__
 const logout = useLogout()
+const { mode } = useAppMode()
 
 const memberSince = computed(() => {
   const user = session.user.value
@@ -53,12 +55,20 @@ const NAV = computed<NavItem[]>(() => [
     sub: 'Ask about your food, targets and training',
     icon: 'sparkles',
   },
-  {
-    name: 'progress',
-    label: 'Progress',
-    sub: 'Weight trend and the fortnightly plan check',
-    icon: 'trending-up',
-  },
+  // You is shared by both halves (D38); Progress is the half's own.
+  mode.value === 'training'
+    ? {
+        name: 'gym-progress',
+        label: 'Progress',
+        sub: 'Sessions, volume, strength and records',
+        icon: 'trending-up',
+      }
+    : {
+        name: 'progress',
+        label: 'Progress',
+        sub: 'Weight trend and the fortnightly plan check',
+        icon: 'trending-up',
+      },
   { name: 'foods', label: 'My foods', sub: 'Saved foods for one-tap logging', icon: 'book' },
   {
     name: 'settings',
@@ -72,7 +82,7 @@ const NAV = computed<NavItem[]>(() => [
         {
           name: 'ai-costs',
           label: 'AI costs',
-          sub: 'Calls, tokens and searches by person, last 30 days',
+          sub: 'Spend by day, purpose, model and person',
           icon: 'trending-up' as const,
         },
       ]

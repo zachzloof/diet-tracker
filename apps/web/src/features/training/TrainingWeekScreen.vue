@@ -33,7 +33,8 @@ import { useExercises, useWorkouts } from './useTraining'
 /**
  * The gym half's Week (D38): sessions, sets and tonnage over the last seven days against
  * the training days declared in the profile, a tappable day strip, week-on-week insights
- * from the seven days before, the week's sessions by day, and the way to each lift's trend.
+ * from the seven days before, the week's sessions by day, and the ways to Progress (months
+ * at a glance) and to each lift's trend.
  * Steps back a week at a time.
  */
 const ui = useUiStore()
@@ -223,7 +224,24 @@ const failed = computed(() => workouts.isError.value && !workouts.hasData.value)
         <SessionRows :sessions="group.rows" />
       </section>
 
-      <Card :padded="false">
+      <Card :padded="false" class="divide-y divide-border">
+        <RouterLink
+          :to="{ name: 'gym-progress' }"
+          class="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
+        >
+          <span
+            class="flex size-10 items-center justify-center rounded-full bg-accent/15 text-accent"
+          >
+            <Icon name="award" :size="20" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-base font-semibold">Progress</span>
+            <span class="block truncate text-sm text-fg-muted"
+              >Sessions, volume, strength and records over months</span
+            >
+          </span>
+          <Icon name="chevron-right" :size="18" class="text-fg-muted" />
+        </RouterLink>
         <RouterLink
           :to="{ name: 'lifts' }"
           class="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-surface-2"

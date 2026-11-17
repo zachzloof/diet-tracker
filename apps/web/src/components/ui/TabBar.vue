@@ -13,8 +13,8 @@ interface Tab {
   icon: IconName
   /** Other route names that count as this tab (a specific day under Today). */
   aliases?: string[]
-  /** Path prefix of the pushed screens that belong to this tab; the tab stays lit on them. */
-  section?: string
+  /** Path prefixes of the pushed screens that belong to this tab; the tab stays lit on them. */
+  sections?: string[]
 }
 
 interface Layout {
@@ -31,7 +31,7 @@ const LAYOUTS: Readonly<Record<AppMode, Layout>> = {
   diet: {
     left: [
       { name: 'today', label: 'Today', icon: 'home', aliases: ['day'] },
-      { name: 'meals', label: 'Meals', icon: 'utensils', section: '/meals' },
+      { name: 'meals', label: 'Meals', icon: 'utensils', sections: ['/meals'] },
     ],
     right: [{ name: 'week', label: 'Week', icon: 'calendar' }, YOU],
     addLabel: 'Log food',
@@ -39,9 +39,17 @@ const LAYOUTS: Readonly<Record<AppMode, Layout>> = {
   training: {
     left: [
       { name: 'gym-today', label: 'Today', icon: 'home', aliases: ['gym-day'] },
-      { name: 'workouts', label: 'Workouts', icon: 'dumbbell', section: '/workouts' },
+      { name: 'workouts', label: 'Workouts', icon: 'dumbbell', sections: ['/workouts'] },
     ],
-    right: [{ name: 'gym-week', label: 'Week', icon: 'calendar', section: '/gym/lifts' }, YOU],
+    right: [
+      {
+        name: 'gym-week',
+        label: 'Week',
+        icon: 'calendar',
+        sections: ['/gym/lifts', '/gym/progress'],
+      },
+      YOU,
+    ],
     addLabel: 'Log a workout',
   },
 }
@@ -54,9 +62,8 @@ const route = useRoute()
 function isActive(tab: Tab): boolean {
   if (route.name === tab.name) return true
   if (tab.aliases?.some((name) => route.name === name)) return true
-  return (
-    tab.section !== undefined &&
-    (route.path === tab.section || route.path.startsWith(`${tab.section}/`))
+  return (tab.sections ?? []).some(
+    (section) => route.path === section || route.path.startsWith(`${section}/`),
   )
 }
 </script>

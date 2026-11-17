@@ -4,6 +4,14 @@ All user-visible changes, grouped by slice. Newest first.
 
 ## Unreleased
 
+### Planned food in the food groups, AI costs by period, and gym Progress (2026-11-17)
+- Food you have planned now shows in Food groups as well: the pips fill in a lighter tone after what you have eaten, and each group says "+ 2.5 planned". The numbers are still what you ate.
+- Gym Progress: You → Progress in the gym half (and a new Progress row on gym Week) is now about training, not weight. Pick 4 weeks, 3 months, 6 months or a year and see sessions, kilograms lifted, sets and time against the stretch before; week-by-week bars for kg lifted, sessions or sets; your weekly streak, a training calendar and the days you train most; an estimated one-rep max for your main lifts with the most improved one called out; your records; and sets per muscle group. The food half's Progress is unchanged.
+- For the owner, the AI costs page is rebuilt. Pick Today, 7 days, 30 days, 90 days or All; it opens on the last 7 days. The headline is what that period cost and how it compares with the one before, with spend per day and per call, a chart by day (by week for long periods), and the split by purpose, by model and by person.
+- The cost figures are more careful. Calls from before 5 November, when cache hits were not yet counted, were priced as if nothing came from OpenAI's cache, which made old coach chats read up to about three times too high. They now take the cache share that later calls of the same kind show, and the page says how many are estimated.
+- The page can also show what OpenAI actually billed for the same days, beside the estimate, with OpenAI's own line items. It needs an OpenAI admin key on the server (`OPENAI_ADMIN_KEY`, optionally `OPENAI_PROJECT_ID`); without one the page says how to turn it on. D45.
+- API: `GET /api/v1/ai/costs?period=` (`today`, `7d`, `30d`, `90d`, `all`) answers `from`, `to`, `days`, `timezone`, `models`, `daily`, `previous`, `billed`, and `estimatedCalls` on each row.
+
 ### Edit your own exercises, and a truer push-up (2026-11-05)
 - You can now change an exercise you created. In a session, open Add exercise and tap the pencil beside one of yours; or open its page under Lifts and tap the pencil at the top. Change its name, equipment, muscle group, what a set records, and how much of your bodyweight a rep lifts.
 - A change reaches the sessions you already logged with it: they show the new name, and their kilograms are worked out again if you changed the bodyweight share. So a crunch of your own that was counting all of you can be set to about a third, and every past week corrects itself.

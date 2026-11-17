@@ -547,6 +547,30 @@ Status legend: `not started`, `in progress`, `done`, `done with deferrals`.
 
 ---
 
+## Follow-up - Planned food groups, AI costs you can trust, gym Progress (D43, D45)
+
+**Status:** done (2026-11-17)
+
+**Goal.** Three asks from the owner. (1) Planned food should shade the food-group pips the way it shades the ring and the bars. (2) The AI costs page said about £10 while OpenAI's own page showed pennies; it needs time periods (the last week, not just everything) and more accurate numbers. (3) Gym > Progress should be proper analytics of progress, not the weight screen.
+
+**Cause (costs).** The list prices were right (re-read 2026-11-17) and every call is logged once with OpenAI's own token counts. Calls before 2026-11-05 carry no cached-token count and were priced as if nothing was cached, which reads up to about three times high on a coach round, and the view only offered the last 30 days, which still held those rows. Production rows could not be read from this machine (the database credentials were refused), so how much of the £10 that explains is unknown; D45 adds OpenAI's own bill beside the estimate to settle it.
+
+**Shipped.** Food: `ServePips` takes `planned` (the lighter tone after the eaten serves), `useDayLog` returns `plannedFoodGroups`, and Food groups says "+ 2.5 planned" beside a group's eaten serves. Costs: `GET /ai/costs?period=today|7d|30d|90d|all` (default 7 days) answers by the owner's local day with person × purpose rows, models, every day of the window and the window before; old rows take the cached share later calls of the same purpose and model recorded (`cachedShare`) and are counted as estimated; `apps/api/src/ai/billing.ts` reads OpenAI's organisation Costs API when `OPENAI_ADMIN_KEY` is set (`OPENAI_PROJECT_ID` narrows it), zod-checked, cached ten minutes. `CostsScreen` has a period control, a headline with the change on the window before and "OpenAI billed" under it when available, per-day and per-call tiles, a by-day (by-week past six weeks) `BarChart`, By purpose with share bars, By model with cache hit rates, By person, OpenAI's line items and a "How this is worked out" note. Gym: `/gym/progress` (`GymProgressScreen` and five cards; maths in `packages/shared/src/training/progress.ts`, written up in TRAINING-MATHS "Progress over a range"), opened from You's Progress row in the gym half and a new Progress row on gym Week; the gym Week tab stays lit on it. New shared `BarChart` and a `trending-down` icon.
+
+**Done when.**
+- [x] Planned food shades the food-group pips and says how much is planned; the numbers stay eaten. *Walked at 390 dark, 360 light and 430 dark with 2.5 serves of vegetables planned on top of 1.5 eaten: the pips filled to 1.5 in full colour and on to 4 at 35%, "1.5 / 6 + 2.5 planned"; the footnote names the lighter tone.*
+- [x] The costs page shows Today, 7, 30, 90 days and All, with the change on the period before. *Same walk, a seeded owner with 365 calls over 60 days either side of 5 Nov: 7 days £1.12 "10% down on the 7 days before (£1.24)", Today £0.18, 30 days £5.65, 90 days and All £12.13 with "Nothing in the 90 days before"; past six weeks the chart goes weekly. Tokens view on the same periods.*
+- [x] Old calls are no longer priced as if nothing was cached. *`brief.test.ts`: a pre-count coach round beside a recorded one at 80% cached prices at $1.40, not $5; `pricing.test.ts` works the 5,500-token round by hand.*
+- [x] OpenAI's own bill shows beside the estimate when an admin key is set, and its absence or failure never breaks the page. *A faked Costs API in the walk: "OpenAI billed" with its UTC days, the ratio line and the line items; the test covers off, ok and a malformed answer.*
+- [x] Gym > Progress shows real analytics. *Walked at the three widths and all four ranges on 30 seeded sessions over 12 weeks: tiles with "+50% on before", week-by-week bars, a 5-week streak, the calendar, weekday bars, Epley estimates with "Most improved: Barbell back squat, up 18%", records and muscle groups. The Food half's Progress row still opens the weight screen. Two fixes from the walk: Strength rows put the name on its own line (it was cut to "Barbell back s..."), and the Time tile shows whole hours from 10 h so it never wraps.*
+- [x] Typecheck, lint, build, tests (shared 254, api 205, web 62). No horizontal scroll or console errors in the walk.
+
+**Deferrals.** No real-phone check; not checked on Railway. The live Costs API has not been called (no admin key here): the shape follows the OpenAI SDK 7.23 types and is zod-checked, so a surprise shows as an error line, not a broken page. Production `ai_calls` were not read. The demo video was not re-recorded; gym Week now has a Progress row above Lifts, so step 8's framing may move. The two year-long workout reads behind gym Progress are not in the offline mirror.
+
+**Decisions it depends on.** D43, D42, D45 (proposed), D39, D44.
+
+---
+
 ## Ideas after slice 6 (not planned)
 
 - Coach chat moved to Slice 11 (D41) on 2026-11-01.

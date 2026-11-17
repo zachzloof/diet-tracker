@@ -153,6 +153,12 @@ const routes: RouteRecordRaw[] = [
     meta: { mode: 'training' },
   },
   {
+    path: '/gym/progress',
+    name: 'gym-progress',
+    component: () => import('@/features/training/GymProgressScreen.vue'),
+    meta: { mode: 'training' },
+  },
+  {
     path: '/gym/lifts',
     name: 'lifts',
     component: () => import('@/features/training/LiftsScreen.vue'),
