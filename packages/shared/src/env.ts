@@ -68,12 +68,12 @@ export const apiEnvSchema = z.object({
    */
   USD_TO_GBP: z.coerce.number().positive().default(0.74),
   /**
-   * D45 (proposed): an OpenAI admin key, read only by the cost view to ask OpenAI's Costs API
-   * what it actually billed. Unset leaves the view on the app's own estimate. Never used for
-   * model calls.
+   * D45: an OpenAI admin key, read only by the cost view to ask OpenAI's Costs API what it
+   * actually billed. Takes effect only with `OPENAI_PROJECT_ID` as well; without both the view
+   * shows the app's own estimate alone. Never used for model calls.
    */
   OPENAI_ADMIN_KEY: optionalString,
-  /** D45: limit the billed figure to this OpenAI project (`proj_…`); unset is the whole organisation. */
+  /** D45: the OpenAI project (`proj_…`) whose bill the cost view reads; needed with `OPENAI_ADMIN_KEY`. */
   OPENAI_PROJECT_ID: optionalString,
 
   /** Absolute path of the built SPA. Defaults to apps/web/dist relative to the API. */

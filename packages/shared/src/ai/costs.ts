@@ -101,7 +101,7 @@ export const aiBilledSchema = z.discriminatedUnion('status', [
     /** OpenAI buckets by UTC day; these are the UTC days asked for, inclusive. */
     from: z.iso.date(),
     to: z.iso.date(),
-    /** Only this project's spend, or null for the whole organisation. */
+    /** The project whose spend this is (`OPENAI_PROJECT_ID`); null only from a test's fake. */
     projectId: z.string().nullable(),
     costUsd: z.number().min(0),
     daily: z.array(z.object({ day: z.iso.date(), costUsd: z.number().min(0) })),

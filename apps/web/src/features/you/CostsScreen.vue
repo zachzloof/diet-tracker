@@ -503,9 +503,9 @@ const purposeShare = (row: AiCostTotals) =>
             {{ totals.unpricedCalls === 1 ? 'is' : 'are' }} left out of the money.
           </p>
           <p v-if="data.billed.status === 'off'">
-            This is an estimate. To set it beside what OpenAI actually billed, give the server an
-            OpenAI admin key as <code>OPENAI_ADMIN_KEY</code> (and <code>OPENAI_PROJECT_ID</code> to
-            count one project only).
+            This is an estimate. To set it beside what OpenAI actually billed, give the server both
+            <code>OPENAI_ADMIN_KEY</code> (an OpenAI admin key) and <code>OPENAI_PROJECT_ID</code>
+            (the production project).
           </p>
           <p v-else>
             OpenAI's bill also counts anything else on the same

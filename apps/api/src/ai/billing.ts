@@ -6,10 +6,11 @@ import { logger } from '../logger.js'
 import { describeAiError } from './openai.js'
 
 /**
- * What OpenAI actually billed (D45, proposed): the organisation Costs API, read with an admin
+ * What OpenAI actually billed (D45): the organisation Costs API, read with an admin
  * key, so the owner's cost view can set its own estimate beside the bill. OpenAI buckets by
- * UTC day and the figures lag by a few hours. Off unless `OPENAI_ADMIN_KEY` is set; with
- * `OPENAI_PROJECT_ID` only that project counts. Answers are kept ten minutes per window;
+ * UTC day and the figures lag by a few hours. Off unless both `OPENAI_ADMIN_KEY` and
+ * `OPENAI_PROJECT_ID` are set (the owner's call, D45): then only that project counts, and the
+ * view is exactly as it was without them. Answers are kept ten minutes per window;
  * a failure is not kept.
  */
 
@@ -89,7 +90,8 @@ export async function billedCosts(
 ): Promise<AiBilled> {
   const adminKey = env.OPENAI_ADMIN_KEY
   const override = openaiBilling.override
-  if (!adminKey && !override) return { status: 'off' }
+  // Both keys or nothing: an admin key alone would count the whole organisation.
+  if (!override && !(adminKey && env.OPENAI_PROJECT_ID)) return { status: 'off' }
   const projectId = env.OPENAI_PROJECT_ID ?? null
   const key = `${from}|${to}|${projectId ?? ''}`
   const hit = cache.get(key)

@@ -766,15 +766,17 @@ Because a plan further back than that would be deleted within the hour, the API 
 
 ---
 
-## D45. Checking the cost view against OpenAI's own bill (proposed)
+## D45. Checking the cost view against OpenAI's own bill (accepted)
 
 **Context.** The owner (2026-11-17): the AI costs screen said about £10 while OpenAI's usage page showed pennies most days. They want periods (today, the last week) rather than one 30-day total, and numbers they can trust. What the build found: the list prices in `pricing.ts` are right for gpt-5.5 ($5 in, $0.50 cached, $30 out per million, re-read on 2026-11-17) and every call and every coach round is logged once with OpenAI's own token counts. The known way the screen read high is the calls from before 2026-11-05, which have no cached-token count and were priced as if nothing was cached; a coach round is mostly cached prefix, so those rounds read up to about three times their cost. The production rows could not be read from here (the database credentials were refused), so how much of the £10 that explains is not known. Whatever is left can only be settled against the bill itself.
 
 **Options.**
 - **A. The estimate alone, made more careful.** Built in every case: any period, the window before it for comparison, per model and per day, and the old rows given the cached share that calls of the same purpose and model have shown since (`cachedShare`), counted on screen as estimated. Cheap and private, but still an estimate: it cannot see free credit, a different tier, or a price change nobody copied in.
-- **B. A, plus OpenAI's Costs API beside it when the server holds an admin key.** Built, off until `OPENAI_ADMIN_KEY` is set on Railway. The view then shows "OpenAI billed £x" for the same days (UTC), how far the estimate is from it, and OpenAI's own line items. `OPENAI_PROJECT_ID` narrows it to the production project so local runs and smoke tests drop out. The cost: an admin key can manage the whole organisation (keys, members, projects), so it is a far more powerful secret than the model key. It is read by one owner-only route, never sent to a model endpoint, cached ten minutes per window, and a failure shows as a line on the screen, never an error page.
+- **B. A, plus OpenAI's Costs API beside it when the server holds an admin key.** Built, off until both `OPENAI_ADMIN_KEY` and `OPENAI_PROJECT_ID` are set on Railway. The view then shows "OpenAI billed £x" for the same days (UTC), how far the estimate is from it, and OpenAI's own line items. `OPENAI_PROJECT_ID` keeps it to the production project so local runs and smoke tests drop out. The cost: an admin key can manage the whole organisation (keys, members, projects), so it is a far more powerful secret than the model key. It is read by one owner-only route, never sent to a model endpoint, cached ten minutes per window, and a failure shows as a line on the screen, never an error page.
 - **C. The bill instead of the estimate.** Simplest to trust, but OpenAI only splits by project, key and line item, never by person or purpose, so the By purpose and By person lists (the reason the view exists) would go.
 
 **Recommendation.** B. Create an admin key under OpenAI → Organization → Admin keys, set it and the project id on Railway, and watch the two numbers for a week. If they agree within about 15% the key can be removed again and the estimate trusted.
 
-**Status.** `proposed` (2026-11-17): A and B built; B does nothing until the owner adds the key.
+**Decided by the owner (2026-11-17).** B, on one condition: "only if those 2 keys are filled; if they aren't, just keep how it is. When I feel I need it I will add those 2 keys." So the billed figure needs both the admin key and the project id; with either missing the view is the estimate alone, exactly as before, and an admin key alone never reaches OpenAI (it would count the whole organisation).
+
+**Status.** `accepted` (2026-11-17): A and B built; B is off until the owner sets both keys.

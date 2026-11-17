@@ -93,6 +93,10 @@ afterEach(() => {
   coachModel.override = null
   env.OPENAI_API_KEY = ''
   env.OWNER_EMAIL = undefined
+  env.OPENAI_ADMIN_KEY = undefined
+  env.OPENAI_PROJECT_ID = undefined
+  openaiBilling.override = null
+  clearBillingCache()
 })
 
 describe('the draft', () => {
@@ -466,7 +470,21 @@ describe('/api/v1/ai/costs (owner only)', () => {
     expect(row?.inputCostUsd).toBeCloseTo(2.8, 6)
   })
 
-  it("sets OpenAI's own bill beside the estimate when an admin key is configured", async () => {
+  it('leaves the bill off unless both the admin key and the project id are set', async () => {
+    env.OWNER_EMAIL = 'finn@example.com'
+    const billed = async () =>
+      aiCostsResponseSchema.parse(
+        await (await send(finnAccount.cookie, 'GET', '/api/v1/ai/costs')).json(),
+      ).billed
+    // With no override, neither half alone may reach OpenAI.
+    env.OPENAI_ADMIN_KEY = 'sk-admin-walk-only'
+    expect(await billed()).toEqual({ status: 'off' })
+    env.OPENAI_ADMIN_KEY = undefined
+    env.OPENAI_PROJECT_ID = 'proj_walk_only'
+    expect(await billed()).toEqual({ status: 'off' })
+  })
+
+  it("sets OpenAI's own bill beside the estimate when both keys are configured", async () => {
     env.OWNER_EMAIL = 'finn@example.com'
     const asked: CostsQuery[] = []
     openaiBilling.override = async (query) => {
